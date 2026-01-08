@@ -1,35 +1,54 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from 'react';
+import Header from './components/Header';
+import Navigation from './components/Navigation';
+import HomePage from './features/home/HomePage';
+import MyPage from './features/mypage/MyPage';
+import CreditPage from './features/credit/CreditPage';
+import InterviewPage from './features/interview/InterviewPage';
+import ResumePage from './features/resume/ResumePage';
+import AIRecommendationPage from './features/ai-recommendation/AIRecommendationPage';
+import MatchingPage from './features/matching/MatchingPage';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [activeTab, setActiveTab] = useState('job');
+
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId);
+    console.log(`${tabId} 탭으로 이동`);
+  };
+
+  const handleLogoClick = () => {
+    setActiveTab('job');
+    console.log('로고 클릭 - 홈으로 이동');
+  };
+
+  // 현재 활성 탭에 따라 페이지 렌더링
+  const renderPage = () => {
+    switch (activeTab) {
+      case 'mypage':
+        return <MyPage />;
+      case 'interview':
+        return <InterviewPage />;
+      case 'credit':
+        return <CreditPage />;
+      case 'resume':
+        return <ResumePage />;
+      case 'ai-recommend':
+        return <AIRecommendationPage />;
+      case 'matching':
+        return <MatchingPage />;
+      default:
+        return <HomePage />;
+    }
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div className="min-h-screen bg-gray-50">
+      <Header onLogoClick={handleLogoClick} />
+      <Navigation activeTab={activeTab} onTabChange={handleTabChange} />
+      {renderPage()}
+    </div>
+  );
 }
 
-export default App
+export default App;
