@@ -1,12 +1,19 @@
 import { useState } from 'react';
 import InterviewSidebar from './components/InterviewSidebar';
+import InterviewChatPage from './components/InterviewChatPage';
 
 export default function InterviewPage() {
   const [activeMenu, setActiveMenu] = useState('interview');
   const [selectedLevel, setSelectedLevel] = useState<'junior' | 'senior'>('junior');
+  const [isInterviewStarted, setIsInterviewStarted] = useState(false);
 
   const handleStartInterview = () => {
     console.log(`${selectedLevel} 면접 시작하기 클릭됨`);
+    setIsInterviewStarted(true);
+  };
+
+  const handleBackToPreparation = () => {
+    setIsInterviewStarted(false);
   };
 
   const handleLevelClick = (level: 'junior' | 'senior') => {
@@ -29,6 +36,16 @@ export default function InterviewPage() {
     { id: 3, title: '1회차 - 시니어 불합격(67점)', color: 'text-red-600' },
     { id: 4, title: '1회차 - 주니어 합격(79점)', color: 'text-green-600' },
   ];
+
+  // 면접이 시작되면 채팅 화면 표시
+  if (isInterviewStarted) {
+    return (
+      <InterviewChatPage 
+        onBack={handleBackToPreparation} 
+        level={selectedLevel}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

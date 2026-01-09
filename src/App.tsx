@@ -5,6 +5,7 @@ import Footer from "./components/Footer";
 import HomePage from "./features/home/HomePage";
 import MyPage from "./features/mypage/MyPage";
 import CreditPage from "./features/credit/CreditPage";
+import CreditChargePage from "./features/credit-charge/CreditChargePage";
 import InterviewPage from "./features/interview/InterviewPage";
 import ResumePage from "./features/resume/ResumePage";
 import AIRecommendationPage from "./features/ai-recommendation/AIRecommendationPage";
@@ -89,6 +90,11 @@ function App() {
     console.log("기업 크레딧 페이지로 이동");
   };
 
+  const handleCreditChargeClick = () => {
+    setActiveTab("creditCharge");
+    console.log("크레딧 충전 페이지로 이동");
+  };
+
   // 독립적인 레이아웃을 사용하는 페이지들
   if (activeTab === "login") {
     return (
@@ -165,17 +171,19 @@ function App() {
   const renderPage = () => {
     switch (activeTab) {
       case "mypage":
-        return <MyPage />;
+        return <MyPage onNavigate={handleTabChange} />;
       case "interview":
         return <InterviewPage />;
       case "credit":
-        return <CreditPage />;
+        return <CreditPage onCharge={handleCreditChargeClick} />;
+      case "creditCharge":
+        return <CreditChargePage onBack={() => handleTabChange('credit')} />;
       case "resume":
         return <ResumePage />;
       case "ai-recommend":
         return <AIRecommendationPage />;
       case "matching":
-        return <MatchingPage />;
+        return <MatchingPage onEditResume={() => handleTabChange('resume')} />;
       default:
         return <HomePage />;
     }

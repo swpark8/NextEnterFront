@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import MatchingSidebar from './components/MatchingSidebar';
 
-export default function MatchingPage() {
+interface MatchingPageProps {
+  onEditResume?: () => void;
+}
+
+export default function MatchingPage({ onEditResume }: MatchingPageProps) {
   const [activeMenu, setActiveMenu] = useState('home');
   const [selectedResume, setSelectedResume] = useState('');
   const [selectedJob, setSelectedJob] = useState('');
@@ -58,16 +62,13 @@ export default function MatchingPage() {
     alert('이력서 작성 페이지로 이동합니다.');
   };
 
-  // 등급 결정
-  const getGrade = (score: number) => {
-    if (score >= 90) return { grade: 'A+', color: 'text-green-600', bgColor: 'bg-green-100' };
-    if (score >= 85) return { grade: 'A', color: 'text-blue-600', bgColor: 'bg-blue-100' };
-    if (score >= 80) return { grade: 'B+', color: 'text-yellow-600', bgColor: 'bg-yellow-100' };
-    if (score >= 75) return { grade: 'B', color: 'text-orange-600', bgColor: 'bg-orange-100' };
-    return { grade: 'C', color: 'text-red-600', bgColor: 'bg-red-100' };
+  // 지원 적합 여부 결정
+  const getSuitability = (score: number) => {
+    if (score >= 75) return { suitable: true, message: '매우 적합', emoji: '🎉' };
+    return { suitable: false, message: '부적합', emoji: '⚠️' };
   };
 
-  const gradeInfo = getGrade(matchingScore);
+  const suitabilityInfo = getSuitability(matchingScore);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -81,7 +82,7 @@ export default function MatchingPage() {
             {/* 상단 헤더 */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
+                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
                   📊
                 </div>
                 <h1 className="text-2xl font-bold">AI 매칭 분석</h1>
@@ -96,7 +97,7 @@ export default function MatchingPage() {
             </div>
 
             {/* 선택 카드 */}
-            <div className="bg-white rounded-2xl border-2 border-purple-400 p-8 mb-6">
+            <div className="bg-white rounded-2xl border-2 border-blue-400 p-8 mb-6">
               <h2 className="text-xl font-bold mb-6">분석 대상 선택</h2>
               
               <div className="space-y-4 mb-6">
@@ -150,7 +151,7 @@ export default function MatchingPage() {
               {/* 분석 시작 버튼 */}
               <button
                 onClick={handleAnalyze}
-                className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition font-bold text-lg flex items-center justify-center gap-2"
+                className="w-full py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-bold text-lg flex items-center justify-center gap-2"
               >
                 <span>🔍</span>
                 <span>AI 매칭 분석 시작</span>
@@ -158,8 +159,8 @@ export default function MatchingPage() {
               </button>
 
               {/* 안내 메시지 */}
-              <div className="mt-4 bg-purple-50 border-2 border-purple-200 rounded-xl p-4">
-                <div className="flex items-center gap-2 text-purple-700">
+              <div className="mt-4 bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+                <div className="flex items-center gap-2 text-blue-700">
                   <span>💡</span>
                   <span className="font-medium">
                     AI가 이력서와 공고를 분석하여 매칭률, 강점, 개선사항을 알려드립니다
@@ -177,21 +178,13 @@ export default function MatchingPage() {
               </div>
             ) : (
               <div className="space-y-6">
-                {/* 매칭 점수 카드 */}
-                <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl p-8 text-white">
+                {/* 매칭 결과 카드 */}
+                <div className={`rounded-2xl p-8 text-white ${suitabilityInfo.suitable ? 'bg-blue-600' : 'bg-red-600'}`}>
                   <div className="text-center">
-                    <h2 className="text-2xl font-bold mb-4">종합 매칭 점수</h2>
-                    <div className="flex items-center justify-center gap-8">
-                      <div>
-                        <div className="text-7xl font-bold mb-2">{matchingScore}</div>
-                        <div className="text-xl">점 / 100점</div>
-                      </div>
-                      <div className={`text-6xl font-bold px-8 py-4 rounded-2xl ${gradeInfo.bgColor} ${gradeInfo.color}`}>
-                        {gradeInfo.grade}
-                      </div>
-                    </div>
-                    <div className="mt-6 text-lg">
-                      🎉 이 공고에 지원하기 <span className="font-bold">매우 적합</span>합니다!
+                    <h2 className="text-2xl font-bold mb-6">종합 매칭 점수</h2>
+                    <div className="text-8xl mb-6">{suitabilityInfo.emoji}</div>
+                    <div className="text-4xl font-bold mb-4">
+                      이 공고에 지원하기 <span className="underline">{suitabilityInfo.message}</span>합니다!
                     </div>
                   </div>
                 </div>
@@ -281,25 +274,25 @@ export default function MatchingPage() {
                 </div>
 
                 {/* AI 추천 개선 사항 */}
-                <div className="bg-white rounded-2xl border-2 border-purple-400 p-6">
+                <div className="bg-white rounded-2xl border-2 border-blue-400 p-6">
                   <div className="flex items-center gap-2 mb-4">
                     <span className="text-2xl">🤖</span>
-                    <h3 className="text-xl font-bold text-purple-600">AI 추천 개선 사항</h3>
+                    <h3 className="text-xl font-bold text-blue-600">AI 추천 개선 사항</h3>
                   </div>
                   <div className="space-y-4">
-                    <div className="bg-purple-50 rounded-lg p-4">
+                    <div className="bg-blue-50 rounded-lg p-4">
                       <h4 className="font-bold mb-2">📝 이력서 수정 제안</h4>
                       <p className="text-gray-700">
                         "프로젝트 성과를 정량적으로 표현하면 좋습니다. 예: '웹 성능 30% 개선', '사용자 수 2배 증가' 등"
                       </p>
                     </div>
-                    <div className="bg-purple-50 rounded-lg p-4">
+                    <div className="bg-blue-50 rounded-lg p-4">
                       <h4 className="font-bold mb-2">🎯 자기소개서 작성 팁</h4>
                       <p className="text-gray-700">
                         "해당 회사의 기술 스택과 문화에 맞춰 협업 경험과 문제 해결 능력을 강조하세요"
                       </p>
                     </div>
-                    <div className="bg-purple-50 rounded-lg p-4">
+                    <div className="bg-blue-50 rounded-lg p-4">
                       <h4 className="font-bold mb-2">📚 학습 추천</h4>
                       <p className="text-gray-700">
                         "Next.js 공식 문서와 튜토리얼을 학습하여 SSR/SSG 경험을 쌓으면 합격률이 높아집니다"
@@ -317,14 +310,20 @@ export default function MatchingPage() {
                     다시 분석하기
                   </button>
                   <button
-                    onClick={() => alert('이력서 수정 페이지로 이동합니다')}
+                    onClick={() => {
+                      if (onEditResume) {
+                        onEditResume();
+                      } else {
+                        alert('이력서 수정 페이지로 이동합니다');
+                      }
+                    }}
                     className="flex-1 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-bold"
                   >
                     이력서 수정하기
                   </button>
                   <button
                     onClick={() => alert('지원하기 페이지로 이동합니다')}
-                    className="flex-1 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition font-bold"
+                    className="flex-1 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-bold"
                   >
                     🚀 지금 지원하기
                   </button>

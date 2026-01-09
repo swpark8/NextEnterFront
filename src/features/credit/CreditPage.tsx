@@ -3,9 +3,10 @@ import CreditSidebar from "./components/CreditSidebar";
 
 interface CreditPageProps {
   onLogoClick?: () => void;
+  onCharge?: () => void;
 }
 
-export default function CreditPage({ onLogoClick }: CreditPageProps) {
+export default function CreditPage({ onLogoClick, onCharge }: CreditPageProps) {
   const [currentCredit] = useState(505);
   const [expiringMileage] = useState(0);
   const [activeTab, setActiveTab] = useState<"coupon" | "usage" | "mileage">(
@@ -25,6 +26,9 @@ export default function CreditPage({ onLogoClick }: CreditPageProps) {
 
   const handlePromote = () => {
     console.log("충전하기 클릭됨");
+    if (onCharge) {
+      onCharge();
+    }
   };
 
   const handleJobClick = () => {
@@ -167,8 +171,8 @@ export default function CreditPage({ onLogoClick }: CreditPageProps) {
                     하라라라랄
                   </div>
                   <div className="mt-3 space-y-1">
-                    <div>당일자 : 000</div>
-                    <div>연락처 : 000</div>
+                    <div>당담자 : 송진우</div>
+                    <div>연락처 : 010-1234-5678</div>
                   </div>
                 </div>
               </button>

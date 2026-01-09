@@ -125,17 +125,7 @@ export default function BusinessServicePage({ onJobManagementClick, onLogoClick,
               <button className="px-4 py-2 text-gray-700 hover:text-blue-600">홍보</button>
             </nav>
 
-            {/* 오른쪽 버튼 */}
-            <div className="flex items-center space-x-4">
-              <button className="px-4 py-2 text-gray-700 hover:text-blue-600">로그인</button>
-              <button className="px-4 py-2 text-gray-700 hover:text-blue-600">회원가입</button>
-              <button
-                onClick={handleLogoClick}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-              >
-                개인 회원
-              </button>
-            </div>
+
           </div>
         </div>
       </header>

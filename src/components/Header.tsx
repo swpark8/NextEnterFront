@@ -79,27 +79,7 @@ export default function Header({
             </div>
           </form>
 
-          {/* 버튼들 */}
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={onLoginClick}
-              className="px-4 py-2 text-gray-700 hover:text-blue-600 transition"
-            >
-              로그인
-            </button>
-            <button
-              onClick={onSignupClick}
-              className="px-4 py-2 text-gray-700 hover:text-blue-600 transition"
-            >
-              회원가입
-            </button>
-            <button
-              onClick={onBusinessServiceClick}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-            >
-              기업 서비스
-            </button>
-          </div>
+
         </div>
       </div>
     </header>
