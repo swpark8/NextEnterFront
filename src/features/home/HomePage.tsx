@@ -25,6 +25,13 @@ export default function HomePage() {
       location: "서울 판교",
       salary: "연봉 5000만원~7000만원",
     },
+    {
+      id: 3,
+      title: "풀스택 개발자",
+      company: "IT 기업",
+      location: "서울 마포",
+      salary: "연봉 4500만원~6500만원",
+    },
   ];
 
   const mustSeeJobs = [

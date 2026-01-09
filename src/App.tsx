@@ -1,14 +1,13 @@
-import { useState } from 'react';
-import Header from './components/Header';
-import Navigation from './components/Navigation';
-import HomePage from './features/home/HomePage';
-import MyPage from './features/mypage/MyPage';
-import CreditPage from './features/credit/CreditPage';
-import InterviewPage from './features/interview/InterviewPage';
-import ResumePage from './features/resume/ResumePage';
-import AIRecommendationPage from './features/ai-recommendation/AIRecommendationPage';
-import MatchingPage from './features/matching/MatchingPage';
-import CreditPage from "./pages/CreditPage";
+import { useState } from "react";
+import Header from "./components/Header";
+import Navigation from "./components/Navigation";
+import HomePage from "./features/home/HomePage";
+import MyPage from "./features/mypage/MyPage";
+import CreditPage from "./features/credit/CreditPage";
+import InterviewPage from "./features/interview/InterviewPage";
+import ResumePage from "./features/resume/ResumePage";
+import AIRecommendationPage from "./features/ai-recommendation/AIRecommendationPage";
+import MatchingPage from "./features/matching/MatchingPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/Signup";
 
@@ -40,10 +39,6 @@ function App() {
   };
 
   // 독립적인 레이아웃을 사용하는 페이지들
-  if (activeTab === "credit") {
-    return <CreditPage onLogoClick={handleLogoClick} />;
-  }
-
   if (activeTab === "login") {
     return (
       <LoginPage
@@ -70,15 +65,15 @@ function App() {
     switch (activeTab) {
       case "mypage":
         return <MyPage />;
-      case 'interview':
+      case "interview":
         return <InterviewPage />;
-      case 'credit':
+      case "credit":
         return <CreditPage />;
-      case 'resume':
+      case "resume":
         return <ResumePage />;
-      case 'ai-recommend':
+      case "ai-recommend":
         return <AIRecommendationPage />;
-      case 'matching':
+      case "matching":
         return <MatchingPage />;
       default:
         return <HomePage />;
