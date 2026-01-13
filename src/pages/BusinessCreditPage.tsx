@@ -3,9 +3,10 @@ import Footer from "../components/Footer";
 
 interface BusinessCreditPageProps {
   onLogoClick?: () => void;
+  onChargeClick?: () => void;
 }
 
-export default function BusinessCreditPage({ onLogoClick }: BusinessCreditPageProps) {
+export default function BusinessCreditPage({ onLogoClick, onChargeClick }: BusinessCreditPageProps) {
   const [currentCredit] = useState(4200);
 
   const recommendedApplicants = [
@@ -29,7 +30,9 @@ export default function BusinessCreditPage({ onLogoClick }: BusinessCreditPagePr
   };
 
   const handleChargeClick = () => {
-    console.log("충전하기 클릭");
+    if (onChargeClick) {
+      onChargeClick();
+    }
   };
 
   return (

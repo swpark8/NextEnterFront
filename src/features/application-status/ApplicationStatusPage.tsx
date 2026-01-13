@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Footer from '../../components/Footer';
 
 type ApplicationStatus = '서류 접수' | '서류 통과' | '면접 진행' | '최종 합격' | '불합격';
 
@@ -208,6 +209,7 @@ export default function ApplicationStatusPage() {
           </div>
         </div>
       </div>
+      <Footer />
     </>
   );
 }

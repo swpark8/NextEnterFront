@@ -7,9 +7,17 @@ interface BusinessServicePageProps {
   onApplicantManagementClick?: () => void;
   onCreditManagementClick?: () => void;
   onAdvertisementManagementClick?: () => void;
+  onJobDetailClick?: (jobId: number) => void;
 }
 
-export default function BusinessServicePage({ onJobManagementClick, onLogoClick, onApplicantManagementClick, onCreditManagementClick, onAdvertisementManagementClick }: BusinessServicePageProps) {
+export default function BusinessServicePage({
+  onJobManagementClick,
+  onLogoClick,
+  onApplicantManagementClick,
+  onCreditManagementClick,
+  onAdvertisementManagementClick,
+  onJobDetailClick,
+}: BusinessServicePageProps) {
   const [activeService, setActiveService] = useState<string>("");
 
   const services = [
@@ -19,7 +27,7 @@ export default function BusinessServicePage({ onJobManagementClick, onLogoClick,
       title: "공고 등록",
       description: "채용 정보",
       features: ["지원 확인", "지원 예약", "지원 예약"],
-      onClick: onJobManagementClick
+      onClick: onJobManagementClick,
     },
     {
       id: "talent",
@@ -27,7 +35,7 @@ export default function BusinessServicePage({ onJobManagementClick, onLogoClick,
       title: "인재 검색",
       description: "지원 확인",
       features: ["지원 확인", "지원 예약", "지원 예약"],
-      onClick: onApplicantManagementClick
+      onClick: onApplicantManagementClick,
     },
     {
       id: "service",
@@ -35,7 +43,7 @@ export default function BusinessServicePage({ onJobManagementClick, onLogoClick,
       title: "광고 관리",
       description: "지원 확인",
       features: ["지원 확인", "지원 예약", "지원 예약"],
-      onClick: onAdvertisementManagementClick
+      onClick: onAdvertisementManagementClick,
     },
     {
       id: "credit",
@@ -43,58 +51,58 @@ export default function BusinessServicePage({ onJobManagementClick, onLogoClick,
       title: "크레딧",
       description: "크레딧 충전 및 관리",
       features: ["크레딧 충전", "사용 내역", "충전 혜택"],
-      onClick: onCreditManagementClick
-    }
+      onClick: onCreditManagementClick,
+    },
   ];
 
   const products = [
     {
       id: 1,
-      badge: "회원 전용 장치 프로그",
-      title: "최신식 노트북",
-      description: "5세대 i5 이상 PC + 개발자용 IDE | 20만원 이하 노트북",
+      badge: "프리미엄 급구 추천",
+      title: "시니어 프론트엔드 개발자",
+      description: "React, TypeScript 경험 5년 이상 | 월급 500만원 이상",
       tags: [
-        "5세대 i7 이상 표준 구매 제품",
-        "구간세가 완전 로드 포함",
-        "전세계와 차액 보증 조건",
-        "PC 자체별 로그 소지온 어려워 보증",
-        "이용자 고객 승류 소요 공예"
+        "5년 이상 경력 필수",
+        "React, TypeScript 전문가",
+        "대규모 프로젝트 경험",
+        "팀 리딩 경험 우대",
+        "혁신적인 UI/UX 구현 능력",
       ],
-      seller: "M.1X1 SSD Focus 칩셋",
-      period: "시부크젠 + 2윌",
-      price: "250,000원"
+      seller: "테크 스타트업 A사",
+      period: "급구 + 상시채용",
+      price: "연봉 6,000만원",
     },
     {
       id: 2,
-      badge: "5세대 i7기사 + PC 개발자용 IDD",
-      title: "최신식 노트북",
-      description: "5세대 i5 이상 PC + 개발자용 IDE | 20만원 이하 노트북",
+      badge: "인기 급상승",
+      title: "백엔드 개발자 (Node.js)",
+      description: "Node.js, Express 기반 API 개발 | 3년 이상 경력",
       tags: [
-        "5세대 i7 이상 표준 구매 제품",
-        "구간세가 완전 로드 포함",
-        "전세계와 차액 보증 조건",
-        "PC 자체별 로그 소지온 어려워 보증"
+        "3년 이상 실무 경험",
+        "RESTful API 설계 및 구현",
+        "데이터베이스 최적화 경험",
+        "MSA 아키텍처 이해",
       ],
-      seller: "M.2D1 Focus 칩셋",
-      period: "시부크젠 + 2윌",
-      price: "170,000원"
+      seller: "핀테크 기업 B사",
+      period: "상시채용",
+      price: "연봉 5,000만원",
     },
     {
       id: 3,
-      badge: "5세대 i7기사 + PC 개발자용 IDD",
-      title: "최신식 노트북",
-      description: "5세대 i5 이상 PC + 개발자용 IDE | 20만원 이하 노트북",
+      badge: "원격근무 가능",
+      title: "풀스택 개발자",
+      description: "React + Spring Boot 풀스택 | 경력 무관",
       tags: [
-        "5세대 i7 이상 표준 구매 제품",
-        "구간세가 완전 로드 포함",
-        "전세계와 차액 보증 조건",
-        "PC 자체별 로그 소지온 어려워 보증",
-        "77호 소지 동의의 이용 20% 재발행탁"
+        "신입/경력 모두 가능",
+        "React 및 Spring Boot 경험",
+        "원격근무 주 2일 가능",
+        "유연한 근무 환경",
+        "성장 지향적인 팀 문화",
       ],
-      seller: "M.1X1 Google 칩셋",
-      period: "시부크젠 + 2윌",
-      price: "144,000원"
-    }
+      seller: "이커머스 C사",
+      period: "상시채용",
+      price: "연봉 4,500만원",
+    },
   ];
 
   const handleLogoClick = () => {
@@ -112,7 +120,7 @@ export default function BusinessServicePage({ onJobManagementClick, onLogoClick,
         <div className="px-4 py-4 mx-auto max-w-7xl">
           <div className="flex items-center justify-between">
             {/* 로고 */}
-            <div 
+            <div
               onClick={handleLogoClick}
               className="cursor-pointer hover:opacity-80 transition-opacity"
             >
@@ -122,12 +130,16 @@ export default function BusinessServicePage({ onJobManagementClick, onLogoClick,
 
             {/* 네비게이션 */}
             <nav className="flex space-x-8">
-              <button className="px-4 py-2 text-gray-700 hover:text-blue-600">■ 채용공고</button>
-              <button className="px-4 py-2 text-gray-700 hover:text-blue-600">자료</button>
-              <button className="px-4 py-2 text-gray-700 hover:text-blue-600">홍보</button>
+              <button className="px-4 py-2 text-gray-700 hover:text-blue-600">
+                ■ 채용공고
+              </button>
+              <button className="px-4 py-2 text-gray-700 hover:text-blue-600">
+                자료
+              </button>
+              <button className="px-4 py-2 text-gray-700 hover:text-blue-600">
+                홍보
+              </button>
             </nav>
-
-
           </div>
         </div>
       </header>
@@ -135,7 +147,9 @@ export default function BusinessServicePage({ onJobManagementClick, onLogoClick,
       {/* 메인 배너 */}
       <div className="py-6 text-white bg-gradient-to-r from-purple-600 to-blue-500">
         <div className="px-4 mx-auto text-center max-w-7xl">
-          <h1 className="text-2xl font-bold">더 빠르게 초지오로 이해를 도와 실러더?</h1>
+          <h1 className="text-2xl font-bold">
+            더 나은 인재를 구하기 위한 플랫폼
+          </h1>
         </div>
       </div>
 
@@ -152,12 +166,16 @@ export default function BusinessServicePage({ onJobManagementClick, onLogoClick,
                 }
               }}
               className={`p-6 bg-white border-2 rounded-xl hover:shadow-lg transition ${
-                activeService === service.id ? 'border-blue-500' : 'border-gray-200'
+                activeService === service.id
+                  ? "border-blue-500"
+                  : "border-gray-200"
               }`}
             >
               <div className="mb-2 text-4xl">{service.icon}</div>
               <h3 className="mb-1 text-lg font-bold">{service.title}</h3>
-              <p className="mb-3 text-sm text-gray-600">{service.description}</p>
+              <p className="mb-3 text-sm text-gray-600">
+                {service.description}
+              </p>
               <div className="space-y-1 text-xs text-left text-gray-500">
                 {service.features.map((feature, idx) => (
                   <div key={idx}>{feature}</div>
@@ -167,33 +185,40 @@ export default function BusinessServicePage({ onJobManagementClick, onLogoClick,
           ))}
         </div>
 
-        {/* 추천상품 섹션 */}
+        {/* 기재 공고 섹션 */}
         <div>
-          <h2 className="mb-6 text-2xl font-bold">추천상품</h2>
+          <h2 className="mb-6 text-2xl font-bold">기재 공고</h2>
           <div className="grid grid-cols-3 gap-6">
             {products.map((product) => (
-              <div key={product.id} className="overflow-hidden bg-white border-2 border-gray-200 rounded-xl hover:shadow-lg transition">
+              <div
+                key={product.id}
+                className="overflow-hidden bg-white border-2 border-gray-200 rounded-xl hover:shadow-lg transition"
+              >
                 {/* 상품 배지 */}
                 {product.badge && (
                   <div className="px-3 py-2 text-sm font-bold text-white bg-orange-500">
                     ⚡ {product.badge}
                   </div>
                 )}
-                
+
                 {/* 상품 내용 */}
                 <div className="p-4">
                   <h3 className="mb-2 text-lg font-bold">{product.title}</h3>
-                  
+
                   {/* 상품 설명 */}
                   <div className="mb-3">
-                    <p className="text-sm text-gray-700">{product.description}</p>
+                    <p className="text-sm text-gray-700">
+                      {product.description}
+                    </p>
                   </div>
 
                   {/* 태그들 */}
                   <div className="mb-4 space-y-1">
                     {product.tags.map((tag, idx) => (
                       <div key={idx} className="flex items-start space-x-2">
-                        <span className="flex-shrink-0 mt-1 text-blue-600">•</span>
+                        <span className="flex-shrink-0 mt-1 text-blue-600">
+                          •
+                        </span>
                         <span className="text-xs text-gray-600">{tag}</span>
                       </div>
                     ))}
@@ -211,9 +236,18 @@ export default function BusinessServicePage({ onJobManagementClick, onLogoClick,
 
                   {/* 가격 및 버튼 */}
                   <div className="flex items-center justify-between">
-                    <span className="text-xl font-bold text-blue-600">{product.price}</span>
-                    <button className="px-6 py-2 text-white transition bg-blue-600 rounded-lg hover:bg-blue-700">
-                      신청하기
+                    <span className="text-xl font-bold text-blue-600">
+                      {product.price}
+                    </span>
+                    <button 
+                      onClick={() => {
+                        if (onJobDetailClick) {
+                          onJobDetailClick(product.id);
+                        }
+                      }}
+                      className="px-6 py-2 text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
+                    >
+                      확인하기
                     </button>
                   </div>
                 </div>

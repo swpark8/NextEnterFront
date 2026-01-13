@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Footer from '../../components/Footer';
 import AISidebar from './components/AISidebar';
 
 export default function AIRecommendationPage() {
@@ -192,6 +193,7 @@ export default function AIRecommendationPage() {
           </div>
         </div>
       </div>
+      <Footer />
     </>
   );
 }

@@ -21,11 +21,13 @@ interface Job {
 interface JobManagementPageProps {
   onNewJobClick?: () => void;
   onLogoClick?: () => void;
+  onJobDetailClick?: (jobId: number) => void;
 }
 
 export default function JobManagementPage({
   onNewJobClick,
   onLogoClick,
+  onJobDetailClick,
 }: JobManagementPageProps) {
   const [selectedStatus, setSelectedStatus] = useState("전체");
   const [selectedRegion, setSelectedRegion] = useState("전체");
@@ -102,6 +104,16 @@ export default function JobManagementPage({
       onNewJobClick();
     } else {
       console.log("새 공고 등록 클릭");
+    }
+  };
+
+  const handleJobClick = (jobId: number) => {
+    console.log("공고 클릭됨:", jobId);
+    if (onJobDetailClick) {
+      console.log("onJobDetailClick 호출");
+      onJobDetailClick(jobId);
+    } else {
+      console.log("onJobDetailClick이 정의되지 않음");
     }
   };
 
@@ -351,7 +363,8 @@ export default function JobManagementPage({
           {filteredJobs.map((job) => (
             <div
               key={job.id}
-              className="p-6 transition bg-white border border-gray-200 rounded-xl hover:shadow-lg"
+              onClick={() => handleJobClick(job.id)}
+              className="p-6 transition bg-white border border-gray-200 rounded-xl hover:shadow-lg cursor-pointer"
             >
               {/* 제목과 상태 */}
               <div className="flex items-start justify-between mb-4">
@@ -423,13 +436,19 @@ export default function JobManagementPage({
               {/* 버튼들 */}
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={() => handleEdit(job.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEdit(job.id);
+                  }}
                   className="px-4 py-2 text-gray-700 transition bg-gray-100 rounded-lg hover:bg-gray-200"
                 >
                   수정
                 </button>
                 <button
-                  onClick={() => handleClose(job.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleClose(job.id);
+                  }}
                   disabled={job.status === "CLOSED" || job.status === "EXPIRED"}
                   className={`px-4 py-2 text-white transition rounded-lg ${
                     job.status === "CLOSED" || job.status === "EXPIRED"

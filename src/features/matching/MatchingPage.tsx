@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Footer from '../../components/Footer';
 import MatchingSidebar from './components/MatchingSidebar';
 
 interface MatchingPageProps {
@@ -373,6 +374,7 @@ export default function MatchingPage({ onEditResume }: MatchingPageProps) {
         </div>
       </div>
       </div>
+      <Footer />
     </>
   );
 }

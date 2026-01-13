@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { getUserProfile, UserProfile } from "../../api/user";
+import Footer from "../../components/Footer";
 
 interface MyPageProps {
   onNavigate: (page: string) => void;
@@ -208,6 +209,7 @@ export default function MyPage({ onNavigate, onEditProfile }: MyPageProps) {
         </div>
       </div>
       </div>
+      <Footer />
     </>
   );
 }

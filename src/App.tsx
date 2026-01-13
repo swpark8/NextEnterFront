@@ -25,6 +25,7 @@ import ProfilePage from "./pages/ProfilePage";
 import AdvertisementManagementPage from "./pages/AdvertisementManagementPage";
 import AdvertisementCreatePage from "./pages/AdvertisementCreatePage";
 import AdvertisementDetailPage from "./pages/AdvertisementDetailPage";
+import JobPostingDetailPage from "./pages/JobPostingDetailPage";
 
 function App() {
   const [activeTab, setActiveTab] = useState("job");
@@ -33,7 +34,9 @@ function App() {
     "personal"
   );
   const [selectedApplicantId, setSelectedApplicantId] = useState<number>(1);
-  const [selectedAdvertisementId, setSelectedAdvertisementId] = useState<number>(1);
+  const [selectedAdvertisementId, setSelectedAdvertisementId] =
+    useState<number>(1);
+  const [selectedJobId, setSelectedJobId] = useState<number>(1);
   const [targetMenu, setTargetMenu] = useState<string | undefined>(undefined);
 
   const handleTabChange = (tabId: string, menuId?: string) => {
@@ -67,6 +70,11 @@ function App() {
 
   const handleJobPostingCreateClick = () => {
     setActiveTab("jobPostingCreate");
+  };
+
+  const handleJobDetailClick = (jobId: number) => {
+    setSelectedJobId(jobId);
+    setActiveTab("jobDetail");
   };
 
   const handleApplicantManagementClick = () => {
@@ -112,6 +120,10 @@ function App() {
     setActiveTab("creditCharge");
   };
 
+  const handleBusinessCreditChargeClick = () => {
+    setActiveTab("businessCreditCharge");
+  };
+
   if (activeTab === "login") {
     return (
       <LoginPage
@@ -141,6 +153,7 @@ function App() {
         onApplicantManagementClick={handleTalentSearchClick}
         onCreditManagementClick={handleBusinessCreditClick}
         onAdvertisementManagementClick={handleAdvertisementManagementClick}
+        onJobDetailClick={handleJobDetailClick}
       />
     );
   }
@@ -150,6 +163,7 @@ function App() {
       <JobManagementPage
         onNewJobClick={handleJobPostingCreateClick}
         onLogoClick={handleBusinessServiceClick}
+        onJobDetailClick={handleJobDetailClick}
       />
     );
   }
@@ -163,17 +177,37 @@ function App() {
     );
   }
 
+  if (activeTab === "jobDetail") {
+    return (
+      <JobPostingDetailPage
+        jobId={selectedJobId}
+        onBackClick={handleJobManagementClick}
+        onLogoClick={handleBusinessServiceClick}
+        onEditClick={handleJobPostingCreateClick}
+      />
+    );
+  }
+
   if (activeTab === "talentSearch") {
     return <TalentSearchPage onLogoClick={handleBusinessServiceClick} />;
   }
 
   if (activeTab === "businessCredit") {
-    return <BusinessCreditPage onLogoClick={handleBusinessServiceClick} />;
+    return (
+      <BusinessCreditPage
+        onLogoClick={handleBusinessServiceClick}
+        onChargeClick={handleBusinessCreditChargeClick}
+      />
+    );
   }
 
   if (activeTab === "profile") {
     // ✅ 이전 페이지로 돌아가도록 수정
     return <ProfilePage onBack={() => handleTabChange(previousTab)} />;
+  }
+
+  if (activeTab === "businessCreditCharge") {
+    return <CreditChargePage onBack={handleBusinessCreditClick} />;
   }
 
   if (activeTab === "applicantManagement") {

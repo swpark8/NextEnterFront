@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Footer from "../../components/Footer";
 import InterviewSidebar from "./components/InterviewSidebar";
 import InterviewChatPage from "./components/InterviewChatPage";
 
@@ -262,6 +263,7 @@ export default function InterviewPage() {
           </div>
         </div>
       </div>
+      <Footer />
     </>
   );
 }
