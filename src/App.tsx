@@ -24,12 +24,17 @@ import BusinessCreditPage from "./pages/BusinessCreditPage";
 import AdvertisementManagementPage from "./pages/AdvertisementManagementPage";
 import AdvertisementCreatePage from "./pages/AdvertisementCreatePage";
 import AdvertisementDetailPage from "./pages/AdvertisementDetailPage";
+import JobPostingDetailPage from "./pages/JobPostingDetailPage";
 
 function App() {
   const [activeTab, setActiveTab] = useState("job");
-  const [accountType, setAccountType] = useState<"personal" | "business">("personal");
+  const [accountType, setAccountType] = useState<"personal" | "business">(
+    "personal"
+  );
   const [selectedApplicantId, setSelectedApplicantId] = useState<number>(1);
-  const [selectedAdvertisementId, setSelectedAdvertisementId] = useState<number>(1);
+  const [selectedAdvertisementId, setSelectedAdvertisementId] =
+    useState<number>(1);
+  const [selectedJobId, setSelectedJobId] = useState<number>(1);
   const [targetMenu, setTargetMenu] = useState<string | undefined>(undefined);
 
   const handleTabChange = (tabId: string, menuId?: string) => {
@@ -61,6 +66,11 @@ function App() {
 
   const handleJobPostingCreateClick = () => {
     setActiveTab("jobPostingCreate");
+  };
+
+  const handleJobDetailClick = (jobId: number) => {
+    setSelectedJobId(jobId);
+    setActiveTab("jobDetail");
   };
 
   const handleApplicantManagementClick = () => {
@@ -106,6 +116,10 @@ function App() {
     setActiveTab("creditCharge");
   };
 
+  const handleBusinessCreditChargeClick = () => {
+    setActiveTab("businessCreditCharge");
+  };
+
   if (activeTab === "login") {
     return (
       <LoginPage
@@ -134,16 +148,39 @@ function App() {
         onApplicantManagementClick={handleTalentSearchClick}
         onCreditManagementClick={handleBusinessCreditClick}
         onAdvertisementManagementClick={handleAdvertisementManagementClick}
+        onJobDetailClick={handleJobDetailClick}
       />
     );
   }
 
   if (activeTab === "jobManagement") {
-    return <JobManagementPage onNewJobClick={handleJobPostingCreateClick} onLogoClick={handleBusinessServiceClick} />;
+    return (
+      <JobManagementPage
+        onNewJobClick={handleJobPostingCreateClick}
+        onLogoClick={handleBusinessServiceClick}
+        onJobDetailClick={handleJobDetailClick}
+      />
+    );
   }
 
   if (activeTab === "jobPostingCreate") {
-    return <JobPostingCreatePage onBackClick={handleJobManagementClick} onLogoClick={handleBusinessServiceClick} />;
+    return (
+      <JobPostingCreatePage
+        onBackClick={handleJobManagementClick}
+        onLogoClick={handleBusinessServiceClick}
+      />
+    );
+  }
+
+  if (activeTab === "jobDetail") {
+    return (
+      <JobPostingDetailPage
+        jobId={selectedJobId}
+        onBackClick={handleJobManagementClick}
+        onLogoClick={handleBusinessServiceClick}
+        onEditClick={handleJobPostingCreateClick}
+      />
+    );
   }
 
   if (activeTab === "talentSearch") {
@@ -151,12 +188,21 @@ function App() {
   }
 
   if (activeTab === "businessCredit") {
-    return <BusinessCreditPage onLogoClick={handleBusinessServiceClick} />;
+    return (
+      <BusinessCreditPage
+        onLogoClick={handleBusinessServiceClick}
+        onChargeClick={handleBusinessCreditChargeClick}
+      />
+    );
+  }
+
+  if (activeTab === "businessCreditCharge") {
+    return <CreditChargePage onBack={handleBusinessCreditClick} />;
   }
 
   if (activeTab === "applicantManagement") {
     return (
-      <ApplicantManagementPage 
+      <ApplicantManagementPage
         onLogoClick={handleBusinessServiceClick}
         onApplicantClick={handleApplicantDetailClick}
       />
@@ -165,7 +211,7 @@ function App() {
 
   if (activeTab === "applicantDetail") {
     return (
-      <ApplicantDetailPage 
+      <ApplicantDetailPage
         applicantId={selectedApplicantId}
         onBackClick={handleApplicantManagementClick}
         onLogoClick={handleBusinessServiceClick}
@@ -227,13 +273,13 @@ function App() {
       case "credit":
         return <CreditPage onCharge={handleCreditChargeClick} />;
       case "creditCharge":
-        return <CreditChargePage onBack={() => handleTabChange('credit')} />;
+        return <CreditChargePage onBack={() => handleTabChange("credit")} />;
       case "resume":
         return <ResumePage initialMenu={targetMenu} />;
       case "ai-recommend":
         return <AIRecommendationPage />;
       case "matching":
-        return <MatchingPage onEditResume={() => handleTabChange('resume')} />;
+        return <MatchingPage onEditResume={() => handleTabChange("resume")} />;
       case "application-status":
         return <ApplicationStatusPage />;
       default:

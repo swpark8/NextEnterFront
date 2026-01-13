@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Footer from "../../components/Footer";
 
 type JobCategory = {
   id: number;
@@ -97,6 +98,7 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
   const ICON_IMG_CLASS = "w-full h-full object-contain";
 
   return (
+    <>
     <main className="px-6 py-8 mx-auto max-w-[1600px]">
       <div className="flex gap-8">
         {/* 왼쪽: 일자리 빠르게 찾기 */}
@@ -362,5 +364,7 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
         </aside>
       </div>
     </main>
+    <Footer />
+    </>
   );
 }

@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import Footer from "../../components/Footer";
 import ResumeSidebar from "./components/ResumeSidebar";
 import ResumeFormPage from "./ResumeFormPage";
 
@@ -230,6 +231,7 @@ export default function ResumePage() {
         </div>
       </div>
       </div>
+      <Footer />
     </>
   );
 }

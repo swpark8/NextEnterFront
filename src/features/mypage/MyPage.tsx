@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Footer from "../../components/Footer";
 
 interface MyPageProps {
   onNavigate?: (page: string) => void;
@@ -163,6 +164,7 @@ export default function MyPage({ onNavigate }: MyPageProps) {
         </div>
       </div>
       </div>
+      <Footer />
     </>
   );
 }
