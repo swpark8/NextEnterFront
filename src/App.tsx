@@ -1,6 +1,5 @@
 import { useState } from "react";
 import Header from "./components/Header";
-import Navigation from "./components/Navigation";
 import Footer from "./components/Footer";
 import HomePage from "./features/home/HomePage";
 import MyPage from "./features/mypage/MyPage";
@@ -23,79 +22,66 @@ import BusinessCreditPage from "./pages/BusinessCreditPage";
 
 function App() {
   const [activeTab, setActiveTab] = useState("job");
-  const [accountType, setAccountType] = useState<"personal" | "business">(
-    "personal"
-  );
+  const [accountType, setAccountType] = useState<"personal" | "business">("personal");
   const [selectedApplicantId, setSelectedApplicantId] = useState<number>(1);
+  const [targetMenu, setTargetMenu] = useState<string | undefined>(undefined);
 
-  const handleTabChange = (tabId: string) => {
+  const handleTabChange = (tabId: string, menuId?: string) => {
     setActiveTab(tabId);
-    console.log(`${tabId} 탭으로 이동`);
+    setTargetMenu(menuId);
+    console.log(`${tabId} 탭으로 이동, 타겟메뉴: ${menuId}`);
   };
 
   const handleLogoClick = () => {
-    setActiveTab("job");
-    console.log("로고 클릭 - 홈으로 이동");
+    handleTabChange("job");
   };
 
   const handleLoginClick = () => {
     setActiveTab("login");
-    setAccountType("personal"); // ← 이 줄 추가
-    console.log("로그인 페이지로 이동");
+    setAccountType("personal");
   };
 
   const handleSignupClick = () => {
     setActiveTab("signup");
-    console.log("회원가입 페이지로 이동");
   };
 
   const handleBusinessServiceClick = () => {
     setActiveTab("businessService");
-    console.log("기업 서비스 페이지로 이동");
   };
 
   const handleJobManagementClick = () => {
     setActiveTab("jobManagement");
-    console.log("공고 관리 페이지로 이동");
   };
 
   const handleJobPostingCreateClick = () => {
     setActiveTab("jobPostingCreate");
-    console.log("새 공고 등록 페이지로 이동");
   };
 
   const handleApplicantManagementClick = () => {
     setActiveTab("applicantManagement");
-    console.log("지원자 관리 페이지로 이동");
   };
 
   const handleApplicantDetailClick = (applicantId: number) => {
     setSelectedApplicantId(applicantId);
     setActiveTab("applicantDetail");
-    console.log(`지원자 ${applicantId} 상세 페이지로 이동`);
   };
 
   const handleCreditManagementClick = () => {
     setActiveTab("creditManagement");
-    console.log("크레딧 관리 페이지로 이동");
   };
 
   const handleTalentSearchClick = () => {
     setActiveTab("applicantManagement");
-    console.log("지원자 관리 페이지로 이동");
   };
 
   const handleBusinessCreditClick = () => {
     setActiveTab("businessCredit");
-    console.log("기업 크레딧 페이지로 이동");
   };
 
   const handleCreditChargeClick = () => {
     setActiveTab("creditCharge");
-    console.log("크레딧 충전 페이지로 이동");
   };
 
-  // 독립적인 레이아웃을 사용하는 페이지들
   if (activeTab === "login") {
     return (
       <LoginPage
@@ -111,7 +97,6 @@ function App() {
       <SignupPage
         onLogoClick={handleLogoClick}
         onLoginClick={handleLoginClick}
-        // onSignupClick={handleSignupClick}
         initialAccountType={accountType}
       />
     );
@@ -167,7 +152,6 @@ function App() {
     return <CreditManagementPage onLogoClick={handleBusinessServiceClick} />;
   }
 
-  // 현재 활성 탭에 따라 페이지 렌더링
   const renderPage = () => {
     switch (activeTab) {
       case "mypage":
@@ -179,7 +163,7 @@ function App() {
       case "creditCharge":
         return <CreditChargePage onBack={() => handleTabChange('credit')} />;
       case "resume":
-        return <ResumePage />;
+        return <ResumePage initialMenu={targetMenu} />;
       case "ai-recommend":
         return <AIRecommendationPage />;
       case "matching":
@@ -190,17 +174,15 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50">
       <Header
         onLogoClick={handleLogoClick}
         onLoginClick={handleLoginClick}
         onSignupClick={handleSignupClick}
-        onBusinessServiceClick={handleBusinessServiceClick}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
       />
-      <Navigation activeTab={activeTab} onTabChange={handleTabChange} />
-      <div className="flex-1">
-        {renderPage()}
-      </div>
+      {renderPage()}
       <Footer />
     </div>
   );
