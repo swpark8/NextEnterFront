@@ -19,6 +19,7 @@ interface HeaderProps {
   onLogoClick?: () => void;
   onLoginClick?: () => void;
   onSignupClick?: () => void;
+  onBusinessServiceClick?: () => void;
   activeTab: string;
   onTabChange: (tabId: string, menuId?: string) => void;
 }
@@ -36,6 +37,7 @@ export default function Header({
   onLogoClick,
   onLoginClick,
   onSignupClick,
+  onBusinessServiceClick,
   activeTab,
   onTabChange,
 }: HeaderProps) {
@@ -235,6 +237,22 @@ export default function Header({
                 </>
               )}
               <button className="px-4 py-2 transition bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+              <button
+                onClick={onLoginClick}
+                className="px-4 py-2 text-gray-700 transition hover:text-blue-600"
+              >
+                로그인
+              </button>
+              <button
+                onClick={onSignupClick}
+                className="px-4 py-2 text-gray-700 transition hover:text-blue-600"
+              >
+                회원가입
+              </button>
+              <button 
+                onClick={onBusinessServiceClick}
+                className="px-4 py-2 transition bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
+              >
                 기업 서비스
               </button>
             </div>

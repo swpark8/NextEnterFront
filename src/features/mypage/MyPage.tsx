@@ -39,6 +39,8 @@ export default function MyPage({ onNavigate, onEditProfile }: MyPageProps) {
       case "입사 지원 현황":
         onNavigate("job");
         break;
+      case '입사 지원 현황':
+        onNavigate('application-status'); // 입사 지원 현황 페이지로 이동
       case "모의 면접":
         onNavigate("interview");
         break;
@@ -61,7 +63,8 @@ export default function MyPage({ onNavigate, onEditProfile }: MyPageProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
+      <div className="min-h-screen bg-gray-50">
       <div className="px-4 py-8 mx-auto max-w-7xl">
         <div className="flex gap-6">
           {/* 왼쪽 사이드바 */}
@@ -204,6 +207,7 @@ export default function MyPage({ onNavigate, onEditProfile }: MyPageProps) {
           </main>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

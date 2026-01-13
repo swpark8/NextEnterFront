@@ -1,13 +1,14 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { createResume, CreateResumeRequest } from "../../api/resume";
 import ResumeSidebar from "./components/ResumeSidebar";
 
 interface ResumeFormPageProps {
   onBack: () => void;
+  resumeId?: number | null; // 수정 시 이력서 ID, null이면 새 이력서 작성
 }
 
-export default function ResumeFormPage({ onBack }: ResumeFormPageProps) {
+export default function ResumeFormPage({ onBack, resumeId }: ResumeFormPageProps) {
   const { user } = useAuth();
   const [activeMenu, setActiveMenu] = useState("resume");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -32,6 +33,22 @@ export default function ResumeFormPage({ onBack }: ResumeFormPageProps) {
   const [coverLetterContent, setCoverLetterContent] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // 이력서 데이터 로드 (resumeId가 있을 때)
+  useEffect(() => {
+    if (resumeId) {
+      console.log(`이력서 ID ${resumeId}의 데이터 로드 중...`);
+      // TODO: 백엔드 API 호출
+      // fetch(`/api/resumes/${resumeId}`)
+      //   .then(res => res.json())
+      //   .then(data => {
+      //     // 데이터로 state 업데이트
+      //     setSelectedJob(data.job);
+      //     setEducations(data.educations);
+      //     // ... 등등
+      //   });
+    }
+  }, [resumeId]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -126,7 +143,7 @@ export default function ResumeFormPage({ onBack }: ResumeFormPageProps) {
     setCoverLetterFiles(coverLetterFiles.filter((_, i) => i !== index));
   };
 
-  // 등록 처리
+  // 등록/수정 처리
   const handleSubmit = async () => {
     if (!user?.userId) {
       alert("로그인이 필요합니다.");
@@ -220,7 +237,7 @@ export default function ResumeFormPage({ onBack }: ResumeFormPageProps) {
       const response = await createResume(resumeData, user.userId);
 
       if (response.success) {
-        alert("이력서가 등록되었습니다!");
+        alert(resumeId ? "이력서가 수정되었습니다!" : "이력서가 등록되었습니다!");
         onBack();
       } else {
         setError(response.message || "이력서 등록에 실패했습니다.");
@@ -327,7 +344,7 @@ export default function ResumeFormPage({ onBack }: ResumeFormPageProps) {
             {/* 섹션: 인적사항 */}
             <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold">인적사항</h2>
+                <h2 className="text-2xl font-bold">{resumeId ? '이력서 수정' : '이력서 작성'}</h2>
                 <button
                   onClick={handleCancel}
                   className="px-6 py-2 text-gray-700 transition bg-gray-200 rounded-lg hover:bg-gray-300"
@@ -450,7 +467,7 @@ export default function ResumeFormPage({ onBack }: ResumeFormPageProps) {
                         : "border-gray-300 hover:bg-gray-50"
                     }`}
                   >
-                    PM
+                    프론트
                   </button>
                   <button
                     onClick={() => handleJobSelect("디자이너")}
@@ -460,7 +477,7 @@ export default function ResumeFormPage({ onBack }: ResumeFormPageProps) {
                         : "border-gray-300 hover:bg-gray-50"
                     }`}
                   >
-                    디자이너
+                    백엔드
                   </button>
                   <button
                     onClick={() => handleJobSelect("FE")}
@@ -470,7 +487,7 @@ export default function ResumeFormPage({ onBack }: ResumeFormPageProps) {
                         : "border-gray-300 hover:bg-gray-50"
                     }`}
                   >
-                    FE
+                    풀스텍
                   </button>
                   <button
                     onClick={() => handleJobSelect("BE")}
@@ -480,7 +497,7 @@ export default function ResumeFormPage({ onBack }: ResumeFormPageProps) {
                         : "border-gray-300 hover:bg-gray-50"
                     }`}
                   >
-                    BE
+                    PM
                   </button>
                   <button
                     onClick={() => handleJobSelect("DevOps")}
@@ -490,7 +507,17 @@ export default function ResumeFormPage({ onBack }: ResumeFormPageProps) {
                         : "border-gray-300 hover:bg-gray-50"
                     }`}
                   >
-                    DevOps
+                    데이터 분석가
+                  </button>
+                  <button
+                    onClick={() => handleJobSelect("BE")}
+                    className={`p-3 text-center border-2 rounded-lg cursor-pointer transition ${
+                      selectedJob === "BE"
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    디자이너
                   </button>
                 </div>
 
@@ -781,7 +808,7 @@ export default function ResumeFormPage({ onBack }: ResumeFormPageProps) {
                       <div key={index} className="flex items-center gap-2">
                         <button
                           onClick={() => removeCoverLetterFile(index)}
-                          className="px-4 py-2 text-sm border-2 border-gray-300 rounded-full hover:bg-gray-100 transition"
+                          className="px-4 py-2 text-sm transition border-2 border-gray-300 rounded-full hover:bg-gray-100"
                         >
                           X | {file}
                         </button>
@@ -823,7 +850,7 @@ export default function ResumeFormPage({ onBack }: ResumeFormPageProps) {
                   disabled={isLoading}
                   className="px-8 py-3 font-semibold text-white transition bg-blue-600 rounded-full hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {isLoading ? "등록 중..." : "등록"}
+{isLoading ? "처리 중..." : (resumeId ? "수정" : "등록")}
                 </button>
               </div>
             </section>

@@ -6,9 +6,10 @@ interface BusinessServicePageProps {
   onLogoClick?: () => void;
   onApplicantManagementClick?: () => void;
   onCreditManagementClick?: () => void;
+  onAdvertisementManagementClick?: () => void;
 }
 
-export default function BusinessServicePage({ onJobManagementClick, onLogoClick, onApplicantManagementClick, onCreditManagementClick }: BusinessServicePageProps) {
+export default function BusinessServicePage({ onJobManagementClick, onLogoClick, onApplicantManagementClick, onCreditManagementClick, onAdvertisementManagementClick }: BusinessServicePageProps) {
   const [activeService, setActiveService] = useState<string>("");
 
   const services = [
@@ -31,9 +32,10 @@ export default function BusinessServicePage({ onJobManagementClick, onLogoClick,
     {
       id: "service",
       icon: "⭐",
-      title: "서비스 대행",
+      title: "광고 관리",
       description: "지원 확인",
-      features: ["지원 확인", "지원 예약", "지원 예약"]
+      features: ["지원 확인", "지원 예약", "지원 예약"],
+      onClick: onAdvertisementManagementClick
     },
     {
       id: "credit",

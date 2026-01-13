@@ -6,6 +6,7 @@ export default function AIRecommendationPage() {
   const [selectedResume, setSelectedResume] = useState('');
   const [currentCredit, setCurrentCredit] = useState(200);
   const [hasRecommendations, setHasRecommendations] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // 샘플 이력서 목록
   const resumes = [
@@ -20,6 +21,7 @@ export default function AIRecommendationPage() {
   };
 
   const handleAIRecommend = () => {
+    console.log('AI 추천 버튼 클릭, selectedResume:', selectedResume);
     if (!selectedResume) {
       alert('이력서를 먼저 선택해주세요!');
       return;
@@ -28,14 +30,52 @@ export default function AIRecommendationPage() {
       alert('크레딧이 부족합니다!');
       return;
     }
+    console.log('확인 다이얼로그 표시');
+    // 확인 다이얼로그 표시
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmAnalysis = () => {
     console.log('AI 추천 받기 클릭됨');
     setCurrentCredit(currentCredit - 50);
     setHasRecommendations(true);
+    setShowConfirmDialog(false);
     // 실제로는 API 호출
   };
 
+  const handleCancelAnalysis = () => {
+    setShowConfirmDialog(false);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
+      {/* 확인 다이얼로그 */}
+      {showConfirmDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+            <div className="text-center mb-6">
+              <div className="text-5xl mb-4">💳</div>
+              <h3 className="text-2xl font-bold mb-4">정말 크레딧을 사용하시겠습니까?</h3>
+              <p className="text-gray-500 mt-2">AI 매칭 분석에 크레딧 50이 차감됩니다.</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleCancelAnalysis}
+                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleConfirmAnalysis}
+                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex gap-6">
           {/* 왼쪽 사이드바 */}
@@ -152,6 +192,6 @@ export default function AIRecommendationPage() {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

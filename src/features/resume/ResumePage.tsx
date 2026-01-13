@@ -5,37 +5,94 @@ import ResumeFormPage from "./ResumeFormPage";
 export default function ResumePage() {
   const [activeMenu, setActiveMenu] = useState("resume");
   const [isCreating, setIsCreating] = useState(false);
+  const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+
+  // 샘플 이력서 목록
+  const [resumes, setResumes] = useState([
+    { id: 1, title: '김유연_2025 개발자 이력서', industry: '프론트엔드 개발', applications: 3 },
+    { id: 2, title: '김유연_프론트엔드 포지션', industry: '웹 개발', applications: 5 },
+    { id: 3, title: '김유연_풀스택 개발자', industry: '풀스택', applications: 2 },
+    { id: 4, title: '김유연_신입 개발자 이력서', industry: '신입 개발', applications: 1 },
+  ]);
 
   const handleFileUpload = () => {
     console.log("파일 선택 클릭됨");
     fileInputRef.current?.click();
   };
 
-  const handleEdit = () => {
-    console.log("수정 클릭됨");
+  const handleEdit = (id: number) => {
+    console.log(`이력서 ${id} 수정 클릭됨`);
+    setSelectedResumeId(id);
     setIsCreating(true);
   };
 
-  const handleDelete = () => {
-    console.log("삭제 클릭됨");
+  const handleDelete = (id: number) => {
+    setDeleteTargetId(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteTargetId !== null) {
+      setResumes(resumes.filter(r => r.id !== deleteTargetId));
+      console.log(`이력서 ${deleteTargetId} 삭제됨`);
+    }
+    setShowDeleteConfirm(false);
+    setDeleteTargetId(null);
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setDeleteTargetId(null);
   };
 
   const handleCreateResume = () => {
+    setSelectedResumeId(null); // 새 이력서 작성
     setIsCreating(true);
   };
 
   const handleBackToList = () => {
     setIsCreating(false);
+    setSelectedResumeId(null);
   };
 
-  // 이력서 작성 페이지 표시
+  // 이력서 작성/수정 페이지 표시
   if (isCreating) {
-    return <ResumeFormPage onBack={handleBackToList} />;
+    return <ResumeFormPage onBack={handleBackToList} resumeId={selectedResumeId} />;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
+      {/* 삭제 확인 다이얼로그 */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+            <div className="text-center mb-6">
+              <div className="text-5xl mb-4">⚠️</div>
+              <h3 className="text-2xl font-bold mb-4">이력서를 삭제하시겠습니까?</h3>
+              <p className="text-gray-500 mt-2">삭제된 이력서는 복구할 수 없습니다.</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleCancelDelete}
+                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold"
+              >
+                삭제
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="min-h-screen bg-gray-50">
       <div className="px-4 py-8 mx-auto max-w-7xl">
         <div className="flex gap-6">
           {/* 왼쪽 사이드바 */}
@@ -56,39 +113,43 @@ export default function ResumePage() {
               </div>
 
               <div className="mb-6">
-                <div className="mb-2 text-sm text-gray-600">총 1건</div>
+                <div className="mb-2 text-sm text-gray-600">총 {resumes.length}건</div>
 
-                {/* 이력서 목록 */}
-                <div className="p-6 border-2 border-gray-300 rounded-lg">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold">이력서 제목</h3>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleEdit}
-                        className="px-4 py-2 text-sm font-medium text-blue-600 transition border-2 border-blue-600 rounded-lg hover:bg-blue-600 hover:text-white cursor-pointer"
-                      >
-                        수정
-                      </button>
-                      <button
-                        onClick={handleDelete}
-                        className="px-4 py-2 text-sm font-medium text-red-600 transition border-2 border-red-600 rounded-lg hover:bg-red-600 hover:text-white cursor-pointer"
-                      >
-                        삭제
-                      </button>
+                {/* 이력서 목록 - 스크롤 가능 */}
+                <div className="max-h-96 overflow-y-auto space-y-3 p-2">
+                  {resumes.map((resume) => (
+                    <div key={resume.id} className="p-6 border-2 border-gray-300 rounded-lg bg-white hover:shadow-md transition">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-bold">{resume.title}</h3>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEdit(resume.id)}
+                            className="px-4 py-2 text-sm font-medium text-blue-600 transition border-2 border-blue-600 rounded-lg hover:bg-blue-600 hover:text-white cursor-pointer"
+                          >
+                            수정
+                          </button>
+                          <button
+                            onClick={() => handleDelete(resume.id)}
+                            className="px-4 py-2 text-sm font-medium text-red-600 transition border-2 border-red-600 rounded-lg hover:bg-red-600 hover:text-white cursor-pointer"
+                          >
+                            삭제
+                          </button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-600">산업:</span>
+                          <span className="ml-2 font-medium">{resume.industry}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">지원 내역:</span>
+                          <span className="ml-2 text-blue-600 underline cursor-pointer">
+                            {resume.applications}건 &gt;
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-600">산업:</span>
-                      <span className="ml-2 font-medium">희망직무</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">지원 내역:</span>
-                      <span className="ml-2 text-blue-600 underline cursor-pointer">
-                        3건 &gt;
-                      </span>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
 
@@ -168,6 +229,7 @@ export default function ResumePage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

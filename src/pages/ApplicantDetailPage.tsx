@@ -1,13 +1,18 @@
-import { useState } from "react";
 import Footer from "../components/Footer";
 
 interface ApplicantDetailPageProps {
   applicantId: number;
   onBackClick?: () => void;
   onLogoClick?: () => void;
+  onCompatibilityClick?: (applicantId: number) => void;
 }
 
-export default function ApplicantDetailPage({ applicantId, onBackClick, onLogoClick }: ApplicantDetailPageProps) {
+export default function ApplicantDetailPage({ 
+  applicantId, 
+  onBackClick, 
+  onLogoClick,
+  onCompatibilityClick 
+}: ApplicantDetailPageProps) {
   // 지원자 상세 데이터 (실제로는 API에서 가져올 데이터)
   const applicantData = {
     1: {
@@ -67,6 +72,19 @@ export default function ApplicantDetailPage({ applicantId, onBackClick, onLogoCl
   const handleLogoClick = () => {
     if (onLogoClick) {
       onLogoClick();
+    }
+  };
+
+  const handleCompatibilityClick = () => {
+    if (onCompatibilityClick) {
+      onCompatibilityClick(applicantId);
+    }
+  };
+
+  const handleInterviewRequest = () => {
+    if (window.confirm(`${data.name}님에게 면접 요청을 하시겠습니까?`)) {
+      alert("면접 요청이 성공적으로 전송되었습니다.");
+      // 여기에 실제 면접 요청 API 호출 로직 추가
     }
   };
 
@@ -220,13 +238,16 @@ export default function ApplicantDetailPage({ applicantId, onBackClick, onLogoCl
 
           {/* 하단 버튼 */}
           <div className="flex gap-4">
-            <button className="flex-1 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition">
+            <button 
+              onClick={handleInterviewRequest}
+              className="flex-1 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
+            >
               면접 요청
             </button>
-            <button className="flex-1 px-6 py-3 bg-white border-2 border-blue-600 text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition">
-              AI 모의면접 추천
-            </button>
-            <button className="px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition">
+            <button 
+              onClick={handleCompatibilityClick}
+              className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition"
+            >
               적합성 상세
             </button>
           </div>
