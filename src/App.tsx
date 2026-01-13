@@ -28,6 +28,7 @@ import AdvertisementDetailPage from "./pages/AdvertisementDetailPage";
 
 function App() {
   const [activeTab, setActiveTab] = useState("job");
+  const [previousTab, setPreviousTab] = useState("job"); // ✅ 이전 탭 추적
   const [accountType, setAccountType] = useState<"personal" | "business">(
     "personal"
   );
@@ -36,9 +37,11 @@ function App() {
   const [targetMenu, setTargetMenu] = useState<string | undefined>(undefined);
 
   const handleTabChange = (tabId: string, menuId?: string) => {
+    // ✅ 현재 탭을 이전 탭으로 저장
+    setPreviousTab(activeTab);
     setActiveTab(tabId);
     setTargetMenu(menuId);
-    console.log(`${tabId} 탭으로 이동, 타겟메뉴: ${menuId}`);
+    console.log(`${tabId} 탭으로 이동, 이전 탭: ${activeTab}`);
   };
 
   const handleLogoClick = () => {
@@ -169,7 +172,8 @@ function App() {
   }
 
   if (activeTab === "profile") {
-    return <ProfilePage onBack={() => handleTabChange("job")} />;
+    // ✅ 이전 페이지로 돌아가도록 수정
+    return <ProfilePage onBack={() => handleTabChange(previousTab)} />;
   }
 
   if (activeTab === "applicantManagement") {

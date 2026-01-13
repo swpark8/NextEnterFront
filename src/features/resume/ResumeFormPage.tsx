@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
+import { createResume, CreateResumeRequest } from "../../api/resume";
 import ResumeSidebar from "./components/ResumeSidebar";
 
 interface ResumeFormPageProps {
@@ -10,6 +12,8 @@ export default function ResumeFormPage({
   onBack,
   resumeId,
 }: ResumeFormPageProps) {
+export default function ResumeFormPage({ onBack, resumeId }: ResumeFormPageProps) {
+  const { user } = useAuth();
   const [activeMenu, setActiveMenu] = useState("resume");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedGender, setSelectedGender] = useState<string>("");
@@ -22,6 +26,17 @@ export default function ResumeFormPage({
   const [experiences, setExperiences] = useState<string[]>(["", ""]);
   const [coverLetterFiles, setCoverLetterFiles] = useState<string[]>([]);
   const coverLetterFileInputRef = useRef<HTMLInputElement>(null);
+
+  // 폼 데이터 상태
+  const [resumeTitle, setResumeTitle] = useState("");
+  const [name, setName] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [email, setEmail] = useState("");
+  const [address, setAddress] = useState("");
+  const [coverLetterTitle, setCoverLetterTitle] = useState("");
+  const [coverLetterContent, setCoverLetterContent] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   // 이력서 데이터 로드 (resumeId가 있을 때)
   useEffect(() => {
@@ -164,6 +179,111 @@ export default function ResumeFormPage({
       //   })
       // });
       alert("이력서가 등록되었습니다");
+  const handleSubmit = async () => {
+    if (!user?.userId) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+
+    // 필수 필드 검증
+    if (!resumeTitle) {
+      alert("이력서 제목을 입력해주세요.");
+      return;
+    }
+
+    if (!name) {
+      alert("이름을 입력해주세요.");
+      return;
+    }
+
+    if (!selectedJob) {
+      alert("직무를 선택해주세요.");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+
+    try {
+      // 이력서 데이터 구조화
+      const resumeData: CreateResumeRequest = {
+        title: resumeTitle || "제목 없음",
+        jobCategory: selectedJob,
+        skills: selectedSkills,
+        sections: {
+          personalInfo: {
+            name,
+            gender: selectedGender,
+            birthDate,
+            email,
+            address,
+            profileImage: selectedImage || undefined,
+          },
+          experiences: experiences
+            .filter((exp) => exp.trim())
+            .map((exp) => {
+              const parts = exp.split("|");
+              return {
+                title: parts[0]?.trim() || "",
+                period: parts[1]?.trim() || "",
+              };
+            }),
+          certificates: certificates
+            .filter((cert) => cert.trim())
+            .map((cert) => {
+              const parts = cert.split("|");
+              return {
+                title: parts[0]?.trim() || "",
+                date: parts[1]?.trim() || "",
+              };
+            }),
+          educations: educations
+            .filter((edu) => edu.trim())
+            .map((edu) => {
+              const parts = edu.split("|");
+              return {
+                school: parts[0]?.trim() || "",
+                period: parts[1]?.trim() || "",
+              };
+            }),
+          careers: careers
+            .filter((career) => career.trim())
+            .map((career) => {
+              const parts = career.split("|");
+              return {
+                company: parts[0]?.trim() || "",
+                period: parts[1]?.trim() || "",
+              };
+            }),
+          portfolios: portfolios
+            .filter((portfolio) => portfolio.trim())
+            .map((portfolio) => ({
+              filename: portfolio,
+            })),
+          coverLetter: {
+            title: coverLetterTitle,
+            content: coverLetterContent,
+            files: coverLetterFiles,
+          },
+        },
+        status: "COMPLETED",
+      };
+
+      const response = await createResume(resumeData, user.userId);
+
+      if (response.success) {
+        alert(resumeId ? "이력서가 수정되었습니다!" : "이력서가 등록되었습니다!");
+        onBack();
+      } else {
+        setError(response.message || "이력서 등록에 실패했습니다.");
+      }
+    } catch (err: any) {
+      console.error("이력서 등록 오류:", err);
+      setError(
+        err.response?.data?.message || "이력서 등록 중 오류가 발생했습니다."
+      );
+    } finally {
+      setIsLoading(false);
     }
     onBack();
   };
@@ -238,6 +358,25 @@ export default function ResumeFormPage({
 
           {/* 메인 컨텐츠 */}
           <div className="flex-1 space-y-8">
+            {/* 에러 메시지 표시 */}
+            {error && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+
+            {/* 이력서 제목 입력 */}
+            <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
+              <h2 className="text-2xl font-bold mb-6">이력서 제목</h2>
+              <input
+                type="text"
+                value={resumeTitle}
+                onChange={(e) => setResumeTitle(e.target.value)}
+                placeholder="예: 프론트엔드 개발자 이력서"
+                className="w-full p-4 border-2 border-gray-300 rounded-lg outline-none focus:border-blue-500"
+              />
+            </section>
+
             {/* 섹션: 인적사항 */}
             <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
               <div className="flex items-center justify-between mb-6">
@@ -289,6 +428,8 @@ export default function ResumeFormPage({
                       </div>
                       <input
                         type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
                         className="p-3 border-r border-gray-300 outline-none"
                         placeholder=""
                       />
@@ -311,30 +452,37 @@ export default function ResumeFormPage({
                         생년월일
                       </div>
                       <input
-                        type="text"
+                        type="date"
+                        value={birthDate}
+                        onChange={(e) => setBirthDate(e.target.value)}
                         className="col-span-3 p-3 outline-none"
                         placeholder=""
                       />
                     </div>
 
-                    {/* 이메일, 주소 */}
+                    {/* 이메일 */}
                     <div className="grid grid-cols-4 gap-0 mb-4 overflow-hidden border-2 border-gray-300 rounded-lg">
                       <div className="p-3 font-medium text-center border-r border-gray-300 bg-gray-50">
                         이메일
                       </div>
                       <input
-                        type="text"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         className="col-span-3 p-3 outline-none"
                         placeholder=""
                       />
                     </div>
 
+                    {/* 주소 */}
                     <div className="grid grid-cols-4 gap-0 overflow-hidden border-2 border-gray-300 rounded-lg">
                       <div className="p-3 font-medium text-center border-r border-gray-300 bg-gray-50">
                         주소
                       </div>
                       <input
                         type="text"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
                         className="col-span-3 p-3 outline-none"
                         placeholder=""
                       />
@@ -710,11 +858,15 @@ export default function ResumeFormPage({
                   <div className="p-4 border-2 border-gray-300 rounded-lg">
                     <input
                       type="text"
+                      value={coverLetterTitle}
+                      onChange={(e) => setCoverLetterTitle(e.target.value)}
                       placeholder="자소서 제목"
                       className="w-full mb-2 font-medium outline-none"
                     />
                   </div>
                   <textarea
+                    value={coverLetterContent}
+                    onChange={(e) => setCoverLetterContent(e.target.value)}
                     placeholder="내용입력"
                     rows={6}
                     className="w-full p-4 border-2 border-gray-300 rounded-lg outline-none resize-none"
@@ -726,15 +878,17 @@ export default function ResumeFormPage({
               <div className="flex justify-end gap-4">
                 <button
                   onClick={handleCancel}
-                  className="px-8 py-3 font-semibold text-gray-700 transition bg-gray-200 rounded-full hover:bg-gray-300"
+                  disabled={isLoading}
+                  className="px-8 py-3 font-semibold text-gray-700 transition bg-gray-200 rounded-full hover:bg-gray-300 disabled:opacity-50"
                 >
                   취소
                 </button>
                 <button
                   onClick={handleSubmit}
-                  className="px-8 py-3 font-semibold text-white transition bg-blue-600 rounded-full hover:bg-blue-700"
+                  disabled={isLoading}
+                  className="px-8 py-3 font-semibold text-white transition bg-blue-600 rounded-full hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {resumeId ? "수정" : "등록"}
+                    {isLoading ? "처리 중..." : (resumeId ? "수정" : "등록")}
                 </button>
               </div>
             </section>
