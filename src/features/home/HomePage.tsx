@@ -42,7 +42,19 @@ export default function HomePage() {
       label: "백엔드",
       color: "bg-blue-100",
     },
+    {
+      id: 3,
+      icon: "/images/html, css.png",
+      label: "퍼블리셔",
+      color: "bg-yellow-100",
+    },
     { id: 4, icon: "/images/풀스텍.png", label: "풀스택", color: "bg-red-100" },
+    {
+      id: 5,
+      icon: "/images/Figma.png",
+      label: "디자이너",
+      color: "bg-orange-100",
+    },
     { id: 6, icon: "/images/notion.png", label: "PM", color: "bg-gray-100" },
     {
       id: 7,
@@ -51,10 +63,10 @@ export default function HomePage() {
       color: "bg-green-100",
     },
     {
-      id: 5,
-      icon: "/images/Figma.png",
-      label: "디자이너",
-      color: "bg-orange-100",
+      id: 8,
+      icon: "/icons/ai.png",
+      label: "AI 엔지니어",
+      color: "bg-cyan-100",
     },
   ];
 
@@ -150,47 +162,28 @@ export default function HomePage() {
           <section>
             <h2 className="mb-6 text-2xl font-bold">업직종별</h2>
             <div className="p-8 bg-white shadow-lg rounded-2xl">
-              <div className="flex gap-6">
-                {/* 왼쪽 세로 배너 */}
-                <div className="flex flex-col gap-6 w-48">
-                  <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl p-4 text-white font-bold text-center">
-                    <div>
-                      <div className="text-2xl mb-2">🚀</div>
-                      <div className="text-lg">인기 직무</div>
+              <div className="grid grid-cols-4 gap-6">
+                {jobCategories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => handleJobClick(category.id)}
+                    className="flex flex-col items-center p-6 space-y-3 transition bg-white border-2 border-blue-500 rounded-xl hover:shadow-lg"
+                  >
+                    {/* ✅ 모든 아이콘을 같은 프레임에 넣어서 크기 통일 */}
+                    <div className={ICON_FRAME_CLASS}>
+                      <img
+                        src={category.icon}
+                        alt={category.label}
+                        className={ICON_IMG_CLASS}
+                        loading="lazy"
+                      />
                     </div>
-                  </div>
-                  <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-green-500 to-teal-600 rounded-xl p-4 text-white font-bold text-center">
-                    <div>
-                      <div className="text-2xl mb-2">⭐</div>
-                      <div className="text-lg">추천 직무</div>
-                    </div>
-                  </div>
-                </div>
 
-                {/* 오른쪽 직무 카드들 */}
-                <div className="flex-1 grid grid-cols-3 gap-6">
-                  {jobCategories.map((category) => (
-                    <button
-                      key={category.id}
-                      onClick={() => handleJobClick(category.id)}
-                      className="flex flex-col items-center p-6 space-y-3 transition bg-white border-2 border-blue-500 rounded-xl hover:shadow-lg"
-                    >
-                      {/* ✅ 모든 아이콘을 같은 프레임에 넣어서 크기 통일 */}
-                      <div className={ICON_FRAME_CLASS}>
-                        <img
-                          src={category.icon}
-                          alt={category.label}
-                          className={ICON_IMG_CLASS}
-                          loading="lazy"
-                        />
-                      </div>
-
-                      <span className="font-semibold text-gray-800">
-                        {category.label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
+                    <span className="font-semibold text-gray-800">
+                      {category.label}
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
           </section>
