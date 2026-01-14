@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Footer from "../components/Footer";
+import { useApp } from "../context/AppContext";
 
 interface Job {
   id: number;
@@ -32,72 +33,10 @@ export default function JobManagementPage({
   const [selectedStatus, setSelectedStatus] = useState("전체");
   const [selectedRegion, setSelectedRegion] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
-  const [jobs, setJobs] = useState<Job[]>([
-    {
-      id: 1,
-      title: "프론트엔드 개발자",
-      status: "ACTIVE",
-      job_category: "프론트엔드 개발자",
-      location: "서울 강남구",
-      experience_min: 5,
-      experience_max: undefined,
-      salary_min: 6000,
-      salary_max: 6000,
-      deadline: "2024-12-31",
-      view_count: 120,
-      applicant_count: 42,
-      bookmark_count: 15,
-      created_at: "2024-12-01",
-    },
-    {
-      id: 2,
-      title: "백엔드 개발자",
-      status: "ACTIVE",
-      job_category: "백엔드 개발자",
-      location: "서울 강북구",
-      experience_min: 3,
-      experience_max: undefined,
-      salary_min: 5000,
-      salary_max: 7000,
-      deadline: "2024-12-28",
-      view_count: 98,
-      applicant_count: 38,
-      bookmark_count: 12,
-      created_at: "2024-11-28",
-    },
-    {
-      id: 3,
-      title: "풀스택 개발자",
-      status: "ACTIVE",
-      job_category: "풀스택 개발자",
-      location: "서울 송파구",
-      experience_min: 3,
-      experience_max: undefined,
-      salary_min: 4500,
-      salary_max: 6500,
-      deadline: "2024-12-25",
-      view_count: 156,
-      applicant_count: 29,
-      bookmark_count: 20,
-      created_at: "2024-11-20",
-    },
-    {
-      id: 4,
-      title: "DevOps 엔지니어",
-      status: "CLOSED",
-      job_category: "DevOps",
-      location: "서울 마포구",
-      experience_min: 5,
-      experience_max: undefined,
-      salary_min: 6500,
-      salary_max: 8500,
-      deadline: "2024-11-30",
-      view_count: 245,
-      applicant_count: 67,
-      bookmark_count: 32,
-      created_at: "2024-11-15",
-    },
-  ]);
+  
+  // Context에서 기업 공고 가져오기
+  const { businessJobs, updateBusinessJob } = useApp();
+  const jobs = businessJobs;
 
   const handleNewJob = () => {
     if (onNewJobClick) {
@@ -145,12 +84,11 @@ export default function JobManagementPage({
       )
     ) {
       // 상태를 CLOSED로 변경
-      setJobs(
-        jobs.map((j) =>
-          j.id === jobId ? { ...j, status: "CLOSED" as const } : j
-        )
-      );
-      alert("공고가 마감되었습니다.");
+      const updatedJob = jobs.find(j => j.id === jobId);
+      if (updatedJob) {
+        updateBusinessJob(jobId, { ...updatedJob, status: "CLOSED" as const });
+        alert("공고가 마감되었습니다.");
+      }
     }
   };
 

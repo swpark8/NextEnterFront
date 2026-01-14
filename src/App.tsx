@@ -26,6 +26,11 @@ import AdvertisementManagementPage from "./pages/AdvertisementManagementPage";
 import AdvertisementCreatePage from "./pages/AdvertisementCreatePage";
 import AdvertisementDetailPage from "./pages/AdvertisementDetailPage";
 import JobPostingDetailPage from "./pages/JobPostingDetailPage";
+import InterviewResultPage from "./pages/InterviewResultPage";
+import AllJobsPage from "./features/all-jobs/AllJobsPage";
+import AIRecommendedJobsPage from "./features/all-jobs/AIRecommendedJobsPage";
+import PositionJobsPage from "./features/all-jobs/PositionJobsPage";
+import LocationJobsPage from "./features/all-jobs/LocationJobsPage";
 
 function App() {
   const [activeTab, setActiveTab] = useState("job");
@@ -44,7 +49,7 @@ function App() {
     setPreviousTab(activeTab);
     setActiveTab(tabId);
     setTargetMenu(menuId);
-    console.log(`${tabId} 탭으로 이동, 이전 탭: ${activeTab}`);
+    console.log(`${tabId} 탭으로 이동, 이전 탭: ${activeTab}, 메뉴: ${menuId}`);
   };
 
   const handleLogoClick = () => {
@@ -275,7 +280,57 @@ function App() {
   }
 
   const renderPage = () => {
+    console.log("현재 activeTab:", activeTab, "targetMenu:", targetMenu); // 디버깅용
+    
     switch (activeTab) {
+      case "job":
+        // 채용정보 서브메뉴 처리
+        if (targetMenu === "1-1") {
+          // 전체 공고 페이지
+          return (
+            <AllJobsPage
+              onLogoClick={handleLogoClick}
+              onNavigateToAI={() => handleTabChange("job", "1-2")}
+              onNavigateToPosition={() => handleTabChange("job", "1-3")}
+              onNavigateToLocation={() => handleTabChange("job", "1-4")}
+            />
+          );
+        }
+        if (targetMenu === "1-2") {
+          // AI 추천 공고 페이지
+          return (
+            <AIRecommendedJobsPage
+              onLogoClick={handleLogoClick}
+              onNavigateToAll={() => handleTabChange("job", "1-1")}
+              onNavigateToPosition={() => handleTabChange("job", "1-3")}
+              onNavigateToLocation={() => handleTabChange("job", "1-4")}
+            />
+          );
+        }
+        if (targetMenu === "1-3") {
+          // 직무별 공고 페이지
+          return (
+            <PositionJobsPage
+              onLogoClick={handleLogoClick}
+              onNavigateToAll={() => handleTabChange("job", "1-1")}
+              onNavigateToAI={() => handleTabChange("job", "1-2")}
+              onNavigateToLocation={() => handleTabChange("job", "1-4")}
+            />
+          );
+        }
+        if (targetMenu === "1-4") {
+          // 지역별 공고 페이지
+          return (
+            <LocationJobsPage
+              onLogoClick={handleLogoClick}
+              onNavigateToAll={() => handleTabChange("job", "1-1")}
+              onNavigateToAI={() => handleTabChange("job", "1-2")}
+              onNavigateToPosition={() => handleTabChange("job", "1-3")}
+            />
+          );
+        }
+        // 기본 홈페이지
+        return <HomePage onLoginClick={handleLoginClick} />;
       case "mypage":
         return (
           <MyPage
@@ -284,17 +339,36 @@ function App() {
           />
         );
       case "interview":
+        // 🆕 면접 결과 서브메뉴 처리
+        console.log("interview 탭 진입, targetMenu:", targetMenu); // 디버깅용
+        if (targetMenu === "5-3") {
+          console.log("면접 결과 페이지 렌더링"); // 디버깅용
+          return <InterviewResultPage onNavigateToInterview={() => handleTabChange("interview")} />;
+        }
+        if (targetMenu === "5-1" || targetMenu === "5-2") {
+          return <InterviewPage />;
+        }
+        // targetMenu가 없으면 기본 면접 페이지
         return <InterviewPage />;
       case "credit":
         return <CreditPage onCharge={handleCreditChargeClick} />;
       case "creditCharge":
         return <CreditChargePage onBack={() => handleTabChange("credit")} />;
       case "resume":
-        return <ResumePage initialMenu={targetMenu} />;
+        return <ResumePage 
+          initialMenu={targetMenu} 
+          onApplicationStatusClick={() => handleTabChange("application-status")}
+        />;
       case "ai-recommend":
         return <AIRecommendationPage />;
       case "matching":
-        return <MatchingPage onEditResume={() => handleTabChange("resume")} />;
+        // 매칭 히스토리 서브메뉴 처리
+        console.log("matching 탭, targetMenu:", targetMenu); // 디버깅용
+        if (targetMenu === "4-2") {
+          console.log("매칭 히스토리 페이지로 이동"); // 디버깅용
+          return <MatchingPage key="history" onEditResume={() => handleTabChange("resume")} initialMenu="history" />;
+        }
+        return <MatchingPage key="matching" onEditResume={() => handleTabChange("resume")} />;
       case "application-status":
         return <ApplicationStatusPage />;
       default:

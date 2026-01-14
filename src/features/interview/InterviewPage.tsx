@@ -58,13 +58,6 @@ export default function InterviewPage() {
     { id: 2, title: "AI 모의 면접 (시니어 차감 - 20)", date: "2024.12.10" },
   ];
 
-  const recentInterviews = [
-    { id: 1, title: "1회차 - 주니어 합격(93점)", color: "text-green-600" },
-    { id: 2, title: "1회차 - 주니어 합격(88점)", color: "text-green-600" },
-    { id: 3, title: "1회차 - 시니어 불합격(67점)", color: "text-red-600" },
-    { id: 4, title: "1회차 - 주니어 합격(79점)", color: "text-green-600" },
-  ];
-
   // 면접이 시작되면 채팅 화면 표시
   if (isInterviewStarted) {
     return (
@@ -140,122 +133,78 @@ export default function InterviewPage() {
               onMenuClick={setActiveMenu}
             />
 
-            {/* 메인 컨텐츠 */}
-            <div className="flex-1 space-y-6">
-              {/* 면접 설정 카드 */}
-              <div className="p-6 bg-white border-2 border-blue-400 rounded-2xl">
-                <h3 className="mb-4 text-lg font-bold">면접 설정</h3>
+            {/* 메인 컨텐츠 - 확대된 면접 설정 */}
+            <div className="flex-1">
+              {/* 면접 설정 카드 - 크기 확대 */}
+              <div className="p-10 bg-white border-2 border-blue-400 rounded-2xl">
+                <h3 className="mb-8 text-2xl font-bold">면접 설정</h3>
 
-                <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="grid grid-cols-2 gap-6 mb-10">
                   <button
                     onClick={() => handleLevelClick("junior")}
-                    className={`p-6 rounded-xl border-2 transition ${
+                    className={`p-10 rounded-xl border-2 transition ${
                       selectedLevel === "junior"
                         ? "border-blue-500 bg-blue-50"
                         : "border-gray-300 hover:border-blue-300"
                     }`}
                   >
-                    <div className="mb-1 text-lg font-bold">주니어</div>
-                    <div className="text-sm text-gray-600">0~3년 경력</div>
-                    <div className="text-sm text-blue-600">
+                    <div className="mb-3 text-2xl font-bold">주니어</div>
+                    <div className="mb-2 text-base text-gray-600">0~3년 경력</div>
+                    <div className="text-base text-blue-600">
                       (- 10 크레딧 차감)
                     </div>
                   </button>
 
                   <button
                     onClick={() => handleLevelClick("senior")}
-                    className={`p-6 rounded-xl border-2 transition ${
+                    className={`p-10 rounded-xl border-2 transition ${
                       selectedLevel === "senior"
                         ? "border-blue-500 bg-blue-50"
                         : "border-gray-300 hover:border-blue-300"
                     }`}
                   >
-                    <div className="mb-1 text-lg font-bold">시니어</div>
-                    <div className="text-sm text-gray-600">4년 이상 경력</div>
-                    <div className="text-sm text-blue-600">
+                    <div className="mb-3 text-2xl font-bold">시니어</div>
+                    <div className="mb-2 text-base text-gray-600">4년 이상 경력</div>
+                    <div className="text-base text-blue-600">
                       (- 20 크레딧 차감)
                     </div>
                   </button>
                 </div>
 
-                {/* 면접 시작 박스 */}
-                <div className="p-8 text-center text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl">
-                  <div className="mb-4">
-                    <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-white/20">
-                      <span className="text-4xl">💬</span>
+                {/* 면접 시작 박스 - 크기 확대 */}
+                <div className="p-12 text-center text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl">
+                  <div className="mb-6">
+                    <div className="flex items-center justify-center w-20 h-20 mx-auto mb-6 rounded-full bg-white/20">
+                      <span className="text-5xl">💬</span>
                     </div>
                   </div>
-                  <p className="mb-6 text-lg leading-relaxed">
+                  <p className="mb-8 text-xl leading-relaxed">
                     AI 면접관과 실전 같은 면접을 경험하세요
                     <br />
                     난이도를 선택하고 시작 버튼을 눌러주세요
                   </p>
                   <button
                     onClick={handleStartInterview}
-                    className="px-8 py-3 text-lg font-bold text-blue-600 transition bg-white rounded-full hover:bg-blue-50"
+                    className="px-10 py-4 text-xl font-bold text-blue-600 transition bg-white rounded-full hover:bg-blue-50"
                   >
                     면접 시작하기
                   </button>
                 </div>
               </div>
 
-              {/* 크레딧 사용 내역 */}
-              <div className="p-6 bg-white border-2 border-blue-400 rounded-2xl">
-                <h3 className="mb-4 text-lg font-bold">크레딧 사용 내역</h3>
-                <div className="space-y-3">
+              {/* 크레딧 사용 내역 - 크기 확대 */}
+              <div className="p-8 mt-6 bg-white border-2 border-blue-400 rounded-2xl">
+                <h3 className="mb-6 text-xl font-bold">크레딧 사용 내역</h3>
+                <div className="space-y-4">
                   {creditUsages.map((usage) => (
                     <button
                       key={usage.id}
                       onClick={() => handleCreditUsageClick(usage.id)}
-                      className="w-full p-4 text-left transition border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50"
+                      className="w-full p-5 text-left transition border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50"
                     >
-                      <div className="mb-1 font-semibold">{usage.title}</div>
+                      <div className="mb-2 text-base font-semibold">{usage.title}</div>
                       <div className="text-sm text-gray-500">{usage.date}</div>
                     </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* 오른쪽 사이드 */}
-            <div className="space-y-6 w-80">
-              {/* 면접 통계 */}
-              <div className="p-6 bg-white border-2 border-blue-400 rounded-2xl">
-                <h3 className="mb-4 text-lg font-bold">면접 통계</h3>
-
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="p-4 text-center border-2 border-blue-300 rounded-lg">
-                    <div className="mb-1 text-sm text-gray-600">최고 점수</div>
-                    <div className="text-3xl font-bold text-green-600">
-                      93점
-                    </div>
-                  </div>
-                  <div className="p-4 text-center border-2 border-blue-300 rounded-lg">
-                    <div className="mb-1 text-sm text-gray-600">최저 점수</div>
-                    <div className="text-3xl font-bold text-red-600">67점</div>
-                  </div>
-                </div>
-
-                <div className="p-4 text-center border-2 border-blue-300 rounded-lg">
-                  <div className="mb-1 text-sm text-gray-600">평균 점수</div>
-                  <div className="text-3xl font-bold text-blue-600">82점</div>
-                </div>
-              </div>
-
-              {/* 최근 면접 기록 */}
-              <div className="p-6 bg-white border-2 border-blue-400 rounded-2xl">
-                <h3 className="mb-4 text-lg font-bold">최근 면접 기록</h3>
-
-                <div className="space-y-3">
-                  {recentInterviews.map((interview) => (
-                    <div
-                      key={interview.id}
-                      className="p-3 border-2 border-gray-200 rounded-lg"
-                    >
-                      <div className={`font-medium ${interview.color}`}>
-                        {interview.title}
-                      </div>
-                    </div>
                   ))}
                 </div>
               </div>
