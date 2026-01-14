@@ -2,18 +2,29 @@ import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { createResume, CreateResumeRequest } from "../../api/resume";
 import ResumeSidebar from "./components/ResumeSidebar";
+import { usePageNavigation } from "../../hooks/usePageNavigation";
 
 interface ResumeFormPageProps {
   onBack: () => void;
   resumeId?: number | null; // 수정 시 이력서 ID, null이면 새 이력서 작성
+  initialMenu?: string;
+  onNavigate?: (page: string, subMenu?: string) => void;
 }
 
 export default function ResumeFormPage({
   onBack,
   resumeId,
+  initialMenu,
+  onNavigate,
 }: ResumeFormPageProps) {
   const { user } = useAuth();
-  const [activeMenu, setActiveMenu] = useState("resume");
+
+  // ✅ 커스텀 훅 사용
+  const { activeMenu, handleMenuClick } = usePageNavigation(
+    "resume",
+    initialMenu,
+    onNavigate
+  );
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedGender, setSelectedGender] = useState<string>("");
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
@@ -322,22 +333,26 @@ export default function ResumeFormPage({
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="px-4 py-8 mx-auto max-w-7xl">
+        <h2 className="inline-block mb-6 text-2xl font-bold">이력서 작성</h2>
         <div className="flex gap-6">
           {/* 왼쪽 사이드바 */}
-          <ResumeSidebar activeMenu={activeMenu} onMenuClick={setActiveMenu} />
+          <ResumeSidebar
+            activeMenu={activeMenu}
+            onMenuClick={handleMenuClick}
+          />
 
           {/* 메인 컨텐츠 */}
           <div className="flex-1 space-y-8">
             {/* 에러 메시지 표시 */}
             {error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="p-4 border border-red-200 rounded-lg bg-red-50">
                 <p className="text-sm text-red-600">{error}</p>
               </div>
             )}
 
             {/* 이력서 제목 입력 */}
             <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
-              <h2 className="text-2xl font-bold mb-6">이력서 제목</h2>
+              <h2 className="mb-6 text-2xl font-bold">이력서 제목</h2>
               <input
                 type="text"
                 value={resumeTitle}
@@ -351,7 +366,7 @@ export default function ResumeFormPage({
             <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold">
-                  {resumeId ? "이력서 수정" : "이력서 작성"}
+                  {resumeId ? "이력서 수정" : "인적사항"}
                 </h2>
                 <button
                   onClick={handleCancel}

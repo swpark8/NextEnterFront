@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import OfferSidebar from "./components/OfferSidebar";
-import { navigationMenuData } from "../navigation-menu/data/menuData";
+import { usePageNavigation } from "../../hooks/usePageNavigation";
 
 interface OfferPageProps {
   initialMenu?: string;
@@ -22,42 +22,14 @@ interface OfferDetail {
 }
 
 export default function OfferPage({ initialMenu, onNavigate }: OfferPageProps) {
-  const [activeMenu, setActiveMenu] = useState(initialMenu || "offer");
   const [hoveredId, setHoveredId] = useState<number | null>(null);
   const [selectedOffer, setSelectedOffer] = useState<number | null>(null);
   const [isMessageExpanded, setIsMessageExpanded] = useState(false);
-
-  useEffect(() => {
-    if (initialMenu) {
-      setActiveMenu(initialMenu);
-    }
-  }, [initialMenu]);
-
-  const handleMenuClick = (menuId: string) => {
-    setActiveMenu(menuId);
-    
-    // 1. 클릭한 메뉴가 어느 탭 소속인지 찾기
-    let targetTab = "";
-    const sections = Object.values(navigationMenuData) as any[];
-
-    for (const section of sections) {
-      if (
-        section.id === menuId ||
-        section.items?.some((item: any) => item.id === menuId)
-      ) {
-        targetTab = section.id;
-        break;
-      }
-    }
-
-    // 2. 내 구역('offer')이 아니면 App.tsx에게 이동 요청
-    if (targetTab && targetTab !== "offer") {
-      if (onNavigate) {
-        onNavigate(targetTab, menuId);
-      }
-    }
-  };
-
+  const { activeMenu, handleMenuClick } = usePageNavigation(
+    "offer",
+    initialMenu,
+    onNavigate
+  );
   // 샘플 제안 데이터
   const [offers, setOffers] = useState([
     {
@@ -349,58 +321,59 @@ export default function OfferPage({ initialMenu, onNavigate }: OfferPageProps) {
             <h3 className="pb-2 mb-4 text-lg font-bold text-blue-600 border-b-2 border-blue-600">
               포지션 제안
             </h3>
-
-            <div className="space-y-3">
-              {offers.map((offer) => (
-                <div
-                  key={offer.id}
-                  onClick={() => handleOfferClick(offer.id)}
-                  onMouseEnter={() => setHoveredId(offer.id)}
-                  onMouseLeave={() => setHoveredId(null)}
-                  className={`p-4 bg-white border-2 rounded-lg cursor-pointer transition-all flex items-center justify-between ${
-                    hoveredId === offer.id
-                      ? "border-blue-500 shadow-md transform scale-[1.01]"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                >
-                  <div className="flex-1">
-                    <h4
-                      className={`mb-1 transition-all ${
-                        hoveredId === offer.id
-                          ? "text-xl font-bold text-gray-900"
-                          : "text-lg font-semibold text-gray-800"
-                      }`}
-                    >
-                      {offer.company}
-                    </h4>
-                    <p className="mb-2 text-sm text-gray-600">
-                      {offer.position} | {offer.date}
-                    </p>
-                  </div>
-
-                  {/* 삭제 버튼 */}
-                  <button
-                    onClick={(e) => handleDelete(offer.id, e)}
-                    className="p-2 text-gray-400 transition-all rounded-lg hover:text-red-600 hover:bg-red-50"
-                    title="삭제"
+            <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
+              <div className="space-y-3">
+                {offers.map((offer) => (
+                  <div
+                    key={offer.id}
+                    onClick={() => handleOfferClick(offer.id)}
+                    onMouseEnter={() => setHoveredId(offer.id)}
+                    onMouseLeave={() => setHoveredId(null)}
+                    className={`p-4 bg-white border-2 rounded-lg cursor-pointer transition-all flex items-center justify-between ${
+                      hoveredId === offer.id
+                        ? "border-blue-500 shadow-md transform scale-[1.01]"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
                   >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                    <div className="flex-1">
+                      <h4
+                        className={`mb-1 transition-all ${
+                          hoveredId === offer.id
+                            ? "text-xl font-bold text-gray-900"
+                            : "text-lg font-semibold text-gray-800"
+                        }`}
+                      >
+                        {offer.company}
+                      </h4>
+                      <p className="mb-2 text-sm text-gray-600">
+                        {offer.position} | {offer.date}
+                      </p>
+                    </div>
+
+                    {/* 삭제 버튼 */}
+                    <button
+                      onClick={(e) => handleDelete(offer.id, e)}
+                      className="p-2 text-gray-400 transition-all rounded-lg hover:text-red-600 hover:bg-red-50"
+                      title="삭제"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              ))}
-            </div>
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
           </div>
         </div>
       </div>

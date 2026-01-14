@@ -21,6 +21,9 @@ import CreditManagementPage from "./pages/CreditManagementPage";
 import TalentSearchPage from "./pages/TalentSearchPage";
 import BusinessCreditPage from "./pages/BusinessCreditPage";
 import CoverLetterPage from "./features/coverletter/CoverLetterPage";
+import ProfilePage from "./pages/ProfilePage";
+import InterviewOfferPage from "./features/offer/InterViewOfferPage";
+import ApplicationStatusPage from "./features/application-status/ApplicationStatusPage";
 
 function App() {
   const [activeTab, setActiveTab] = useState("job");
@@ -56,7 +59,7 @@ function App() {
   const handleCreditManagementClick = () => setActiveTab("creditManagement");
   const handleTalentSearchClick = () => setActiveTab("applicantManagement");
   const handleBusinessCreditClick = () => setActiveTab("businessCredit");
-  const handleCreditChargeClick = () => setActiveTab("creditCharge");
+  const handleCreditChargeClick = () => handleTabChange("credit", "credit-sub-2");
 
   // 페이지 렌더링 로직 (로그인/회원가입 등)
   if (activeTab === "login")
@@ -65,6 +68,7 @@ function App() {
         onLogoClick={handleLogoClick}
         onSignupClick={handleSignupClick}
         onAccountTypeChange={setAccountType}
+        onLoginSuccess={() => handleTabChange("job")}
       />
     );
   if (activeTab === "signup")
@@ -124,8 +128,32 @@ function App() {
 
   const renderPage = () => {
     switch (activeTab) {
+      case "profile":
+        return <ProfilePage onBack={() => handleTabChange("mypage")} />;
+      case "application-status":
+        return (
+          <ApplicationStatusPage
+            initialMenu={targetMenu}
+            onNavigate={handleTabChange}
+          />
+        );
       case "mypage":
-        return <MyPage onNavigate={handleTabChange} initialMenu={targetMenu} />;
+        // targetMenu가 mypage-sub-3(지원 이력)이면 ApplicationStatusPage
+        if (targetMenu === "mypage-sub-3") {
+          return (
+            <ApplicationStatusPage
+              initialMenu={targetMenu}
+              onNavigate={handleTabChange}
+            />
+          );
+        }
+        return (
+          <MyPage
+            onNavigate={handleTabChange}
+            onEditProfile={() => handleTabChange("profile")}
+            initialMenu={targetMenu}
+          />
+        );
       case "interview":
         return (
           <InterviewPage
@@ -134,6 +162,15 @@ function App() {
           />
         );
       case "credit":
+        if (targetMenu === "credit-sub-2") {
+          return (
+            <CreditChargePage
+              onBack={() => handleTabChange("credit")}
+              initialMenu={targetMenu}
+              onNavigate={handleTabChange}
+            />
+          );
+        }
         return (
           <CreditPage
             onCharge={handleCreditChargeClick}
@@ -141,20 +178,25 @@ function App() {
             onNavigate={handleTabChange}
           />
         );
-      case "creditCharge":
-        return <CreditChargePage onBack={() => handleTabChange("credit")} />;
       case "resume":
-        // ResumePage는 이미 로직이 적용되어 있습니다.
+        // targetMenu가 자소서 관련이면 CoverLetterPage, 아니면 ResumePage
         if (targetMenu === "resume-sub-2") {
           return (
             <CoverLetterPage
+              key="coverletter"
               initialMenu={targetMenu}
               onNavigate={handleTabChange}
             />
           );
         }
+        // targetMenu가 없거나 resume-sub-1이면 ResumePage (기본값)
+        // ✅ key prop: targetMenu 변경 시 컴포넌트를 완전히 새로 마운트하여 내부 상태(isCreating) 초기화
         return (
-          <ResumePage initialMenu={targetMenu} onNavigate={handleTabChange} />
+          <ResumePage
+            key={targetMenu || "resume-default"}
+            initialMenu={targetMenu}
+            onNavigate={handleTabChange}
+          />
         );
       case "ai-recommend":
         return (
@@ -172,8 +214,21 @@ function App() {
           />
         );
       case "offer":
+        if (targetMenu === "offer-sub-2") {
+          return (
+            <InterviewOfferPage
+              key="interview-offer"
+              initialMenu={targetMenu}
+              onNavigate={handleTabChange}
+            />
+          );
+        }
         return (
-          <OfferPage initialMenu={targetMenu} onNavigate={handleTabChange} />
+          <OfferPage
+            key={targetMenu || "offer-default"}
+            initialMenu={targetMenu}
+            onNavigate={handleTabChange}
+          />
         );
       default:
         // ✅ [수정] 홈페이지(기본화면)에서도 사이드바 클릭이 되려면 props를 넘겨야 합니다.

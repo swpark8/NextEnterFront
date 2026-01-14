@@ -69,98 +69,82 @@ export default function CoverLetterFormPage({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="px-4 py-8 mx-auto max-w-7xl">
-        <div className="flex gap-6">
-          {/* 사이드바 */}
-          <ResumeSidebar
-            activeMenu={activeMenu}
-            onMenuClick={handleSidebarClick}
-          />
+    <div className="px-4 py-8 mx-auto max-w-7xl">
+      <h2 className="inline-block mb-6 text-2xl font-bold">자소서 작성</h2>
+      <div className="flex gap-6">
+        {/* 사이드바 */}
+        <ResumeSidebar
+          activeMenu={activeMenu}
+          onMenuClick={handleSidebarClick}
+        />
 
-          {/* 메인 컨텐츠 */}
-          <div className="flex-1 space-y-8">
-            <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-2xl font-bold">자기소개서 작성</h2>
-                <button
-                  onClick={handleCancel}
-                  className="px-6 py-2 text-gray-700 transition bg-gray-200 rounded-lg hover:bg-gray-300"
-                >
-                  목록으로
-                </button>
+        {/* 메인 컨텐츠 */}
+        <div className="flex-1 space-y-8">
+          <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
+            <div className="mb-8">
+              {/* 제목 입련란 */}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold">제목</h3>
               </div>
-
-              <div className="mb-8">
-                {/* 파일 업로드 */}
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold">파일 불러오기</h3>
-                  <button
-                    onClick={handleCoverLetterFileUpload}
-                    className="font-semibold text-blue-600 hover:text-blue-700"
-                  >
-                    + 불러오기
-                  </button>
+              <input
+                type="file"
+                ref={coverLetterFileInputRef}
+                onChange={handleCoverLetterFileChange}
+                className="hidden"
+              />
+              {coverLetterFiles.length > 0 && (
+                <div className="mb-6 space-y-2">
+                  {coverLetterFiles.map((file, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <button
+                        onClick={() => removeCoverLetterFile(index)}
+                        className="px-3 py-1 text-sm border rounded-full"
+                      >
+                        X | {file}
+                      </button>
+                    </div>
+                  ))}
                 </div>
-                <input
-                  type="file"
-                  ref={coverLetterFileInputRef}
-                  onChange={handleCoverLetterFileChange}
-                  className="hidden"
-                />
-                {coverLetterFiles.length > 0 && (
-                  <div className="mb-6 space-y-2">
-                    {coverLetterFiles.map((file, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <button
-                          onClick={() => removeCoverLetterFile(index)}
-                          className="px-3 py-1 text-sm border rounded-full"
-                        >
-                          X | {file}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+              )}
 
-                {/* 입력 폼 */}
-                <div className="space-y-4">
-                  <div className="p-4 border-2 border-gray-300 rounded-lg">
-                    <input
-                      type="text"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="자소서 제목"
-                      className="w-full font-medium outline-none"
-                    />
-                  </div>
-                  <textarea
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    placeholder="내용을 입력하세요."
-                    rows={15}
-                    className="w-full p-4 border-2 border-gray-300 rounded-lg outline-none resize-none"
+              {/* 입력 폼 */}
+              <div className="space-y-4">
+                <div className="p-4 border-2 border-gray-300 rounded-lg">
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="자소서 제목을 작성해주세요."
+                    className="w-full font-medium outline-none"
                   />
                 </div>
+                <h3 className="text-lg font-bold">내용</h3>
+                <textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="내용을 입력하세요."
+                  rows={15}
+                  className="w-full p-4 border-2 border-gray-300 rounded-lg outline-none resize-none"
+                />
               </div>
+            </div>
 
-              {/* 하단 버튼 */}
-              <div className="flex justify-end gap-4 pt-6 border-t border-gray-100">
-                <button
-                  onClick={handleCancel}
-                  className="px-8 py-3 font-semibold text-gray-700 bg-gray-200 rounded-full"
-                >
-                  취소
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  className="px-8 py-3 font-semibold text-white bg-blue-600 rounded-full"
-                >
-                  등록
-                </button>
-              </div>
-            </section>
-          </div>
+            {/* 하단 버튼 */}
+            <div className="flex justify-end gap-4 pt-6 border-t border-gray-100">
+              <button
+                onClick={handleCancel}
+                className="px-8 py-3 font-semibold text-gray-700 bg-gray-200 rounded-full"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleSubmit}
+                className="px-8 py-3 font-semibold text-white bg-blue-600 rounded-full"
+              >
+                등록
+              </button>
+            </div>
+          </section>
         </div>
       </div>
     </div>

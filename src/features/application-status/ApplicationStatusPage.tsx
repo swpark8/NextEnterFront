@@ -1,215 +1,352 @@
-import { useState } from 'react';
-import Footer from '../../components/Footer';
+import { useState } from "react";
+import { usePageNavigation } from "../../hooks/usePageNavigation";
+import ApplicationStautsSidebar from "./components/ApplicationStatusPageSIdebar";
 
-type ApplicationStatus = '서류 접수' | '서류 통과' | '면접 진행' | '최종 합격' | '불합격';
-
-interface Application {
-  id: number;
-  company: string;
-  position: string;
-  appliedDate: string;
-  status: ApplicationStatus;
-  deadline: string;
+interface ApplicationStatusPageProps {
+  initialMenu?: string;
+  onNavigate?: (page: string, subMenu?: string) => void;
 }
 
-export default function ApplicationStatusPage() {
-  const [applications] = useState<Application[]>([
+interface ApplicationItem {
+  id: number;
+  date: string;
+  company: string;
+  position: string;
+  jobType: string;
+  viewed: boolean;
+  status: string;
+  canCancel: boolean;
+}
+
+export default function ApplicationStatusPage({
+  initialMenu: _initialMenu,
+  onNavigate: _onNavigate,
+}: ApplicationStatusPageProps) {
+  const { activeMenu, handleMenuClick } = usePageNavigation(
+    "mypage",
+    _initialMenu,
+    _onNavigate
+  );
+  const [stats] = useState({
+    total: 8,
+    viewed: 5,
+    notViewed: 2,
+    cancelled: 1,
+  });
+
+  const [period, setPeriod] = useState("3개월");
+  const [status, setStatus] = useState("전체");
+  const [businessType, setBusinessType] = useState("전체");
+  const [industry, setIndustry] = useState("전체");
+  const [startDate, setStartDate] = useState("2025-10-09");
+  const [endDate, setEndDate] = useState("2026-01-07");
+  const [searchKeyword, setSearchKeyword] = useState("");
+
+  const [applications, setApplications] = useState<ApplicationItem[]>([
     {
       id: 1,
-      company: '네이버',
-      position: '프론트엔드 개발자',
-      appliedDate: '2025.01.10',
-      status: '서류 통과',
-      deadline: '2025.01.20'
+      date: "2016.01.06",
+      company: "회사",
+      position: "(주) 노회사 회사위치 27무엇A 가7동무엇 27무B (개발/기획)",
+      jobType: "정규직",
+      viewed: true,
+      status: "지원완료",
+      canCancel: true,
     },
     {
       id: 2,
-      company: '카카오',
-      position: 'React 개발자',
-      appliedDate: '2025.01.08',
-      status: '면접 진행',
-      deadline: '2025.01.18'
+      date: "2016.01.06",
+      company: "회사",
+      position: "(주) 노회사 회사위치 27무엇A 가7동무엇 27무B (개발/기획)",
+      jobType: "정규직",
+      viewed: true,
+      status: "지원완료",
+      canCancel: true,
     },
     {
       id: 3,
-      company: '토스',
-      position: '풀스택 엔지니어',
-      appliedDate: '2025.01.05',
-      status: '서류 접수',
-      deadline: '2025.01.15'
+      date: "2016.01.06",
+      company: "회사",
+      position: "(주) 노회사 회사위치 27무엇A 가7동무엇 27무B (개발/기획)",
+      jobType: "정규직",
+      viewed: true,
+      status: "지원완료",
+      canCancel: true,
     },
     {
       id: 4,
-      company: '쿠팡',
-      position: 'Frontend Developer',
-      appliedDate: '2025.01.03',
-      status: '최종 합격',
-      deadline: '2025.01.10'
+      date: "2016.01.06",
+      company: "회사",
+      position: "(주) 노회사 회사위치 27무엇A 가7동무엇 27무B (개발/기획)",
+      jobType: "정규직",
+      viewed: true,
+      status: "지원완료",
+      canCancel: true,
     },
     {
       id: 5,
-      company: '당근마켓',
-      position: '웹 개발자',
-      appliedDate: '2024.12.28',
-      status: '불합격',
-      deadline: '2025.01.05'
-    }
+      date: "2016.01.06",
+      company: "회사",
+      position: "(주) 노회사 회사위치 27무엇A 가7동무엇 27무B (개발/기획)",
+      jobType: "정규직",
+      viewed: false,
+      status: "미열람",
+      canCancel: true,
+    },
+    {
+      id: 6,
+      date: "2016.01.06",
+      company: "회사",
+      position: "(주) 노회사 회사위치 27무엇A 가7동무엇 27무B (개발/기획)",
+      jobType: "정규직",
+      viewed: false,
+      status: "미열람",
+      canCancel: true,
+    },
   ]);
 
-  const getStatusColor = (status: ApplicationStatus) => {
-    switch (status) {
-      case '서류 접수':
-        return 'bg-gray-100 text-gray-700 border-gray-300';
-      case '서류 통과':
-        return 'bg-blue-100 text-blue-700 border-blue-300';
-      case '면접 진행':
-        return 'bg-purple-100 text-purple-700 border-purple-300';
-      case '최종 합격':
-        return 'bg-green-100 text-green-700 border-green-300';
-      case '불합격':
-        return 'bg-red-100 text-red-700 border-red-300';
+  const handleSearch = () => {
+    console.log("검색 실행");
+  };
+
+  const handleViewResume = (id: number) => {
+    console.log(`이력서 ${id} 보기`);
+  };
+
+  const handleViewProgress = (id: number) => {
+    console.log(`진행상태 ${id} 보기`);
+  };
+
+  const handleCancel = (id: number) => {
+    if (window.confirm("정말 지원을 취소하시겠습니까?")) {
+      setApplications(applications.filter((app) => app.id !== id));
     }
-  };
-
-  const getStatusIcon = (status: ApplicationStatus) => {
-    switch (status) {
-      case '서류 접수':
-        return '📝';
-      case '서류 통과':
-        return '✅';
-      case '면접 진행':
-        return '🎯';
-      case '최종 합격':
-        return '🎉';
-      case '불합격':
-        return '❌';
-    }
-  };
-
-  const handleApplicationClick = (id: number) => {
-    console.log(`지원 ${id} 클릭됨`);
-  };
-
-  const handleCancelApplication = (id: number) => {
-    if (confirm('정말 지원을 취소하시겠습니까?')) {
-      console.log(`지원 ${id} 취소됨`);
-    }
-  };
-
-  // 상태별 통계
-  const stats = {
-    total: applications.length,
-    accepted: applications.filter(a => a.status === '최종 합격').length,
-    inProgress: applications.filter(a => ['서류 접수', '서류 통과', '면접 진행'].includes(a.status)).length,
-    rejected: applications.filter(a => a.status === '불합격').length
   };
 
   return (
-    <>
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          {/* 헤더 */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <span className="text-2xl">📋</span>
+    <div className="px-4 py-8 mx-auto max-w-7xl">
+      <h2 className="inline-block mb-6 text-2xl font-bold">지원 현황</h2>
+      <div className="flex gap-6">
+        <ApplicationStautsSidebar
+          activeMenu={activeMenu}
+          onMenuClick={handleMenuClick}
+        />
+
+        <div className="flex-1">
+          <div className="grid grid-cols-4 gap-6 mb-8">
+            <div className="flex flex-col items-center justify-center p-9 bg-white border-2 border-white rounded-2xl">
+              <div className="flex items-center justify-center w-24 h-24 mb-3 text-4xl font-bold text-white bg-blue-500 rounded-full">
+                {stats.total}
               </div>
-              <h1 className="text-3xl font-bold">입사 지원 현황</h1>
+              <div className="text-lg font-semibold text-gray-700">
+                지원완료
+              </div>
             </div>
-            <p className="text-gray-600">지원한 공고의 진행 상황을 확인하세요</p>
+
+            <div className="flex flex-col items-center justify-center p-9 bg-white border-2 border-white rounded-2xl">
+              <div className="flex items-center justify-center w-24 h-24 mb-3 text-4xl font-bold text-white bg-blue-500 rounded-full">
+                {stats.viewed}
+              </div>
+              <div className="text-lg font-semibold text-gray-700">열람</div>
+            </div>
+
+            <div className="flex flex-col items-center justify-center p-9 bg-white border-2 border-white rounded-2xl">
+              <div className="flex items-center justify-center w-24 h-24 mb-3 text-4xl font-bold text-white bg-blue-500 rounded-full">
+                {stats.notViewed}
+              </div>
+              <div className="text-lg font-semibold text-gray-700">미열람</div>
+            </div>
+
+            <div className="flex flex-col items-center justify-center p-9 bg-white border-2 border-white rounded-2xl">
+              <div className="flex items-center justify-center w-24 h-24 mb-3 text-4xl font-bold text-white bg-blue-500 rounded-full">
+                {stats.cancelled}
+              </div>
+              <div className="text-lg font-semibold text-gray-700">
+                지원취소
+              </div>
+            </div>
           </div>
 
-          {/* 통계 카드 */}
-          <div className="grid grid-cols-4 gap-4 mb-8">
-            <div className="bg-white rounded-xl border-2 border-blue-400 p-6">
-              <div className="text-gray-600 text-sm mb-2">전체 지원</div>
-              <div className="text-3xl font-bold text-blue-600">{stats.total}건</div>
+          <div className="p-6 mb-6 bg-white border-2 border-gray-200 rounded-2xl">
+            <div className="flex items-center gap-4 pb-4 mb-4 border-b border-gray-200">
+              <div className="w-20 font-medium text-gray-700">조회기간</div>
+              <div className="flex gap-2">
+                {["1주일", "1개월", "2개월", "3개월", "날짜지정"].map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPeriod(p)}
+                    className={`px-4 py-2 text-sm rounded-lg transition ${
+                      period === p
+                        ? "bg-blue-600 text-white font-semibold"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg"
+              />
+              <span className="text-gray-500">~</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg"
+              />
             </div>
-            <div className="bg-white rounded-xl border-2 border-green-400 p-6">
-              <div className="text-gray-600 text-sm mb-2">최종 합격</div>
-              <div className="text-3xl font-bold text-green-600">{stats.accepted}건</div>
-            </div>
-            <div className="bg-white rounded-xl border-2 border-purple-400 p-6">
-              <div className="text-gray-600 text-sm mb-2">진행 중</div>
-              <div className="text-3xl font-bold text-purple-600">{stats.inProgress}건</div>
-            </div>
-            <div className="bg-white rounded-xl border-2 border-red-400 p-6">
-              <div className="text-gray-600 text-sm mb-2">불합격</div>
-              <div className="text-3xl font-bold text-red-600">{stats.rejected}건</div>
-            </div>
-          </div>
 
-          {/* 지원 목록 */}
-          <div className="bg-white rounded-2xl border-2 border-blue-400 p-6">
-            <h2 className="text-xl font-bold mb-6">지원 목록</h2>
-
-            <div className="space-y-4">
-              {applications.map((app) => (
-                <div
-                  key={app.id}
-                  onClick={() => handleApplicationClick(app.id)}
-                  className="border-2 border-gray-200 rounded-xl p-6 hover:shadow-lg transition cursor-pointer"
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              <div className="flex items-center gap-2">
+                <label className="w-20 text-sm font-medium text-gray-700">
+                  진행상태
+                </label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <h3 className="text-xl font-bold">{app.company}</h3>
-                        <span className={`px-4 py-1.5 rounded-full text-sm font-semibold border-2 ${getStatusColor(app.status)}`}>
-                          {getStatusIcon(app.status)} {app.status}
-                        </span>
-                      </div>
-                      <p className="text-lg text-gray-700 mb-4">{app.position}</p>
-                      
-                      <div className="flex items-center gap-6 text-sm text-gray-600">
-                        <div className="flex items-center gap-2">
-                          <span>📅</span>
-                          <span>지원일: {app.appliedDate}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span>⏰</span>
-                          <span>마감일: {app.deadline}</span>
-                        </div>
-                      </div>
-                    </div>
+                  <option value="전체">전체</option>
+                  <option value="지원완료">지원완료</option>
+                  <option value="열람">열람</option>
+                  <option value="미열람">미열람</option>
+                </select>
+              </div>
 
-                    <div className="flex flex-col gap-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleApplicationClick(app.id);
-                        }}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
+              <div className="flex items-center gap-2">
+                <label className="w-20 text-sm font-medium text-gray-700">
+                  영업여부
+                </label>
+                <select
+                  value={businessType}
+                  onChange={(e) => setBusinessType(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg"
+                >
+                  <option value="전체">전체</option>
+                  <option value="영업중">영업중</option>
+                  <option value="영업종료">영업종료</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="w-20 text-sm font-medium text-gray-700">
+                  지원산업
+                </label>
+                <select
+                  value={industry}
+                  onChange={(e) => setIndustry(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg"
+                >
+                  <option value="전체">전체</option>
+                  <option value="IT">IT</option>
+                  <option value="제조">제조</option>
+                  <option value="서비스">서비스</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                placeholder="기업명, 채용제목"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
+              />
+              <button
+                onClick={handleSearch}
+                className="px-8 py-2 font-semibold text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
+              >
+                검색
+              </button>
+            </div>
+          </div>
+
+          <div className="overflow-hidden bg-white border-2 border-gray-200 rounded-2xl">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr className="border-b-2 border-gray-200">
+                  <th className="px-4 py-3 text-sm font-semibold text-center text-gray-700">
+                    지원일
+                  </th>
+                  <th className="px-4 py-3 text-sm font-semibold text-center text-gray-700">
+                    회사명
+                  </th>
+                  <th className="px-4 py-3 text-sm font-semibold text-center text-gray-700">
+                    지원내역
+                  </th>
+                  <th className="px-4 py-3 text-sm font-semibold text-center text-gray-700">
+                    열람여부 ▼
+                  </th>
+                  <th className="px-4 py-3 text-sm font-semibold text-center text-gray-700">
+                    지원취소
+                  </th>
+                  <th className="px-4 py-3 text-sm font-semibold text-center text-gray-700">
+                    진행상태
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {applications.map((app) => (
+                  <tr key={app.id} className="border-b border-gray-200">
+                    <td className="px-4 py-4 text-sm text-center text-gray-700">
+                      {app.date}
+                    </td>
+                    <td className="px-4 py-4 text-sm text-center text-gray-700">
+                      {app.company}
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-700">
+                      <div className="mb-1">{app.position}</div>
+                      <div className="text-xs text-gray-500">{app.jobType}</div>
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      <span
+                        className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${
+                          app.viewed
+                            ? "bg-green-100 text-green-700"
+                            : "bg-gray-100 text-gray-700"
+                        }`}
                       >
-                        상세보기
-                      </button>
-                      {['서류 접수', '서류 통과'].includes(app.status) && (
+                        {app.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      {app.canCancel && (
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleCancelApplication(app.id);
-                          }}
-                          className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold"
+                          onClick={() => handleCancel(app.id)}
+                          className="text-sm text-red-600 underline hover:text-red-700"
                         >
-                          지원 취소
+                          지원취소
                         </button>
                       )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {applications.length === 0 && (
-              <div className="text-center py-16">
-                <div className="text-6xl mb-4">📭</div>
-                <h3 className="text-xl font-bold text-gray-400 mb-2">지원한 공고가 없습니다</h3>
-                <p className="text-gray-500">관심있는 공고에 지원해보세요</p>
-              </div>
-            )}
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      <div className="flex flex-col gap-1">
+                        <button
+                          onClick={() => handleViewResume(app.id)}
+                          className="text-xs text-blue-600 underline hover:text-blue-700"
+                        >
+                          서류확인 보기
+                        </button>
+                        <button
+                          onClick={() => handleViewProgress(app.id)}
+                          className="text-xs text-blue-600 underline hover:text-blue-700"
+                        >
+                          진행
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
-      <Footer />
-    </>
+    </div>
   );
 }

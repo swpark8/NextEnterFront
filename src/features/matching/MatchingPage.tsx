@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import Footer from '../../components/Footer';
-import MatchingSidebar from './components/MatchingSidebar';
+import { useState } from "react";
+import MatchingSidebar from "./components/MatchingSidebar";
+import { usePageNavigation } from "../../hooks/usePageNavigation";
 
 interface MatchingPageProps {
   onEditResume?: () => void;
@@ -8,61 +8,56 @@ interface MatchingPageProps {
   onNavigate?: (page: string, subMenu?: string) => void;
 }
 
-export default function MatchingPage({ onEditResume, initialMenu, onNavigate }: MatchingPageProps) {
-  const [activeMenu, setActiveMenu] = useState(initialMenu || 'home');
-  const [selectedResume, setSelectedResume] = useState('');
-  const [selectedJob, setSelectedJob] = useState('');
+export default function MatchingPage({
+  onEditResume,
+  initialMenu,
+  onNavigate,
+}: MatchingPageProps) {
+  const [selectedResume, setSelectedResume] = useState("");
+  const [selectedJob, setSelectedJob] = useState("");
   const [currentCredit, setCurrentCredit] = useState(200);
   const [hasAnalysis, setHasAnalysis] = useState(false);
   const [matchingScore, setMatchingScore] = useState(0);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-  useEffect(() => {
-    if (initialMenu) {
-      setActiveMenu(initialMenu);
-    }
-  }, [initialMenu]);
-
-  const handleMenuClick = (menuId: string) => {
-    setActiveMenu(menuId);
-    const mainMenus = ['resume', 'interview', 'credit', 'home', 'application', 'offer'];
-    if (onNavigate && mainMenus.includes(menuId)) {
-      onNavigate(menuId, menuId);
-    }
-  };
+  const { activeMenu, handleMenuClick } = usePageNavigation(
+    "matching",
+    initialMenu,
+    onNavigate
+  );
 
   // 샘플 이력서 목록
   const resumes = [
-    { id: '1', name: '김유연_2025 개발자 이력서' },
-    { id: '2', name: '김유연_프론트엔드 포지션' },
-    { id: '3', name: '김유연_풀스택 개발자' },
-    { id: '4', name: '김유연_신입 개발자 이력서' },
+    { id: "1", name: "김유연_2025 개발자 이력서" },
+    { id: "2", name: "김유연_프론트엔드 포지션" },
+    { id: "3", name: "김유연_풀스택 개발자" },
+    { id: "4", name: "김유연_신입 개발자 이력서" },
   ];
 
   // 샘플 공고 목록
   const jobs = [
-    { id: '1', name: '네이버 - 프론트엔드 개발자', company: '네이버' },
-    { id: '2', name: '카카오 - React 개발자', company: '카카오' },
-    { id: '3', name: '토스 - 풀스택 엔지니어', company: '토스' },
-    { id: '4', name: '당근마켓 - 웹 개발자', company: '당근마켓' },
-    { id: '5', name: '쿠팡 - Frontend Developer', company: '쿠팡' },
+    { id: "1", name: "네이버 - 프론트엔드 개발자", company: "네이버" },
+    { id: "2", name: "카카오 - React 개발자", company: "카카오" },
+    { id: "3", name: "토스 - 풀스택 엔지니어", company: "토스" },
+    { id: "4", name: "당근마켓 - 웹 개발자", company: "당근마켓" },
+    { id: "5", name: "쿠팡 - Frontend Developer", company: "쿠팡" },
   ];
 
   const handleCreditClick = () => {
-    console.log('보유 크레딧 클릭됨');
+    console.log("보유 크레딧 클릭됨");
   };
 
   const handleAnalyze = () => {
     if (!selectedResume) {
-      alert('이력서를 먼저 선택해주세요!');
+      alert("이력서를 먼저 선택해주세요!");
       return;
     }
     if (!selectedJob) {
-      alert('분석할 공고를 선택해주세요!');
+      alert("분석할 공고를 선택해주세요!");
       return;
     }
     if (currentCredit < 30) {
-      alert('크레딧이 부족합니다!');
+      alert("크레딧이 부족합니다!");
       return;
     }
 
@@ -71,9 +66,9 @@ export default function MatchingPage({ onEditResume, initialMenu, onNavigate }: 
   };
 
   const handleConfirmAnalysis = () => {
-    console.log('매칭 분석 실행');
+    console.log("매칭 분석 실행");
     setCurrentCredit(currentCredit - 30);
-    
+
     // 랜덤 점수 생성 (85-95 사이)
     const score = Math.floor(Math.random() * 11) + 85;
     setMatchingScore(score);
@@ -86,14 +81,15 @@ export default function MatchingPage({ onEditResume, initialMenu, onNavigate }: 
   };
 
   const handleAddResume = () => {
-    console.log('이력서 추가하기 클릭됨');
-    alert('이력서 작성 페이지로 이동합니다.');
+    console.log("이력서 추가하기 클릭됨");
+    alert("이력서 작성 페이지로 이동합니다.");
   };
 
   // 지원 적합 여부 결정
   const getSuitability = (score: number) => {
-    if (score >= 75) return { suitable: true, message: '매우 적합', emoji: '🎉' };
-    return { suitable: false, message: '부적합', emoji: '⚠️' };
+    if (score >= 75)
+      return { suitable: true, message: "매우 적합", emoji: "🎉" };
+    return { suitable: false, message: "부적합", emoji: "⚠️" };
   };
 
   const suitabilityInfo = getSuitability(matchingScore);
@@ -106,8 +102,12 @@ export default function MatchingPage({ onEditResume, initialMenu, onNavigate }: 
           <div className="w-full max-w-md p-8 mx-4 bg-white shadow-2xl rounded-2xl">
             <div className="mb-6 text-center">
               <div className="mb-4 text-5xl">💳</div>
-              <h3 className="mb-4 text-2xl font-bold">정말 크레딧을 사용하시겠습니까?</h3>
-              <p className="mt-2 text-gray-500">AI 매칭 분석에 크레딧 50이 차감됩니다.</p>
+              <h3 className="mb-4 text-2xl font-bold">
+                정말 크레딧을 사용하시겠습니까?
+              </h3>
+              <p className="mt-2 text-gray-500">
+                AI 매칭 분석에 크레딧 30이 차감됩니다.
+              </p>
             </div>
             <div className="flex gap-3">
               <button
@@ -127,35 +127,37 @@ export default function MatchingPage({ onEditResume, initialMenu, onNavigate }: 
         </div>
       )}
 
-      <div className="min-h-screen bg-gray-50">
-      <div className="px-4 py-8 mx-auto max-w-7xl">
-        <div className="flex gap-6">
+      <div className="px-4 py-6 mx-auto max-w-7xl">
+        {/* items-end: 버튼 높이와 상관없이 제목을 바닥에 고정 */}
+        <div className="flex items-end justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">AI 매칭 분석</h2>
+
+          {/* 버튼을 여기로 이동시켜서 레이아웃 흔들림 방지 */}
+          <button
+            onClick={handleCreditClick}
+            className="flex items-center gap-2 px-6 py-2 text-white transition bg-blue-600 rounded-full hover:bg-blue-700"
+          >
+            <span>💳</span>
+            <span>보유 크레딧 : {currentCredit}</span>
+          </button>
+        </div>
+
+        {/* ✅ items-start 추가: 사이드바와 본문의 시작점을 맨 위로 고정 */}
+        <div className="flex items-start gap-6">
           {/* 왼쪽 사이드바 */}
-          <MatchingSidebar activeMenu={activeMenu} onMenuClick={handleMenuClick} />
+          <MatchingSidebar
+            activeMenu={activeMenu}
+            onMenuClick={handleMenuClick}
+          />
 
           {/* 메인 컨텐츠 */}
           <div className="flex-1">
-            {/* 상단 헤더 */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded-full">
-                  📊
-                </div>
-                <h1 className="text-2xl font-bold">AI 매칭 분석</h1>
-              </div>
-              <button
-                onClick={handleCreditClick}
-                className="flex items-center gap-2 px-6 py-3 font-semibold text-white transition bg-blue-600 rounded-full hover:bg-blue-700"
-              >
-                <span>💳</span>
-                <span>보유 크레딧 : {currentCredit}</span>
-              </button>
-            </div>
+            {/* ❌ 기존에 있던 내부 헤더(빈 h1, 버튼)는 삭제했습니다. */}
 
             {/* 선택 카드 */}
             <div className="p-8 mb-6 bg-white border-2 border-blue-400 rounded-2xl">
               <h2 className="mb-6 text-xl font-bold">분석 대상 선택</h2>
-              
+
               <div className="mb-6 space-y-4">
                 {/* 이력서 선택 */}
                 <div>
@@ -219,7 +221,8 @@ export default function MatchingPage({ onEditResume, initialMenu, onNavigate }: 
                 <div className="flex items-center gap-2 text-blue-700">
                   <span>💡</span>
                   <span className="font-medium">
-                    AI가 이력서와 공고를 분석하여 매칭률, 강점, 개선사항을 알려드립니다
+                    AI가 이력서와 공고를 분석하여 매칭률, 강점, 개선사항을
+                    알려드립니다
                   </span>
                 </div>
               </div>
@@ -229,18 +232,30 @@ export default function MatchingPage({ onEditResume, initialMenu, onNavigate }: 
             {!hasAnalysis ? (
               <div className="p-16 text-center bg-white border-2 border-gray-200 rounded-2xl">
                 <div className="mb-4 text-6xl">📊</div>
-                <h3 className="mb-2 text-2xl font-bold text-gray-400">분석 결과가 없습니다</h3>
-                <p className="text-gray-500">이력서와 공고를 선택하고 AI 매칭 분석을 시작해보세요</p>
+                <h3 className="mb-2 text-2xl font-bold text-gray-400">
+                  분석 결과가 없습니다
+                </h3>
+                <p className="text-gray-500">
+                  이력서와 공고를 선택하고 AI 매칭 분석을 시작해보세요
+                </p>
               </div>
             ) : (
               <div className="space-y-6">
                 {/* 매칭 결과 카드 */}
-                <div className={`rounded-2xl p-8 text-white ${suitabilityInfo.suitable ? 'bg-blue-600' : 'bg-red-600'}`}>
+                <div
+                  className={`rounded-2xl p-8 text-white ${
+                    suitabilityInfo.suitable ? "bg-blue-600" : "bg-red-600"
+                  }`}
+                >
                   <div className="text-center">
                     <h2 className="mb-6 text-2xl font-bold">종합 매칭 점수</h2>
                     <div className="mb-6 text-8xl">{suitabilityInfo.emoji}</div>
                     <div className="mb-4 text-4xl font-bold">
-                      이 공고에 지원하기 <span className="underline">{suitabilityInfo.message}</span>합니다!
+                      이 공고에 지원하기{" "}
+                      <span className="underline">
+                        {suitabilityInfo.message}
+                      </span>
+                      합니다!
                     </div>
                   </div>
                 </div>
@@ -251,16 +266,22 @@ export default function MatchingPage({ onEditResume, initialMenu, onNavigate }: 
                   <div className="p-6 bg-white border-2 border-green-400 rounded-2xl">
                     <div className="flex items-center gap-2 mb-4">
                       <span className="text-2xl">✅</span>
-                      <h3 className="text-xl font-bold text-green-600">강점 분석</h3>
+                      <h3 className="text-xl font-bold text-green-600">
+                        강점 분석
+                      </h3>
                     </div>
                     <ul className="space-y-3">
                       <li className="flex items-start gap-2">
                         <span className="mt-1 text-green-500">•</span>
-                        <span>React, TypeScript 경력 3년으로 요구사항을 완벽히 충족</span>
+                        <span>
+                          React, TypeScript 경력 3년으로 요구사항을 완벽히 충족
+                        </span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="mt-1 text-green-500">•</span>
-                        <span>대규모 프로젝트 경험이 풍부하여 팀 리딩 가능</span>
+                        <span>
+                          대규모 프로젝트 경험이 풍부하여 팀 리딩 가능
+                        </span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="mt-1 text-green-500">•</span>
@@ -277,7 +298,9 @@ export default function MatchingPage({ onEditResume, initialMenu, onNavigate }: 
                   <div className="p-6 bg-white border-2 border-yellow-400 rounded-2xl">
                     <div className="flex items-center gap-2 mb-4">
                       <span className="text-2xl">⚠️</span>
-                      <h3 className="text-xl font-bold text-yellow-600">개선 필요 사항</h3>
+                      <h3 className="text-xl font-bold text-yellow-600">
+                        개선 필요 사항
+                      </h3>
                     </div>
                     <ul className="space-y-3">
                       <li className="flex items-start gap-2">
@@ -286,7 +309,9 @@ export default function MatchingPage({ onEditResume, initialMenu, onNavigate }: 
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="mt-1 text-yellow-500">•</span>
-                        <span>테스트 코드 작성 경험을 이력서에 추가하면 좋음</span>
+                        <span>
+                          테스트 코드 작성 경험을 이력서에 추가하면 좋음
+                        </span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="mt-1 text-yellow-500">•</span>
@@ -300,26 +325,32 @@ export default function MatchingPage({ onEditResume, initialMenu, onNavigate }: 
                 <div className="p-6 bg-white border-2 border-blue-400 rounded-2xl">
                   <div className="flex items-center gap-2 mb-4">
                     <span className="text-2xl">💻</span>
-                    <h3 className="text-xl font-bold text-blue-600">기술 스택 매칭률</h3>
+                    <h3 className="text-xl font-bold text-blue-600">
+                      기술 스택 매칭률
+                    </h3>
                   </div>
                   <div className="space-y-4">
                     {[
-                      { name: 'React', match: 100 },
-                      { name: 'TypeScript', match: 95 },
-                      { name: 'JavaScript', match: 100 },
-                      { name: 'CSS/SASS', match: 90 },
-                      { name: 'Git', match: 100 },
-                      { name: 'Next.js', match: 60 },
+                      { name: "React", match: 100 },
+                      { name: "TypeScript", match: 95 },
+                      { name: "JavaScript", match: 100 },
+                      { name: "CSS/SASS", match: 90 },
+                      { name: "Git", match: 100 },
+                      { name: "Next.js", match: 60 },
                     ].map((skill) => (
                       <div key={skill.name}>
                         <div className="flex justify-between mb-1">
                           <span className="font-medium">{skill.name}</span>
-                          <span className="font-bold text-blue-600">{skill.match}%</span>
+                          <span className="font-bold text-blue-600">
+                            {skill.match}%
+                          </span>
                         </div>
                         <div className="w-full h-3 bg-gray-200 rounded-full">
                           <div
                             className={`h-3 rounded-full transition-all ${
-                              skill.match >= 80 ? 'bg-green-500' : 'bg-yellow-500'
+                              skill.match >= 80
+                                ? "bg-green-500"
+                                : "bg-yellow-500"
                             }`}
                             style={{ width: `${skill.match}%` }}
                           />
@@ -333,25 +364,30 @@ export default function MatchingPage({ onEditResume, initialMenu, onNavigate }: 
                 <div className="p-6 bg-white border-2 border-blue-400 rounded-2xl">
                   <div className="flex items-center gap-2 mb-4">
                     <span className="text-2xl">🤖</span>
-                    <h3 className="text-xl font-bold text-blue-600">AI 추천 개선 사항</h3>
+                    <h3 className="text-xl font-bold text-blue-600">
+                      AI 추천 개선 사항
+                    </h3>
                   </div>
                   <div className="space-y-4">
                     <div className="p-4 rounded-lg bg-blue-50">
                       <h4 className="mb-2 font-bold">📝 이력서 수정 제안</h4>
                       <p className="text-gray-700">
-                        "프로젝트 성과를 정량적으로 표현하면 좋습니다. 예: '웹 성능 30% 개선', '사용자 수 2배 증가' 등"
+                        "프로젝트 성과를 정량적으로 표현하면 좋습니다. 예: '웹
+                        성능 30% 개선', '사용자 수 2배 증가' 등"
                       </p>
                     </div>
                     <div className="p-4 rounded-lg bg-blue-50">
                       <h4 className="mb-2 font-bold">🎯 자기소개서 작성 팁</h4>
                       <p className="text-gray-700">
-                        "해당 회사의 기술 스택과 문화에 맞춰 협업 경험과 문제 해결 능력을 강조하세요"
+                        "해당 회사의 기술 스택과 문화에 맞춰 협업 경험과 문제
+                        해결 능력을 강조하세요"
                       </p>
                     </div>
                     <div className="p-4 rounded-lg bg-blue-50">
                       <h4 className="mb-2 font-bold">📚 학습 추천</h4>
                       <p className="text-gray-700">
-                        "Next.js 공식 문서와 튜토리얼을 학습하여 SSR/SSG 경험을 쌓으면 합격률이 높아집니다"
+                        "Next.js 공식 문서와 튜토리얼을 학습하여 SSR/SSG 경험을
+                        쌓으면 합격률이 높아집니다"
                       </p>
                     </div>
                   </div>
@@ -370,7 +406,7 @@ export default function MatchingPage({ onEditResume, initialMenu, onNavigate }: 
                       if (onEditResume) {
                         onEditResume();
                       } else {
-                        alert('이력서 수정 페이지로 이동합니다');
+                        alert("이력서 수정 페이지로 이동합니다");
                       }
                     }}
                     className="flex-1 py-4 font-bold text-white transition bg-blue-600 rounded-xl hover:bg-blue-700"
@@ -378,7 +414,7 @@ export default function MatchingPage({ onEditResume, initialMenu, onNavigate }: 
                     이력서 수정하기
                   </button>
                   <button
-                    onClick={() => alert('지원하기 페이지로 이동합니다')}
+                    onClick={() => alert("지원하기 페이지로 이동합니다")}
                     className="flex-1 py-4 font-bold text-white transition bg-blue-600 rounded-xl hover:bg-blue-700"
                   >
                     🚀 지금 지원하기
@@ -389,8 +425,6 @@ export default function MatchingPage({ onEditResume, initialMenu, onNavigate }: 
           </div>
         </div>
       </div>
-      </div>
-      <Footer />
     </>
   );
 }
