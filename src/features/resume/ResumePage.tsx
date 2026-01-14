@@ -2,8 +2,14 @@ import { useState, useRef } from "react";
 import Footer from "../../components/Footer";
 import ResumeSidebar from "./components/ResumeSidebar";
 import ResumeFormPage from "./ResumeFormPage";
+import { useApp } from "../../context/AppContext";
 
-export default function ResumePage() {
+interface ResumePageProps {
+  initialMenu?: string;
+  onApplicationStatusClick?: () => void;
+}
+
+export default function ResumePage({ initialMenu, onApplicationStatusClick }: ResumePageProps = {}) {
   const [activeMenu, setActiveMenu] = useState("resume");
   const [isCreating, setIsCreating] = useState(false);
   const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
@@ -11,17 +17,33 @@ export default function ResumePage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
 
-  // 샘플 이력서 목록
-  const [resumes, setResumes] = useState([
-    { id: 1, title: '김유연_2025 개발자 이력서', industry: '프론트엔드 개발', applications: 3 },
-    { id: 2, title: '김유연_프론트엔드 포지션', industry: '웹 개발', applications: 5 },
-    { id: 3, title: '김유연_풀스택 개발자', industry: '풀스택', applications: 2 },
-    { id: 4, title: '김유연_신입 개발자 이력서', industry: '신입 개발', applications: 1 },
-  ]);
+  // Context에서 이력서 데이터 가져오기
+  const { resumes, addResume, deleteResume: deleteResumeContext } = useApp();
 
   const handleFileUpload = () => {
     console.log("파일 선택 클릭됨");
     fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      console.log("파일 업로드됨:", file.name);
+      
+      // 파일명에서 확장자 제거
+      const fileName = file.name.replace(/\.[^/.]+$/, "");
+      
+      // 새 이력서 추가
+      const newResume = {
+        id: resumes.length > 0 ? Math.max(...resumes.map(r => r.id)) + 1 : 1,
+        title: fileName,
+        industry: '업로드된 이력서',
+        applications: 0
+      };
+      
+      addResume(newResume);
+      alert(`"${fileName}" 이력서가 업로드되었습니다!`);
+    }
   };
 
   const handleEdit = (id: number) => {
@@ -37,7 +59,7 @@ export default function ResumePage() {
 
   const handleConfirmDelete = () => {
     if (deleteTargetId !== null) {
-      setResumes(resumes.filter(r => r.id !== deleteTargetId));
+      deleteResumeContext(deleteTargetId);
       console.log(`이력서 ${deleteTargetId} 삭제됨`);
     }
     setShowDeleteConfirm(false);
@@ -57,6 +79,15 @@ export default function ResumePage() {
   const handleBackToList = () => {
     setIsCreating(false);
     setSelectedResumeId(null);
+  };
+
+  // 지원 내역 클릭 핸들러
+  const handleApplicationClick = (resumeId: number) => {
+    if (onApplicationStatusClick) {
+      onApplicationStatusClick();
+    } else {
+      console.log(`이력서 ${resumeId}의 지원 내역 페이지로 이동`);
+    }
   };
 
   // 이력서 작성/수정 페이지 표시
@@ -144,7 +175,10 @@ export default function ResumePage() {
                         </div>
                         <div>
                           <span className="text-gray-600">지원 내역:</span>
-                          <span className="ml-2 text-blue-600 underline cursor-pointer">
+                          <span 
+                            onClick={() => handleApplicationClick(resume.id)}
+                            className="ml-2 text-blue-600 underline cursor-pointer hover:text-blue-800"
+                          >
                             {resume.applications}건 &gt;
                           </span>
                         </div>
@@ -169,10 +203,7 @@ export default function ResumePage() {
                   <input
                     type="file"
                     ref={fileInputRef}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) console.log("파일 업로드됨:", file.name);
-                    }}
+                    onChange={handleFileChange}
                     accept=".pdf,.doc,.docx,.hwp,.xls,.xlsx"
                     className="hidden"
                   />

@@ -22,7 +22,7 @@ export const navigationMenuData = {
     id: "matching",
     title: "매칭분석",
     items: [
-      { id: "4-1", label: "매칭결과 리포트" },
+      { id: "4-1", label: "매칭 분석 시작" },
       { id: "4-2", label: "매칭 히스토리" },
     ],
   },
