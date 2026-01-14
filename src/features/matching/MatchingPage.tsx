@@ -1,17 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MatchingSidebar from './components/MatchingSidebar';
 
 interface MatchingPageProps {
   onEditResume?: () => void;
+  initialMenu?: string;
+  onNavigate?: (page: string, subMenu?: string) => void;
 }
 
-export default function MatchingPage({ onEditResume }: MatchingPageProps) {
-  const [activeMenu, setActiveMenu] = useState('home');
+export default function MatchingPage({ onEditResume, initialMenu, onNavigate }: MatchingPageProps) {
+  const [activeMenu, setActiveMenu] = useState(initialMenu || 'home');
   const [selectedResume, setSelectedResume] = useState('');
   const [selectedJob, setSelectedJob] = useState('');
   const [currentCredit, setCurrentCredit] = useState(200);
   const [hasAnalysis, setHasAnalysis] = useState(false);
   const [matchingScore, setMatchingScore] = useState(0);
+
+  useEffect(() => {
+    if (initialMenu) {
+      setActiveMenu(initialMenu);
+    }
+  }, [initialMenu]);
+
+  const handleMenuClick = (menuId: string) => {
+    setActiveMenu(menuId);
+    const mainMenus = ['resume', 'interview', 'credit', 'home', 'application', 'offer'];
+    if (onNavigate && mainMenus.includes(menuId)) {
+      onNavigate(menuId, menuId);
+    }
+  };
 
   // 샘플 이력서 목록
   const resumes = [
@@ -75,7 +91,7 @@ export default function MatchingPage({ onEditResume }: MatchingPageProps) {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex gap-6">
           {/* 왼쪽 사이드바 */}
-          <MatchingSidebar activeMenu={activeMenu} onMenuClick={setActiveMenu} />
+          <MatchingSidebar activeMenu={activeMenu} onMenuClick={handleMenuClick} />
 
           {/* 메인 컨텐츠 */}
           <div className="flex-1">

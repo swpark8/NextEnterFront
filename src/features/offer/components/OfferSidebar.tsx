@@ -1,13 +1,10 @@
 import LeftSidebar from "../../../components/LeftSidebar";
 
-interface MatchingSidebarProps {
+interface OfferSidebarProps {
   activeMenu: string;
   onMenuClick: (menuId: string) => void;
 }
 
-export default function MatchingSidebar({
-  activeMenu,
-  onMenuClick,
-}: MatchingSidebarProps) {
+export default function OfferSidebar({ activeMenu, onMenuClick }: OfferSidebarProps) {
   return <LeftSidebar activeMenu={activeMenu} onMenuClick={onMenuClick} />;
 }

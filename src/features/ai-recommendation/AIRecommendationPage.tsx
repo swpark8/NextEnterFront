@@ -1,11 +1,30 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AISidebar from './components/AISidebar';
 
-export default function AIRecommendationPage() {
-  const [activeMenu, setActiveMenu] = useState('home');
+interface AIRecommendationPageProps {
+  initialMenu?: string;
+  onNavigate?: (page: string, subMenu?: string) => void;
+}
+
+export default function AIRecommendationPage({ initialMenu, onNavigate }: AIRecommendationPageProps) {
+  const [activeMenu, setActiveMenu] = useState(initialMenu || 'home');
   const [selectedResume, setSelectedResume] = useState('');
   const [currentCredit, setCurrentCredit] = useState(200);
   const [hasRecommendations, setHasRecommendations] = useState(false);
+
+  useEffect(() => {
+    if (initialMenu) {
+      setActiveMenu(initialMenu);
+    }
+  }, [initialMenu]);
+
+  const handleMenuClick = (menuId: string) => {
+    setActiveMenu(menuId);
+    const mainMenus = ['resume', 'interview', 'matching', 'credit', 'home', 'application', 'offer'];
+    if (onNavigate && mainMenus.includes(menuId)) {
+      onNavigate(menuId, menuId);
+    }
+  };
 
   // 샘플 이력서 목록
   const resumes = [
@@ -39,7 +58,7 @@ export default function AIRecommendationPage() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex gap-6">
           {/* 왼쪽 사이드바 */}
-          <AISidebar activeMenu={activeMenu} onMenuClick={setActiveMenu} />
+          <AISidebar activeMenu={activeMenu} onMenuClick={handleMenuClick} />
 
           {/* 메인 컨텐츠 */}
           <div className="flex-1">

@@ -1,11 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface MyPageProps {
   onNavigate?: (page: string) => void;
+  initialMenu?: string;
 }
 
-export default function MyPage({ onNavigate }: MyPageProps) {
+export default function MyPage({ onNavigate, initialMenu }: MyPageProps) {
   const [resumeCount] = useState(2);
+  const [activeMenu, setActiveMenu] = useState(initialMenu || "home");
+
+  useEffect(() => {
+    if (initialMenu) {
+      setActiveMenu(initialMenu);
+    }
+  }, [initialMenu]);
 
   const handleClick = (item: string) => {
     console.log(`${item} 클릭됨`);

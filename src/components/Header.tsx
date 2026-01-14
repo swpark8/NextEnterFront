@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import HoverMenu from "../features/navigation-menu/components/HoverMenu";
 import DropdownMenu from "../features/navigation-menu/components/DropdownMenu";
+import { navigationMenuData } from "../features/navigation-menu/data/menuData";
 
 const MENU_CLOSE_DELAY = 150;
 
@@ -17,6 +18,7 @@ const navItems = [
   { id: "resume", label: "이력서" },
   { id: "matching", label: "매칭분석" },
   { id: "interview", label: "모의면접" },
+  { id: "offer", label: "받은 제안" },
   { id: "mypage", label: "마이페이지" },
   { id: "credit", label: "크레딧" },
 ];
@@ -195,7 +197,26 @@ export default function Header({
       </nav>
 
       <div className="relative z-[45]">
-        <DropdownMenu isOpen={isDropdownOpen} />
+        <DropdownMenu
+          isOpen={isDropdownOpen}
+          onMenuClick={(menuId) => {
+            // 메뉴닫기
+            setIsDropdownOpen(false);
+            let targetTab = "home";
+
+            const sections = Object.values(navigationMenuData) as any[];
+            for (const section of sections) {
+              if (
+                section.id === menuId ||
+                section.items?.some((item: any) => item.id === menuId)
+              ) {
+                targetTab = section.id;
+                break;
+              }
+            }
+            onTabChange(targetTab, menuId);
+          }}
+        />
       </div>
     </>
   );

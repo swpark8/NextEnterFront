@@ -1,18 +1,61 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import CreditSidebar from "./components/CreditSidebar";
+// ✅ 메뉴 데이터 불러오기 (이동할 때 필요)
+import { navigationMenuData } from "../../features/navigation-menu/data/menuData";
 
 interface CreditPageProps {
   onLogoClick?: () => void;
   onCharge?: () => void;
+  initialMenu?: string;
+  onNavigate?: (page: string, subMenu?: string) => void;
 }
 
-export default function CreditPage({ onLogoClick, onCharge }: CreditPageProps) {
+export default function CreditPage({
+  onLogoClick,
+  onCharge,
+  initialMenu,
+  onNavigate,
+}: CreditPageProps) {
   const [currentCredit] = useState(505);
   const [expiringMileage] = useState(0);
   const [activeTab, setActiveTab] = useState<"coupon" | "usage" | "mileage">(
     "coupon"
   );
-  const [activeMenu, setActiveMenu] = useState("credit");
+
+  // 초기 메뉴 설정
+  const [activeMenu, setActiveMenu] = useState(initialMenu || "credit-sub-1");
+
+  useEffect(() => {
+    if (initialMenu) {
+      setActiveMenu(initialMenu);
+    }
+  }, [initialMenu]);
+
+  // ✅ [수정된 핵심 로직] 사이드바 클릭 시 페이지 이동 처리
+  const handleMenuClick = (menuId: string) => {
+    setActiveMenu(menuId);
+
+    // 1. 클릭한 메뉴가 어느 탭 소속인지 찾기
+    let targetTab = "";
+    const sections = Object.values(navigationMenuData) as any[];
+
+    for (const section of sections) {
+      if (
+        section.id === menuId ||
+        section.items?.some((item: any) => item.id === menuId)
+      ) {
+        targetTab = section.id;
+        break;
+      }
+    }
+
+    // 2. 내 구역('credit')이 아니면 App.tsx에게 이동 요청
+    if (targetTab && targetTab !== "credit") {
+      if (onNavigate) {
+        onNavigate(targetTab, menuId);
+      }
+    }
+  };
 
   const coupons = [
     { id: 1, discount: "10%", label: "10% 할인 쿠폰" },
@@ -41,9 +84,6 @@ export default function CreditPage({ onLogoClick, onCharge }: CreditPageProps) {
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 text-xl text-white bg-orange-400 rounded-full">
-              💳
-            </div>
             <h1 className="text-2xl font-bold">보유 크레딧</h1>
           </div>
           <button
@@ -57,7 +97,10 @@ export default function CreditPage({ onLogoClick, onCharge }: CreditPageProps) {
 
         <div className="flex gap-6">
           {/* 왼쪽 사이드바 */}
-          <CreditSidebar activeMenu={activeMenu} onMenuClick={setActiveMenu} />
+          <CreditSidebar
+            activeMenu={activeMenu}
+            onMenuClick={handleMenuClick} // ✅ 수정된 핸들러 연결
+          />
 
           {/* 메인 컨텐츠 */}
           <div className="flex-1">
