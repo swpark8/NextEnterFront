@@ -70,6 +70,12 @@ export default function LoginPage({
     }
   };
 
+  // 소셜 로그인 핸들러
+  const handleSocialLogin = (provider: "naver" | "kakao" | "google") => {
+    const backendUrl = "http://localhost:8080";
+    window.location.href = `${backendUrl}/oauth2/authorization/${provider}`;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* 메인 컨텐츠 */}
@@ -247,6 +253,65 @@ export default function LoginPage({
               >
                 회원가입
               </button>
+            </div>
+
+            {/* ✅ 소셜 로그인 섹션 */}
+            <div className="mt-6">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-gray-50 text-gray-500">
+                    간편로그인
+                  </span>
+                </div>
+              </div>
+
+              {/* 소셜 로그인 버튼들 */}
+              <div className="mt-4 flex justify-center gap-3">
+                {/* 네이버 로그인 */}
+                <button
+                  onClick={() => handleSocialLogin("naver")}
+                  className="w-12 h-12 rounded-full bg-[#03C75A] flex items-center justify-center hover:opacity-90 transition-opacity shadow-md"
+                  title="네이버 로그인"
+                >
+                  <span className="text-white text-2xl font-bold">N</span>
+                </button>
+
+                {/* 카카오 로그인 */}
+                <button
+                  onClick={() => handleSocialLogin("kakao")}
+                  className="w-12 h-12 rounded-full bg-[#FEE500] flex items-center justify-center hover:opacity-90 transition-opacity shadow-md"
+                  title="카카오 로그인"
+                >
+                  <span className="text-[#000000] text-2xl font-bold">K</span>
+                </button>
+
+                {/* 구글 로그인 (선택사항) */}
+                <button
+                  onClick={() => alert("구글 로그인은 준비 중입니다.")}
+                  className="w-12 h-12 rounded-full bg-white border-2 border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors shadow-md"
+                  title="구글 로그인"
+                >
+                  <span className="text-gray-700 text-2xl font-bold">G</span>
+                </button>
+
+                {/* 애플 로그인 (선택사항) */}
+                <button
+                  onClick={() => alert("애플 로그인은 준비 중입니다.")}
+                  className="w-12 h-12 rounded-full bg-black flex items-center justify-center hover:opacity-90 transition-opacity shadow-md"
+                  title="애플 로그인"
+                >
+                  <svg
+                    className="w-6 h-6 text-white"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </div>
