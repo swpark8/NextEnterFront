@@ -1,11 +1,17 @@
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { createResume, CreateResumeRequest } from "../../api/resume";
+import {
+  createResume,
+  updateResume,
+  getResumeDetail,
+  CreateResumeRequest,
+  ResumeSections,
+} from "../../api/resume";
 import ResumeSidebar from "./components/ResumeSidebar";
 
 interface ResumeFormPageProps {
   onBack: () => void;
-  resumeId?: number | null; // 수정 시 이력서 ID, null이면 새 이력서 작성
+  resumeId?: number | null;
 }
 
 export default function ResumeFormPage({
@@ -37,21 +43,110 @@ export default function ResumeFormPage({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // 이력서 데이터 로드 (resumeId가 있을 때)
+  // ✅ 수정 모드일 때 데이터 로드
   useEffect(() => {
-    if (resumeId) {
-      console.log(`이력서 ID ${resumeId}의 데이터 로드 중...`);
-      // TODO: 백엔드 API 호출
-      // fetch(`/api/resumes/${resumeId}`)
-      //   .then(res => res.json())
-      //   .then(data => {
-      //     // 데이터로 state 업데이트
-      //     setSelectedJob(data.job);
-      //     setEducations(data.educations);
-      //     // ... 등등
-      //   });
+    if (resumeId && user?.userId) {
+      loadResumeData(resumeId, user.userId);
     }
-  }, [resumeId]);
+  }, [resumeId, user?.userId]);
+
+  // ✅ 이력서 데이터 로드 함수
+  const loadResumeData = async (id: number, userId: number) => {
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const resume = await getResumeDetail(id, userId);
+      console.log("불러온 이력서 데이터:", resume);
+
+      // 기본 정보
+      setResumeTitle(resume.title);
+      setSelectedJob(resume.jobCategory);
+
+      // structuredData 파싱
+      if (resume.structuredData) {
+        try {
+          const sections: ResumeSections = JSON.parse(resume.structuredData);
+          console.log("파싱된 섹션 데이터:", sections);
+
+          // 인적사항
+          if (sections.personalInfo) {
+            setName(sections.personalInfo.name || "");
+            setSelectedGender(sections.personalInfo.gender || "");
+            setBirthDate(sections.personalInfo.birthDate || "");
+            setEmail(sections.personalInfo.email || "");
+            setAddress(sections.personalInfo.address || "");
+            setSelectedImage(sections.personalInfo.profileImage || null);
+          }
+
+          // 경험/활동/교육
+          if (sections.experiences && sections.experiences.length > 0) {
+            setExperiences(
+              sections.experiences.map((exp) => `${exp.title} | ${exp.period}`)
+            );
+          }
+
+          // 자격증/어학/수상
+          if (sections.certificates && sections.certificates.length > 0) {
+            setCertificates(
+              sections.certificates.map(
+                (cert) => `${cert.title} | ${cert.date}`
+              )
+            );
+          }
+
+          // 학력
+          if (sections.educations && sections.educations.length > 0) {
+            setEducations(
+              sections.educations.map((edu) => `${edu.school} | ${edu.period}`)
+            );
+          }
+
+          // 경력
+          if (sections.careers && sections.careers.length > 0) {
+            setCareers(
+              sections.careers.map(
+                (career) => `${career.company} | ${career.period}`
+              )
+            );
+          }
+
+          // 포트폴리오
+          if (sections.portfolios && sections.portfolios.length > 0) {
+            setPortfolios(sections.portfolios.map((p) => p.filename));
+          }
+
+          // 자기소개서
+          if (sections.coverLetter) {
+            setCoverLetterTitle(sections.coverLetter.title || "");
+            setCoverLetterContent(sections.coverLetter.content || "");
+            if (sections.coverLetter.files) {
+              setCoverLetterFiles(sections.coverLetter.files);
+            }
+          }
+        } catch (parseError) {
+          console.error("섹션 데이터 파싱 오류:", parseError);
+        }
+      }
+
+      // 스킬
+      if (resume.skills) {
+        try {
+          const skillsArray = JSON.parse(resume.skills);
+          if (Array.isArray(skillsArray)) {
+            setSelectedSkills(skillsArray);
+          }
+        } catch {
+          // JSON 파싱 실패하면 무시
+        }
+      }
+    } catch (err: any) {
+      console.error("이력서 데이터 로드 오류:", err);
+      setError("이력서 데이터를 불러오는 중 오류가 발생했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -146,7 +241,7 @@ export default function ResumeFormPage({
     setCoverLetterFiles(coverLetterFiles.filter((_, i) => i !== index));
   };
 
-  // 등록/수정 처리
+  // ✅ 등록/수정 처리
   const handleSubmit = async () => {
     if (!user?.userId) {
       alert("로그인이 필요합니다.");
@@ -237,25 +332,35 @@ export default function ResumeFormPage({
         status: "COMPLETED",
       };
 
-      const response = await createResume(resumeData, user.userId);
-
-      if (response.success) {
-        alert(
-          resumeId ? "이력서가 수정되었습니다!" : "이력서가 등록되었습니다!"
-        );
-        onBack();
+      let response;
+      if (resumeId) {
+        // 수정 모드
+        response = await updateResume(resumeId, resumeData, user.userId);
+        if (response.resumeId) {
+          alert("이력서가 수정되었습니다!");
+          onBack();
+        } else {
+          setError("이력서 수정에 실패했습니다.");
+        }
       } else {
-        setError(response.message || "이력서 등록에 실패했습니다.");
+        // 등록 모드
+        response = await createResume(resumeData, user.userId);
+        if (response.resumeId) {
+          alert("이력서가 등록되었습니다!");
+          onBack();
+        } else {
+          setError("이력서 등록에 실패했습니다.");
+        }
       }
     } catch (err: any) {
-      console.error("이력서 등록 오류:", err);
+      console.error("이력서 저장 오류:", err);
       setError(
-        err.response?.data?.message || "이력서 등록 중 오류가 발생했습니다."
+        err.response?.data?.message ||
+          `이력서 ${resumeId ? "수정" : "등록"} 중 오류가 발생했습니다.`
       );
     } finally {
       setIsLoading(false);
     }
-    onBack();
   };
 
   // 취소 처리
@@ -350,9 +455,7 @@ export default function ResumeFormPage({
             {/* 섹션: 인적사항 */}
             <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold">
-                  {resumeId ? "이력서 수정" : "이력서 작성"}
-                </h2>
+                <h2 className="text-2xl font-bold">인적사항</h2>
                 <button
                   onClick={handleCancel}
                   className="px-6 py-2 text-gray-700 transition bg-gray-200 rounded-lg hover:bg-gray-300"
@@ -466,7 +569,37 @@ export default function ResumeFormPage({
                 <div className="flex items-center gap-2 mb-4">
                   <h3 className="text-lg font-bold">직무</h3>
                 </div>
-                <div className="grid grid-cols-5 gap-4 mb-6">
+                <div className="grid grid-cols-6 gap-4 mb-6">
+                  <button
+                    onClick={() => handleJobSelect("프론트엔드")}
+                    className={`p-3 text-center border-2 rounded-lg cursor-pointer transition ${
+                      selectedJob === "프론트엔드"
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    프론트
+                  </button>
+                  <button
+                    onClick={() => handleJobSelect("백엔드")}
+                    className={`p-3 text-center border-2 rounded-lg cursor-pointer transition ${
+                      selectedJob === "백엔드"
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    백엔드
+                  </button>
+                  <button
+                    onClick={() => handleJobSelect("풀스택")}
+                    className={`p-3 text-center border-2 rounded-lg cursor-pointer transition ${
+                      selectedJob === "풀스택"
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    풀스택
+                  </button>
                   <button
                     onClick={() => handleJobSelect("PM")}
                     className={`p-3 text-center border-2 rounded-lg cursor-pointer transition ${
@@ -475,42 +608,12 @@ export default function ResumeFormPage({
                         : "border-gray-300 hover:bg-gray-50"
                     }`}
                   >
-                    프론트
-                  </button>
-                  <button
-                    onClick={() => handleJobSelect("디자이너")}
-                    className={`p-3 text-center border-2 rounded-lg cursor-pointer transition ${
-                      selectedJob === "디자이너"
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    백엔드
-                  </button>
-                  <button
-                    onClick={() => handleJobSelect("FE")}
-                    className={`p-3 text-center border-2 rounded-lg cursor-pointer transition ${
-                      selectedJob === "FE"
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    풀스텍
-                  </button>
-                  <button
-                    onClick={() => handleJobSelect("BE")}
-                    className={`p-3 text-center border-2 rounded-lg cursor-pointer transition ${
-                      selectedJob === "BE"
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
                     PM
                   </button>
                   <button
-                    onClick={() => handleJobSelect("DevOps")}
+                    onClick={() => handleJobSelect("데이터 분석가")}
                     className={`p-3 text-center border-2 rounded-lg cursor-pointer transition ${
-                      selectedJob === "DevOps"
+                      selectedJob === "데이터 분석가"
                         ? "border-blue-500 bg-blue-50"
                         : "border-gray-300 hover:bg-gray-50"
                     }`}
@@ -518,9 +621,9 @@ export default function ResumeFormPage({
                     데이터 분석가
                   </button>
                   <button
-                    onClick={() => handleJobSelect("BE")}
+                    onClick={() => handleJobSelect("디자이너")}
                     className={`p-3 text-center border-2 rounded-lg cursor-pointer transition ${
-                      selectedJob === "BE"
+                      selectedJob === "디자이너"
                         ? "border-blue-500 bg-blue-50"
                         : "border-gray-300 hover:bg-gray-50"
                     }`}
@@ -816,7 +919,7 @@ export default function ResumeFormPage({
                       <div key={index} className="flex items-center gap-2">
                         <button
                           onClick={() => removeCoverLetterFile(index)}
-                          className="px-4 py-2 text-sm transition border-2 border-gray-300 rounded-full hover:bg-gray-100"
+                          className="px-4 py-2 text-sm border-2 border-gray-300 rounded-full hover:bg-gray-100 transition"
                         >
                           X | {file}
                         </button>
@@ -858,7 +961,13 @@ export default function ResumeFormPage({
                   disabled={isLoading}
                   className="px-8 py-3 font-semibold text-white transition bg-blue-600 rounded-full hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {isLoading ? "처리 중..." : resumeId ? "수정" : "등록"}
+                  {isLoading
+                    ? resumeId
+                      ? "수정 중..."
+                      : "등록 중..."
+                    : resumeId
+                    ? "수정"
+                    : "등록"}
                 </button>
               </div>
             </section>

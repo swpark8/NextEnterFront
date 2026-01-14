@@ -96,49 +96,36 @@ export interface ResumeListItem {
   createdAt: string;
 }
 
-export interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data?: T;
-}
-
-// ✅ 이력서 목록 조회 (userId를 헤더로 전송)
+// ✅ 이력서 목록 조회 (배열을 직접 받음)
 export const getResumeList = async (
   userId: number
-): Promise<ApiResponse<ResumeListItem[]>> => {
-  const response = await api.get<ApiResponse<ResumeListItem[]>>(
-    "/api/resume/list",
-    {
-      headers: {
-        userId: userId.toString(),
-      },
-    }
-  );
+): Promise<ResumeListItem[]> => {
+  const response = await api.get<ResumeListItem[]>("/api/resume/list", {
+    headers: {
+      userId: userId.toString(),
+    },
+  });
   return response.data;
 };
 
-// ✅ 이력서 상세 조회 (userId를 헤더로 전송)
+// ✅ 이력서 상세 조회 (ResumeResponse를 직접 받음)
 export const getResumeDetail = async (
   resumeId: number,
   userId: number
-): Promise<ApiResponse<ResumeResponse>> => {
-  const response = await api.get<ApiResponse<ResumeResponse>>(
-    `/api/resume/${resumeId}`,
-    {
-      headers: {
-        userId: userId.toString(),
-      },
-    }
-  );
+): Promise<ResumeResponse> => {
+  const response = await api.get<ResumeResponse>(`/api/resume/${resumeId}`, {
+    headers: {
+      userId: userId.toString(),
+    },
+  });
   return response.data;
 };
 
-// ✅ 이력서 생성 (userId를 헤더로 전송)
+// ✅ 이력서 생성 (백엔드 응답: {resumeId: number})
 export const createResume = async (
   request: CreateResumeRequest,
   userId: number
-): Promise<ApiResponse<{ resumeId: number }>> => {
-  // sections를 JSON 문자열로 변환
+): Promise<{ resumeId: number }> => {
   const payload = {
     title: request.title,
     jobCategory: request.jobCategory,
@@ -146,7 +133,7 @@ export const createResume = async (
     status: request.status || "DRAFT",
   };
 
-  const response = await api.post<ApiResponse<{ resumeId: number }>>(
+  const response = await api.post<{ resumeId: number }>(
     "/api/resume",
     payload,
     {
@@ -158,13 +145,12 @@ export const createResume = async (
   return response.data;
 };
 
-// ✅ 이력서 수정 (userId를 헤더로 전송)
+// ✅ 이력서 수정 (백엔드 응답: {resumeId: number})
 export const updateResume = async (
   resumeId: number,
   request: CreateResumeRequest,
   userId: number
-): Promise<ApiResponse<{ resumeId: number }>> => {
-  // sections를 JSON 문자열로 변환
+): Promise<{ resumeId: number }> => {
   const payload = {
     title: request.title,
     jobCategory: request.jobCategory,
@@ -172,7 +158,7 @@ export const updateResume = async (
     status: request.status || "DRAFT",
   };
 
-  const response = await api.put<ApiResponse<{ resumeId: number }>>(
+  const response = await api.put<{ resumeId: number }>(
     `/api/resume/${resumeId}`,
     payload,
     {
@@ -184,12 +170,12 @@ export const updateResume = async (
   return response.data;
 };
 
-// ✅ 이력서 삭제 (userId를 헤더로 전송)
+// ✅ 이력서 삭제 (백엔드 응답: {message: string})
 export const deleteResume = async (
   resumeId: number,
   userId: number
-): Promise<ApiResponse<{ message: string }>> => {
-  const response = await api.delete<ApiResponse<{ message: string }>>(
+): Promise<{ message: string }> => {
+  const response = await api.delete<{ message: string }>(
     `/api/resume/${resumeId}`,
     {
       headers: {
@@ -200,15 +186,15 @@ export const deleteResume = async (
   return response.data;
 };
 
-// ✅ 파일 업로드 (userId를 헤더로 전송)
+// ✅ 파일 업로드
 export const uploadResumeFile = async (
   file: File,
   userId: number
-): Promise<ApiResponse<ResumeResponse>> => {
+): Promise<ResumeResponse> => {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await api.post<ApiResponse<ResumeResponse>>(
+  const response = await api.post<ResumeResponse>(
     "/api/resume/upload",
     formData,
     {

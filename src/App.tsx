@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import HomePage from "./features/home/HomePage";
@@ -26,10 +26,11 @@ import AdvertisementManagementPage from "./pages/AdvertisementManagementPage";
 import AdvertisementCreatePage from "./pages/AdvertisementCreatePage";
 import AdvertisementDetailPage from "./pages/AdvertisementDetailPage";
 import JobPostingDetailPage from "./pages/JobPostingDetailPage";
+import OAuth2CallbackPage from "./pages/OAuth2CallbackPage";
 
 function App() {
   const [activeTab, setActiveTab] = useState("job");
-  const [previousTab, setPreviousTab] = useState("job"); // ✅ 이전 탭 추적
+  const [previousTab, setPreviousTab] = useState("job");
   const [accountType, setAccountType] = useState<"personal" | "business">(
     "personal"
   );
@@ -39,8 +40,17 @@ function App() {
   const [selectedJobId, setSelectedJobId] = useState<number>(1);
   const [targetMenu, setTargetMenu] = useState<string | undefined>(undefined);
 
+  // OAuth2 리다이렉트 감지
+  useEffect(() => {
+    const path = window.location.pathname;
+    const search = window.location.search;
+
+    if (path === "/oauth2/redirect" && search.includes("token=")) {
+      setActiveTab("oauth2-callback");
+    }
+  }, []);
+
   const handleTabChange = (tabId: string, menuId?: string) => {
-    // ✅ 현재 탭을 이전 탭으로 저장
     setPreviousTab(activeTab);
     setActiveTab(tabId);
     setTargetMenu(menuId);
@@ -124,6 +134,11 @@ function App() {
     setActiveTab("businessCreditCharge");
   };
 
+  // OAuth2 콜백 처리
+  if (activeTab === "oauth2-callback") {
+    return <OAuth2CallbackPage onLoginSuccess={() => handleTabChange("job")} />;
+  }
+
   if (activeTab === "login") {
     return (
       <LoginPage
@@ -202,7 +217,6 @@ function App() {
   }
 
   if (activeTab === "profile") {
-    // ✅ 이전 페이지로 돌아가도록 수정
     return <ProfilePage onBack={() => handleTabChange(previousTab)} />;
   }
 
