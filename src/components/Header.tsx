@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import HoverMenu from "../features/navigation-menu/components/HoverMenu";
 import DropdownMenu from "../features/navigation-menu/components/DropdownMenu";
 import { navigationMenuData } from "../features/navigation-menu/data/menuData";
@@ -7,7 +8,6 @@ import { logout as logoutApi } from "../api/auth";
 
 const MENU_CLOSE_DELAY = 150;
 
-// ⭐ 로그인이 필요한 메뉴 목록
 const LOGIN_REQUIRED_MENUS = [
   "resume",
   "matching",
@@ -16,40 +16,33 @@ const LOGIN_REQUIRED_MENUS = [
   "credit",
 ];
 
-interface HeaderProps {
-  onLogoClick?: () => void;
-  onLoginClick?: () => void;
-  onSignupClick?: () => void;
-  onBusinessServiceClick?: () => void;
-  activeTab: string;
-  onTabChange: (tabId: string, menuId?: string) => void;
-}
-
-const navItems = [
-  { id: "job", label: "채용정보" },
-  { id: "resume", label: "이력서" },
-  { id: "matching", label: "매칭분석" },
-  { id: "interview", label: "모의면접" },
-  { id: "offer", label: "받은 제안" },
-  { id: "mypage", label: "마이페이지" },
-  { id: "credit", label: "크레딧" },
-];
-
-export default function Header({
-  onLogoClick,
-  onLoginClick,
-  onSignupClick,
-  onBusinessServiceClick,
-  activeTab,
-  onTabChange,
-}: HeaderProps) {
+export default function Header() {
   const { user, isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 현재 활성 탭 결정
+  const getActiveTab = () => {
+    const path = location.pathname;
+    if (path.startsWith("/user/jobs")) return "job";
+    if (path.startsWith("/user/mypage")) return "mypage";
+    if (path.startsWith("/user/credit")) return "credit";
+    if (path.startsWith("/user/interview")) return "interview";
+    if (path.startsWith("/user/resume") || path.startsWith("/user/coverletter"))
+      return "resume";
+    if (path.startsWith("/user/matching")) return "matching";
+    if (path.startsWith("/user/offers")) return "offer";
+    return "job";
+  };
+
+  const activeTab = getActiveTab();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,28 +69,55 @@ export default function Header({
   const handleLogout = async () => {
     try {
       await logoutApi();
+    } catch (error) {
+      console.error("로그아웃 API 오류:", error);
+    } finally {
       logout();
       setIsUserMenuOpen(false);
-      onTabChange("job");
-    } catch (error) {
-      console.error("로그아웃 오류:", error);
-      logout();
-      onTabChange("job");
+      window.location.href = "/user";
     }
   };
 
-  // ⭐ 메뉴 클릭 핸들러 (로그인 체크 추가)
-  const handleMenuClick = (tabId: string) => {
-    // 로그인이 필요한 메뉴인지 확인
+  const handleMenuClick = (tabId: string, menuId?: string) => {
     if (LOGIN_REQUIRED_MENUS.includes(tabId) && !isAuthenticated) {
       alert("로그인이 필요한 기능입니다.");
-      onLoginClick?.();
+      navigate("/user/login");
       return;
     }
 
-    // 로그인되었거나 로그인 불필요한 메뉴
-    onTabChange(tabId);
+    // 메뉴별 라우팅
+    const routes: { [key: string]: string } = {
+      job: "/user",
+      "job-sub-1": "/user/jobs/all",
+      "job-sub-2": "/user/jobs/ai",
+      "job-sub-3": "/user/jobs/position",
+      "job-sub-4": "/user/jobs/location",
+      mypage: "/user/mypage",
+      credit: "/user/credit",
+      "credit-sub-2": "/user/credit/charge",
+      interview: "/user/interview",
+      resume: "/user/resume",
+      "resume-sub-2": "/user/coverletter",
+      matching: "/user/matching",
+      offer: "/user/offers",
+      "offer-sub-2": "/user/offers/interview",
+    };
+
+    const route = menuId ? routes[menuId] : routes[tabId];
+    if (route) {
+      navigate(route);
+    }
   };
+
+  const navItems = [
+    { id: "job", label: "채용정보" },
+    { id: "resume", label: "이력서" },
+    { id: "matching", label: "매칭분석" },
+    { id: "interview", label: "모의면접" },
+    { id: "offer", label: "받은 제안" },
+    { id: "mypage", label: "마이페이지" },
+    { id: "credit", label: "크레딧" },
+  ];
 
   return (
     <>
@@ -121,7 +141,7 @@ export default function Header({
                 </svg>
               </button>
               <div
-                onClick={onLogoClick}
+                onClick={() => navigate("/user")}
                 className="transition cursor-pointer hover:opacity-80"
               >
                 <span className="text-2xl font-bold text-blue-600">
@@ -198,7 +218,7 @@ export default function Header({
                       <button
                         onClick={() => {
                           setIsUserMenuOpen(false);
-                          onTabChange("profile"); // 🆕 내 정보 페이지로 이동
+                          navigate("/user/profile");
                         }}
                         className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 transition"
                       >
@@ -207,7 +227,7 @@ export default function Header({
                       <button
                         onClick={() => {
                           setIsUserMenuOpen(false);
-                          onTabChange("mypage");
+                          navigate("/user/mypage");
                         }}
                         className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 transition"
                       >
@@ -225,13 +245,13 @@ export default function Header({
               ) : (
                 <>
                   <button
-                    onClick={onLoginClick}
+                    onClick={() => navigate("/user/login")}
                     className="px-4 py-2 text-gray-700 transition hover:text-blue-600"
                   >
                     로그인
                   </button>
                   <button
-                    onClick={onSignupClick}
+                    onClick={() => navigate("/user/signup")}
                     className="px-4 py-2 text-gray-700 transition hover:text-blue-600"
                   >
                     회원가입
@@ -239,7 +259,7 @@ export default function Header({
                 </>
               )}
               <button
-                onClick={onBusinessServiceClick}
+                onClick={() => navigate("/company")}
                 className="px-4 py-2 transition bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
               >
                 기업 서비스
@@ -301,7 +321,9 @@ export default function Header({
                 {hoveredTab === item.id && (
                   <HoverMenu
                     tabId={item.id}
-                    onSubMenuClick={(tabId, subId) => onTabChange(tabId, subId)}
+                    onSubMenuClick={(tabId, subId) =>
+                      handleMenuClick(tabId, subId)
+                    }
                   />
                 )}
               </div>
@@ -314,21 +336,8 @@ export default function Header({
         <DropdownMenu
           isOpen={isDropdownOpen}
           onMenuClick={(menuId) => {
-            // 메뉴닫기
             setIsDropdownOpen(false);
-            let targetTab = "home";
-
-            const sections = Object.values(navigationMenuData) as any[];
-            for (const section of sections) {
-              if (
-                section.id === menuId ||
-                section.items?.some((item: any) => item.id === menuId)
-              ) {
-                targetTab = section.id;
-                break;
-              }
-            }
-            onTabChange(targetTab, menuId);
+            handleMenuClick(menuId);
           }}
         />
       </div>

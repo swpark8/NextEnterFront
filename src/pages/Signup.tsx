@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Footer from "../components/Footer";
 import { signup } from "../api/auth";
+import { registerCompany } from "../api/company"; // ✅ 추가
 
 interface SignupPageProps {
   onLogoClick?: () => void;
@@ -33,7 +34,6 @@ export default function SignupPage({
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
 
-  // ✅ 로딩 및 API 에러 상태 추가
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState("");
 
@@ -71,10 +71,6 @@ export default function SignupPage({
       case "companyName":
         if (accountType === "business" && !value.trim())
           error = "기업명을 입력해주세요";
-        break;
-      case "industry":
-        if (accountType === "business" && !value.trim())
-          error = "업종을 입력해주세요";
         break;
     }
     return error;
@@ -114,7 +110,6 @@ export default function SignupPage({
       if (!businessNumber.trim())
         newErrors.businessNumber = "사업자등록번호를 입력해주세요";
       if (!companyName.trim()) newErrors.companyName = "기업명을 입력해주세요";
-      if (!industry.trim()) newErrors.industry = "업종을 입력해주세요";
     }
 
     setErrors(newErrors);
@@ -127,11 +122,25 @@ export default function SignupPage({
       ...(accountType === "business" && {
         businessNumber: true,
         companyName: true,
-        industry: true,
       }),
     });
 
     return Object.keys(newErrors).length === 0;
+  };
+
+  // ✅ 직원수 문자열을 숫자로 변환하는 함수
+  const parseEmployeeCount = (value: string): number | undefined => {
+    if (!value) return undefined;
+
+    const rangeMap: { [key: string]: number } = {
+      "1-10": 10,
+      "11-50": 50,
+      "51-100": 100,
+      "101-500": 500,
+      "500+": 1000,
+    };
+
+    return rangeMap[value];
   };
 
   // ✅ 회원가입 API 호출
@@ -140,40 +149,59 @@ export default function SignupPage({
 
     if (!validateForm()) return;
 
-    // 기업회원은 아직 미구현
-    if (accountType === "business") {
-      setApiError("기업회원 가입은 준비 중입니다.");
-      return;
-    }
-
     setIsLoading(true);
     setApiError("");
 
     try {
-      // ✅ 성별 값 변환 (male -> MALE)
-      const genderValue = gender ? gender.toUpperCase() : undefined;
+      // ✅ 개인회원 가입
+      if (accountType === "personal") {
+        const genderValue = gender ? gender.toUpperCase() : undefined;
 
-      const signupData = {
-        email: email.trim(),
-        password: password,
-        name: name.trim(),
-        phone: phone.trim(),
-        age: age ? parseInt(age) : undefined,
-        gender: genderValue,
-      };
+        const signupData = {
+          email: email.trim(),
+          password: password,
+          name: name.trim(),
+          phone: phone.trim(),
+          age: age ? parseInt(age) : undefined,
+          gender: genderValue,
+        };
 
-      const response = await signup(signupData);
+        const response = await signup(signupData);
 
-      if (response.success) {
-        // 회원가입 성공
-        alert("회원가입이 완료되었습니다! 로그인 페이지로 이동합니다.");
-
-        // ✅ 로그인 페이지로 이동 (props 사용)
-        if (onLoginClick) {
-          onLoginClick();
+        if (response.success) {
+          alert("회원가입이 완료되었습니다! 로그인 페이지로 이동합니다.");
+          if (onLoginClick) {
+            onLoginClick();
+          }
+        } else {
+          setApiError(response.message || "회원가입에 실패했습니다.");
         }
-      } else {
-        setApiError(response.message || "회원가입에 실패했습니다.");
+      }
+      // ✅ 기업회원 가입
+      else {
+        const companyData = {
+          email: email.trim(),
+          password: password,
+          name: name.trim(),
+          phone: phone.trim() || undefined,
+          businessNumber: businessNumber.trim(),
+          companyName: companyName.trim(),
+          industry: industry.trim() || undefined,
+          employeeCount: parseEmployeeCount(employeeCount),
+          website: companyUrl.trim() || undefined,
+          description: companyDescription.trim() || undefined,
+        };
+
+        const response = await registerCompany(companyData);
+
+        if (response.success) {
+          alert("기업 회원가입이 완료되었습니다! 로그인 페이지로 이동합니다.");
+          if (onLoginClick) {
+            onLoginClick();
+          }
+        } else {
+          setApiError(response.message || "기업 회원가입에 실패했습니다.");
+        }
       }
     } catch (err: any) {
       console.error("회원가입 오류:", err);
@@ -236,7 +264,7 @@ export default function SignupPage({
             </button>
           </div>
 
-          {/* ✅ API 에러 메시지 표시 */}
+          {/* API 에러 메시지 표시 */}
           {apiError && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded">
               <p className="text-red-600 text-sm">{apiError}</p>
@@ -313,7 +341,9 @@ export default function SignupPage({
             <div>
               <input
                 type="text"
-                placeholder="이름"
+                placeholder={
+                  accountType === "business" ? "담당자 이름" : "이름"
+                }
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 onBlur={(e) => handleBlur("name", e.target.value)}
@@ -412,20 +442,12 @@ export default function SignupPage({
                 <div>
                   <input
                     type="text"
-                    placeholder="업종 (예: IT/소프트웨어)"
+                    placeholder="업종 (선택사항, 예: IT/소프트웨어)"
                     value={industry}
                     onChange={(e) => setIndustry(e.target.value)}
-                    onBlur={(e) => handleBlur("industry", e.target.value)}
                     disabled={isLoading}
-                    className={`w-full px-4 py-3 border rounded focus:outline-none focus:border-blue-500 text-sm disabled:bg-gray-100 ${
-                      errors.industry ? "border-red-500" : "border-gray-300"
-                    }`}
+                    className="w-full px-4 py-3 border border-gray-300 rounded focus:outline-none focus:border-blue-500 text-sm disabled:bg-gray-100"
                   />
-                  {errors.industry && touched.industry && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors.industry}
-                    </p>
-                  )}
                 </div>
                 <div>
                   <select

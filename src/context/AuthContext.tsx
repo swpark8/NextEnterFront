@@ -10,6 +10,9 @@ interface User {
   userId: number;
   email: string;
   name: string;
+  userType?: "personal" | "company"; // ✅ 추가
+  companyName?: string; // ✅ 기업 사용자용
+  businessNumber?: string; // ✅ 기업 사용자용
 }
 
 interface AuthContextType {
@@ -50,8 +53,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setUser(parsedUser);
       } catch (error) {
         console.error("Failed to parse user data:", error);
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        localStorage.clear();
       }
     }
   }, []);
@@ -66,8 +68,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const logout = () => {
     setUser(null);
     setToken(null);
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    localStorage.clear();
+    sessionStorage.clear();
+    console.log("로그아웃 완료: 모든 저장된 데이터 삭제됨");
   };
 
   const isAuthenticated = !!user && !!token;

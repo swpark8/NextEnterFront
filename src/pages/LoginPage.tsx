@@ -1,26 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Footer from "../components/Footer";
 import { login as loginApi } from "../api/auth";
+import { loginCompany } from "../api/company";
 import { useAuth } from "../context/AuthContext";
 
 interface LoginPageProps {
-  onLogoClick?: () => void;
-  onSignupClick?: () => void;
-  onAccountTypeChange?: (type: "personal" | "business") => void;
-  onLoginSuccess?: () => void;
+  initialAccountType?: "personal" | "business";
 }
 
 export default function LoginPage({
-  onSignupClick,
-  onAccountTypeChange,
-  onLoginSuccess,
+  initialAccountType = "personal",
 }: LoginPageProps) {
   const { login: authLogin } = useAuth();
+  const navigate = useNavigate();
 
-  // 개인회원/기업회원 탭 상태 관리
   const [accountType, setAccountType] = useState<"personal" | "business">(
-    "personal"
+    initialAccountType
   );
+
+  useEffect(() => {
+    setAccountType(initialAccountType);
+  }, [initialAccountType]);
 
   // 입력 필드 상태 관리
   const [email, setEmail] = useState("");
@@ -34,33 +35,72 @@ export default function LoginPage({
     e.preventDefault();
     setError("");
 
-    // 개인회원 로그인만 처리
-    if (accountType === "business") {
-      setError("기업회원 로그인은 준비 중입니다.");
-      return;
-    }
-
     // 유효성 검사
     if (!email || !password) {
       setError("이메일과 비밀번호를 입력해주세요.");
       return;
     }
 
+    // 기업회원 로그인 시 사업자번호 필수
+    if (accountType === "business" && !businessNumber) {
+      setError("사업자번호를 입력해주세요.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const response = await loginApi({ email, password });
+      // 개인회원 로그인
+      if (accountType === "personal") {
+        const response = await loginApi({ email, password });
 
-      if (response.success && response.data) {
-        // 로그인 성공
-        const { userId, token, email: userEmail, name } = response.data;
+        if (response.success && response.data) {
+          const { userId, token, email: userEmail, name } = response.data;
 
-        authLogin({ userId, email: userEmail, name }, token);
+          authLogin(
+            { userId, email: userEmail, name, userType: "personal" },
+            token
+          );
 
-        // 메인 페이지로 이동
-        onLoginSuccess?.();
-      } else {
-        setError(response.message || "로그인에 실패했습니다.");
+          navigate("/user", { replace: true });
+        } else {
+          setError(response.message || "로그인에 실패했습니다.");
+        }
+      }
+      // 기업회원 로그인
+      else {
+        const response = await loginCompany({
+          email,
+          password,
+          businessNumber,
+        });
+
+        if (response.success && response.data) {
+          const {
+            companyId,
+            token,
+            email: userEmail,
+            name,
+            companyName,
+            businessNumber: bn,
+          } = response.data;
+
+          authLogin(
+            {
+              userId: companyId,
+              email: userEmail,
+              name,
+              userType: "company",
+              companyName,
+              businessNumber: bn,
+            },
+            token
+          );
+
+          navigate("/company", { replace: true });
+        } else {
+          setError(response.message || "로그인에 실패했습니다.");
+        }
       }
     } catch (err: any) {
       console.error("로그인 오류:", err);
@@ -70,7 +110,7 @@ export default function LoginPage({
     }
   };
 
-  // 소셜 로그인 핸들러
+  // 소셜 로그인 핸들러 (개인회원 전용)
   const handleSocialLogin = (provider: "naver" | "kakao" | "google") => {
     const backendUrl = "http://localhost:8080";
     window.location.href = `${backendUrl}/oauth2/authorization/${provider}`;
@@ -108,8 +148,8 @@ export default function LoginPage({
               <button
                 onClick={() => {
                   setAccountType("personal");
-                  onAccountTypeChange?.("personal");
                   setError("");
+                  navigate("/user/login");
                 }}
                 className={`flex-1 py-3 text-center font-medium transition-all ${
                   accountType === "personal"
@@ -122,8 +162,8 @@ export default function LoginPage({
               <button
                 onClick={() => {
                   setAccountType("business");
-                  onAccountTypeChange?.("business");
                   setError("");
+                  navigate("/company/login");
                 }}
                 className={`flex-1 py-3 text-center font-medium transition-all ${
                   accountType === "business"
@@ -248,71 +288,73 @@ export default function LoginPage({
               </button>
               <span className="text-gray-300">|</span>
               <button
-                onClick={onSignupClick}
+                onClick={() =>
+                  navigate(
+                    accountType === "personal"
+                      ? "/user/signup"
+                      : "/company/signup"
+                  )
+                }
                 className="text-blue-600 hover:text-blue-700 transition"
               >
                 회원가입
               </button>
             </div>
 
-            {/* ✅ 소셜 로그인 섹션 */}
-            <div className="mt-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
+            {/* ✅ 소셜 로그인 섹션 - 개인회원일 때만 표시 */}
+            {accountType === "personal" && (
+              <div className="mt-6">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-gray-50 text-gray-500">
+                      간편로그인
+                    </span>
+                  </div>
                 </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-gray-50 text-gray-500">
-                    간편로그인
-                  </span>
-                </div>
-              </div>
 
-              {/* 소셜 로그인 버튼들 */}
-              <div className="mt-4 flex justify-center gap-3">
-                {/* 네이버 로그인 */}
-                <button
-                  onClick={() => handleSocialLogin("naver")}
-                  className="w-12 h-12 rounded-full bg-[#03C75A] flex items-center justify-center hover:opacity-90 transition-opacity shadow-md"
-                  title="네이버 로그인"
-                >
-                  <span className="text-white text-2xl font-bold">N</span>
-                </button>
-
-                {/* 카카오 로그인 */}
-                <button
-                  onClick={() => handleSocialLogin("kakao")}
-                  className="w-12 h-12 rounded-full bg-[#FEE500] flex items-center justify-center hover:opacity-90 transition-opacity shadow-md"
-                  title="카카오 로그인"
-                >
-                  <span className="text-[#000000] text-2xl font-bold">K</span>
-                </button>
-
-                {/* 구글 로그인 (선택사항) */}
-                <button
-                  onClick={() => alert("구글 로그인은 준비 중입니다.")}
-                  className="w-12 h-12 rounded-full bg-white border-2 border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors shadow-md"
-                  title="구글 로그인"
-                >
-                  <span className="text-gray-700 text-2xl font-bold">G</span>
-                </button>
-
-                {/* 애플 로그인 (선택사항) */}
-                <button
-                  onClick={() => alert("애플 로그인은 준비 중입니다.")}
-                  className="w-12 h-12 rounded-full bg-black flex items-center justify-center hover:opacity-90 transition-opacity shadow-md"
-                  title="애플 로그인"
-                >
-                  <svg
-                    className="w-6 h-6 text-white"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
+                {/* 소셜 로그인 버튼들 */}
+                <div className="flex justify-center mt-3 space-x-4">
+                  <button
+                    onClick={() => handleSocialLogin("naver")}
+                    className="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden hover:opacity-80 transition-opacity shadow-md"
+                    title="네이버 로그인"
                   >
-                    <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
-                  </svg>
-                </button>
+                    <img
+                      src="/images/naver-icon.png"
+                      alt="네이버 로그인"
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+
+                  <button
+                    onClick={() => handleSocialLogin("kakao")}
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-[#FEE500] hover:opacity-80 transition-opacity shadow-md"
+                    title="카카오 로그인"
+                  >
+                    <img
+                      src="/images/kakao-icon.png"
+                      alt="카카오 로그인"
+                      className="w-12 h-12 object-contain"
+                    />
+                  </button>
+
+                  <button
+                    onClick={() => handleSocialLogin("google")}
+                    className="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden hover:opacity-80 transition-opacity shadow-md"
+                    title="구글 로그인"
+                  >
+                    <img
+                      src="/images/google-icon.png"
+                      alt="구글 로그인"
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

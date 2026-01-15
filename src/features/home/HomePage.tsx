@@ -14,7 +14,7 @@ interface HomePageProps {
 
 export default function HomePage({ onLoginClick }: HomePageProps) {
   const { isAuthenticated } = useAuth();
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // 로그인 상태
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState("서울 전체");
   const [selectedShifts, setSelectedShifts] = useState<string[]>([]);
 
@@ -24,6 +24,12 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
 
   const handleLogin = () => {
     onLoginClick?.();
+  };
+
+  // ✅ 소셜 로그인 핸들러 추가
+  const handleSocialLogin = (provider: "naver" | "kakao" | "google") => {
+    const backendUrl = "http://localhost:8080";
+    window.location.href = `${backendUrl}/oauth2/authorization/${provider}`;
   };
 
   const handleShiftToggle = (shift: string) => {
@@ -223,7 +229,6 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
                         onClick={() => handleJobClick(category.id)}
                         className="flex flex-col items-center p-4 space-y-2 transition bg-white border-2 border-blue-500 rounded-xl hover:shadow-lg"
                       >
-                        {/* ✅ 모든 아이콘을 같은 프레임에 넣어서 크기 통일 */}
                         <div className={ICON_FRAME_CLASS}>
                           <img
                             src={category.icon}
@@ -316,17 +321,47 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
                   로그인
                 </button>
                 <div className="mt-4 text-sm text-gray-500">간편로그인</div>
+
+                {/* 소셜 로그인 버튼들 - 이미지 사용 */}
                 <div className="flex justify-center mt-3 space-x-4">
-                  <button className="flex items-center justify-center w-10 h-10 font-bold text-white bg-green-500 rounded-full">
-                    N
+                  {/* 네이버 */}
+                  <button
+                    onClick={() => handleSocialLogin("naver")}
+                    className="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden hover:opacity-80 transition-opacity shadow-md"
+                    title="네이버 로그인"
+                  >
+                    <img
+                      src="/images/naver-icon.png"
+                      alt="네이버 로그인"
+                      className="w-full h-full object-cover"
+                    />
                   </button>
-                  <button className="flex items-center justify-center w-10 h-10 font-bold text-black bg-yellow-400 rounded-full">
-                    K
+
+                  {/* 카카오 로그인 - 노란색 배경 */}
+                  <button
+                    onClick={() => handleSocialLogin("kakao")}
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-[#FEE500] hover:opacity-80 transition-opacity shadow-md"
+                    title="카카오 로그인"
+                  >
+                    <img
+                      src="/images/kakao-icon.png"
+                      alt="카카오 로그인"
+                      className="w-12 h-12 object-contain"
+                    />
                   </button>
-                  <button className="flex items-center justify-center w-10 h-10 bg-white border border-gray-300 rounded-full">
-                    G
+
+                  {/* 구글 */}
+                  <button
+                    onClick={() => handleSocialLogin("google")}
+                    className="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden hover:opacity-80 transition-opacity shadow-md"
+                    title="구글 로그인"
+                  >
+                    <img
+                      src="/images/google-icon.png"
+                      alt="구글 로그인"
+                      className="w-full h-full object-cover"
+                    />
                   </button>
-                  <button className="flex items-center justify-center w-10 h-10 text-white bg-black rounded-full"></button>
                 </div>
               </div>
             )}
