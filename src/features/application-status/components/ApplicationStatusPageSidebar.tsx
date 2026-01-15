@@ -1,13 +1,13 @@
 import LeftSidebar from "../../../components/LeftSidebar";
 
-interface CreditSidebarProps {
+interface ApplicationStautsSidebarProps {
   activeMenu: string;
   onMenuClick: (menuId: string) => void;
 }
 
-export default function CreditSidebar({
+export default function ApplicationStautsSidebar({
   activeMenu,
   onMenuClick,
-}: CreditSidebarProps) {
+}: ApplicationStautsSidebarProps) {
   return <LeftSidebar activeMenu={activeMenu} onMenuClick={onMenuClick} />;
 }

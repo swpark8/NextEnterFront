@@ -3,6 +3,7 @@ import { useAuth } from "../../context/AuthContext";
 import { getResumeList, deleteResume, ResumeListItem } from "../../api/resume";
 import ResumeSidebar from "./components/ResumeSidebar";
 import ResumeFormPage from "./ResumeFormPage";
+import { usePageNavigation } from "../../hooks/usePageNavigation";
 
 interface ResumePageProps {
   initialMenu?: string;
@@ -18,6 +19,8 @@ export default function ResumePage({
   const [isCreating, setIsCreating] = useState(false);
   const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 삭제 관련 상태
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
 
@@ -171,7 +174,7 @@ export default function ResumePage({
             <div className="flex gap-3">
               <button
                 onClick={handleCancelDelete}
-                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold"
+                className="flex-1 px-6 py-3 font-semibold text-gray-700 transition bg-gray-200 rounded-lg hover:bg-gray-300"
               >
                 취소
               </button>

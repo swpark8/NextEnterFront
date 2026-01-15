@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
-import Footer from "../../components/Footer";
 
 type JobCategory = {
   id: number;
@@ -180,29 +179,29 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
                 <div className="flex gap-6">
                   {/* 왼쪽 세로 배너 - 광고용 */}
                   <div className="w-44">
-                    <div className="h-full flex flex-col justify-between bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 rounded-xl p-4 text-white">
+                    <div className="flex flex-col justify-between h-full p-4 text-white bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 rounded-xl">
                       <div>
-                        <div className="text-2xl mb-2">🎯</div>
-                        <h3 className="text-lg font-bold mb-1">특별 채용</h3>
-                        <h3 className="text-base font-bold mb-3">공고</h3>
+                        <div className="mb-2 text-2xl">🎯</div>
+                        <h3 className="mb-1 text-lg font-bold">특별 채용</h3>
+                        <h3 className="mb-3 text-base font-bold">공고</h3>
                       </div>
 
                       <div className="space-y-2">
-                        <div className="bg-white/20 backdrop-blur-sm rounded-lg p-2">
+                        <div className="p-2 rounded-lg bg-white/20 backdrop-blur-sm">
                           <p className="text-xs font-semibold mb-0.5">
                             프리미엄 기업
                           </p>
                           <p className="text-[10px]">지금 바로 지원하세요</p>
                         </div>
 
-                        <div className="bg-white/20 backdrop-blur-sm rounded-lg p-2">
+                        <div className="p-2 rounded-lg bg-white/20 backdrop-blur-sm">
                           <p className="text-xs font-semibold mb-0.5">
                             신입 대환영
                           </p>
                           <p className="text-[10px]">성장 기회를 잡으세요</p>
                         </div>
 
-                        <div className="bg-white/20 backdrop-blur-sm rounded-lg p-2">
+                        <div className="p-2 rounded-lg bg-white/20 backdrop-blur-sm">
                           <p className="text-xs font-semibold mb-0.5">
                             연봉 UP
                           </p>
@@ -210,14 +209,14 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
                         </div>
                       </div>
 
-                      <button className="w-full mt-3 px-3 py-2 bg-white text-purple-600 text-sm font-bold rounded-lg hover:bg-gray-100 transition">
+                      <button className="w-full px-3 py-2 mt-3 text-sm font-bold text-purple-600 transition bg-white rounded-lg hover:bg-gray-100">
                         자세히 보기 →
                       </button>
                     </div>
                   </div>
 
                   {/* 오른쪽 직무 카드들 */}
-                  <div className="flex-1 grid grid-cols-3 gap-4">
+                  <div className="grid flex-1 grid-cols-3 gap-4">
                     {jobCategories.map((category) => (
                       <button
                         key={category.id}
@@ -373,7 +372,6 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
           </aside>
         </div>
       </main>
-      <Footer />
     </>
   );
 }

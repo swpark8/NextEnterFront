@@ -1,37 +1,53 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { getUserProfile, UserProfile } from "../../api/user";
-import Footer from "../../components/Footer";
 
 interface MyPageProps {
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, subMenu?: string) => void;
   onEditProfile?: () => void;
+  initialMenu?: string;
 }
 
-export default function MyPage({ onNavigate, onEditProfile }: MyPageProps) {
+export default function MyPage({ onNavigate, onEditProfile, initialMenu }: MyPageProps) {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [resumeCount] = useState(2);
+  const [activeMenu, setActiveMenu] = useState("home");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // 프로필 정보 불러오기
   useEffect(() => {
+    if (initialMenu) {
+      setActiveMenu(initialMenu);
+    }
+  }, [initialMenu]);
+
+  // ✅ 프로필 정보 불러오기 (로그인한 경우에만)
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!user?.userId) return;
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await getUserProfile(user.userId);
+        if (response.success && response.data) {
+          setProfile(response.data);
+        }
+      } catch (err: any) {
+        console.error("프로필 로드 오류:", err);
+        setError("프로필을 불러오는데 실패했습니다.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (user?.userId) {
       loadProfile();
     }
   }, [user?.userId]);
-
-  const loadProfile = async () => {
-    if (!user?.userId) return;
-
-    try {
-      const response = await getUserProfile(user.userId);
-      if (response.success && response.data) {
-        setProfile(response.data);
-      }
-    } catch (err) {
-      console.error("프로필 로드 오류:", err);
-    }
-  };
 
   const handleClick = (item: string) => {
     console.log(`${item} 클릭됨`);
@@ -49,6 +65,12 @@ export default function MyPage({ onNavigate, onEditProfile }: MyPageProps) {
       case "AI 맞춤 공고":
         onNavigate("ai-recommend");
         break;
+      case "스크랩 현황":
+        console.log("스크랩 현황 페이지 이동");
+        break;
+      case "관심 기업":
+        console.log("관심 기업 페이지 이동");
+        break;
       default:
         break;
     }
@@ -60,6 +82,36 @@ export default function MyPage({ onNavigate, onEditProfile }: MyPageProps) {
     { id: 3, title: "이력서\n열람", icon: "📄" },
     { id: 4, title: "AI\n맞춤 공고", icon: "🔔" },
   ];
+
+  // ✅ 로딩 중 표시
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="mb-4 text-4xl">⏳</div>
+          <p className="text-gray-600">로딩 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ 에러 표시
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="mb-4 text-4xl">⚠️</div>
+          <p className="text-red-600">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 mt-4 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+          >
+            새로고침
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -165,6 +217,7 @@ export default function MyPage({ onNavigate, onEditProfile }: MyPageProps) {
                     내 이력서 ({resumeCount}개) &gt;
                   </h3>
                 </div>
+              </div>
 
                 <div className="space-y-4">
                   {/* ✅ 이력서 목록 카드 (1개만 유지) */}
