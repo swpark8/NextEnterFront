@@ -1,441 +1,291 @@
-import { useState, useEffect } from "react";
-import Header from "./components/Header";
-import Footer from "./components/Footer";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
+import UserLayout from "./layouts/UserLayout";
+import CompanyLayout from "./layouts/CompanyLayout";
+
+// 개인회원 페이지들
 import HomePage from "./features/home/HomePage";
+import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/Signup";
 import MyPage from "./features/mypage/MyPage";
 import CreditPage from "./features/credit/CreditPage";
 import CreditChargePage from "./features/credit-charge/CreditChargePage";
 import InterviewPage from "./features/interview/InterviewPage";
 import ResumePage from "./features/resume/ResumePage";
+import CoverLetterPage from "./features/coverletter/CoverLetterPage";
 import AIRecommendationPage from "./features/ai-recommendation/AIRecommendationPage";
 import MatchingPage from "./features/matching/MatchingPage";
 import OfferPage from "./features/offer/OfferPage";
-import LoginPage from "./pages/LoginPage";
-import SignupPage from "./pages/Signup";
-import BusinessServicePage from "./pages/BusinessServicePage";
-import JobManagementPage from "./pages/JobManagementPage";
-import JobPostingCreatePage from "./pages/JobPostingCreatePage";
-import ApplicantManagementPage from "./pages/ApplicantManagementPage";
-import ApplicantDetailPage from "./pages/ApplicantDetailPage";
-import ApplicantCompatibilityPage from "./pages/ApplicantCompatibilityPage";
-import CreditManagementPage from "./pages/CreditManagementPage";
-import TalentSearchPage from "./pages/TalentSearchPage";
-import BusinessCreditPage from "./pages/BusinessCreditPage";
-import CoverLetterPage from "./features/coverletter/CoverLetterPage";
+import InterviewOfferPage from "./features/offer/InterViewOfferPage";
 import ProfilePage from "./pages/ProfilePage";
-import AdvertisementManagementPage from "./pages/AdvertisementManagementPage";
-import AdvertisementCreatePage from "./pages/AdvertisementCreatePage";
-import AdvertisementDetailPage from "./pages/AdvertisementDetailPage";
-import JobPostingDetailPage from "./pages/JobPostingDetailPage";
-import OAuth2CallbackPage from "./pages/OAuth2CallbackPage";
-import InterviewResultPage from "./pages/InterviewResultPage";
+import ApplicationStatusPage from "./features/application-status/ApplicationStatusPage";
 import AllJobsPage from "./features/all-jobs/AllJobsPage";
 import AIRecommendedJobsPage from "./features/all-jobs/AIRecommendedJobsPage";
 import PositionJobsPage from "./features/all-jobs/PositionJobsPage";
 import LocationJobsPage from "./features/all-jobs/LocationJobsPage";
-import InterviewOfferPage from "./features/offer/InterViewOfferPage";
-import ApplicationStatusPage from "./features/application-status/ApplicationStatusPage";
+import OAuth2CallbackPage from "./pages/OAuth2CallbackPage";
+
+// 기업회원 페이지들
+import BusinessServicePage from "./pages/BusinessServicePage";
+import JobManagementPage from "./pages/JobManagementPage";
+import JobPostingCreatePage from "./pages/JobPostingCreatePage";
+import JobPostingDetailPage from "./pages/JobPostingDetailPage";
+import ApplicantManagementPage from "./pages/ApplicantManagementPage";
+import ApplicantDetailPage from "./pages/ApplicantDetailPage";
+import ApplicantCompatibilityPage from "./pages/ApplicantCompatibilityPage";
+import TalentSearchPage from "./pages/TalentSearchPage";
+import BusinessCreditPage from "./pages/BusinessCreditPage";
+import AdvertisementManagementPage from "./pages/AdvertisementManagementPage";
+import AdvertisementCreatePage from "./pages/AdvertisementCreatePage";
+import AdvertisementDetailPage from "./pages/AdvertisementDetailPage";
 
 function App() {
-  const [activeTab, setActiveTab] = useState("job");
-  const [previousTab, setPreviousTab] = useState("job");
-  const [accountType, setAccountType] = useState<"personal" | "business">(
-    "personal"
-  );
-  const [selectedApplicantId, setSelectedApplicantId] = useState<number>(1);
-  const [selectedAdvertisementId, setSelectedAdvertisementId] =
-    useState<number>(1);
-  const [selectedJobId, setSelectedJobId] = useState<number>(1);
-  const [targetMenu, setTargetMenu] = useState<string | undefined>(undefined);
-
-  // OAuth2 리다이렉트 감지
-  useEffect(() => {
-    const path = window.location.pathname;
-    const search = window.location.search;
-
-    if (path === "/oauth2/redirect" && search.includes("token=")) {
-      setActiveTab("oauth2-callback");
-    }
-  }, []);
-
-  const handleTabChange = (tabId: string, menuId?: string) => {
-    setPreviousTab(activeTab);
-    setActiveTab(tabId);
-    setTargetMenu(menuId);
-    console.log(`${tabId} 탭으로 이동, 이전 탭: ${activeTab}, 메뉴: ${menuId}`);
-  };
-
-  const handleLogoClick = () => handleTabChange("job");
-  const handleLoginClick = () => {
-    setActiveTab("login");
-    setAccountType("personal");
-  };
-  const handleSignupClick = () => setActiveTab("signup");
-
-  // 기업 서비스 관련 핸들러들
-  const handleBusinessServiceClick = () => setActiveTab("businessService");
-  const handleJobManagementClick = () => setActiveTab("jobManagement");
-  const handleJobPostingCreateClick = () => setActiveTab("jobPostingCreate");
-  const handleJobDetailClick = (jobId: number) => {
-    setSelectedJobId(jobId);
-    setActiveTab("jobDetail");
-  };
-  const handleApplicantManagementClick = () =>
-    setActiveTab("applicantManagement");
-  const handleApplicantDetailClick = (applicantId: number) => {
-    setSelectedApplicantId(applicantId);
-    setActiveTab("applicantDetail");
-  };
-  const handleApplicantCompatibilityClick = (applicantId: number) => {
-    setSelectedApplicantId(applicantId);
-    setActiveTab("applicantCompatibility");
-  };
-
-  const handleCreditManagementClick = () => {
-    setActiveTab("creditManagement");
-  };
-
-  const handleTalentSearchClick = () => {
-    setActiveTab("applicantManagement");
-  };
-
-  const handleBusinessCreditClick = () => {
-    setActiveTab("businessCredit");
-  };
-
-  const handleAdvertisementManagementClick = () => {
-    setActiveTab("advertisementManagement");
-  };
-
-  const handleAdvertisementCreateClick = () => {
-    setActiveTab("advertisementCreate");
-  };
-
-  const handleAdvertisementDetailClick = (id: number) => {
-    setSelectedAdvertisementId(id);
-    setActiveTab("advertisementDetail");
-  };
-
-  const handleCreditChargeClick = () => handleTabChange("credit", "credit-sub-2");
-
-  const handleBusinessCreditChargeClick = () => {
-    setActiveTab("businessCreditCharge");
-  };
-
-  // OAuth2 콜백 처리
-  if (activeTab === "oauth2-callback") {
-    return <OAuth2CallbackPage onLoginSuccess={() => handleTabChange("job")} />;
-  }
-
-  if (activeTab === "login") {
-    return (
-      <LoginPage
-        onLogoClick={handleLogoClick}
-        onSignupClick={handleSignupClick}
-        onAccountTypeChange={setAccountType}
-        onLoginSuccess={() => handleTabChange("job")}
-      />
-    );
-  }
-  if (activeTab === "signup")
-    return (
-      <SignupPage
-        onLogoClick={handleLogoClick}
-        onLoginClick={handleLoginClick}
-        initialAccountType={accountType}
-      />
-    );
-
-  // 기업 페이지 렌더링175
-
-  if (activeTab === "businessService")
-    return (
-      <BusinessServicePage
-        onJobManagementClick={handleJobManagementClick}
-        onLogoClick={handleBusinessServiceClick}
-        onApplicantManagementClick={handleTalentSearchClick}
-        onCreditManagementClick={handleBusinessCreditClick}
-        onAdvertisementManagementClick={handleAdvertisementManagementClick}
-        onJobDetailClick={handleJobDetailClick}
-      />
-    );
-  if (activeTab === "jobManagement")
-    return (
-      <JobManagementPage
-        onNewJobClick={handleJobPostingCreateClick}
-        onLogoClick={handleBusinessServiceClick}
-        onJobDetailClick={handleJobDetailClick}
-      />
-    );
-  if (activeTab === "jobPostingCreate")
-    return (
-      <JobPostingCreatePage
-        onBackClick={handleJobManagementClick}
-        onLogoClick={handleBusinessServiceClick}
-      />
-    );
-  if (activeTab === "talentSearch")
-    return <TalentSearchPage onLogoClick={handleBusinessServiceClick} />;
-  if (activeTab === "businessCredit")
-    return (
-      <BusinessCreditPage
-        onLogoClick={handleBusinessServiceClick}
-        onChargeClick={handleBusinessCreditChargeClick}
-      />
-    );
-
-  if (activeTab === "profile") {
-    return <ProfilePage onBack={() => handleTabChange(previousTab)} />;
-  }
-
-  if (activeTab === "businessCreditCharge") {
-    return <CreditChargePage onBack={handleBusinessCreditClick} />;
-  }
-
-  if (activeTab === "applicantManagement") {
-    return (
-      <ApplicantManagementPage
-        onLogoClick={handleBusinessServiceClick}
-        onApplicantClick={handleApplicantDetailClick}
-      />
-    );
-  }
-
-  if (activeTab === "applicantDetail")
-    return (
-      <ApplicantDetailPage
-        applicantId={selectedApplicantId}
-        onBackClick={handleApplicantManagementClick}
-        onLogoClick={handleBusinessServiceClick}
-        onCompatibilityClick={handleApplicantCompatibilityClick}
-      />
-    );
-  if (activeTab === "creditManagement")
-    return <CreditManagementPage onLogoClick={handleBusinessServiceClick} />;
-
-  if (activeTab === "jobDetail") {
-    return (
-      <JobPostingDetailPage
-        jobId={selectedJobId}
-        onBackClick={handleJobManagementClick}
-        onLogoClick={handleBusinessServiceClick}
-        onEditClick={handleJobPostingCreateClick}
-      />
-    );
-  }
-
-  if (activeTab === "advertisementManagement") {
-    return (
-      <AdvertisementManagementPage
-        onNewAdClick={handleAdvertisementCreateClick}
-        onLogoClick={handleBusinessServiceClick}
-        onAdDetailClick={handleAdvertisementDetailClick}
-      />
-    );
-  }
-
-  if (activeTab === "advertisementCreate") {
-    return (
-      <AdvertisementCreatePage
-        onBackClick={handleAdvertisementManagementClick}
-        onLogoClick={handleBusinessServiceClick}
-      />
-    );
-  }
-
-  if (activeTab === "advertisementDetail") {
-    return (
-      <AdvertisementDetailPage
-        advertisementId={selectedAdvertisementId}
-        onBackClick={handleAdvertisementManagementClick}
-        onLogoClick={handleBusinessServiceClick}
-        onEditClick={handleAdvertisementCreateClick}
-      />
-    );
-  }
-
-  if (activeTab === "applicantCompatibility") {
-    return (
-      <ApplicantCompatibilityPage
-        applicantId={selectedApplicantId}
-        onBackClick={handleApplicantDetailClick.bind(null, selectedApplicantId)}
-        onLogoClick={handleBusinessServiceClick}
-      />
-    );
-  }
-
-  const renderPage = () => {
-    console.log("현재 activeTab:", activeTab, "targetMenu:", targetMenu); // 디버깅용
-
-    switch (activeTab) {
-      case "profile":
-        return <ProfilePage onBack={() => handleTabChange("mypage")} />;
-      case "application-status":
-        return (
-          <ApplicationStatusPage
-            initialMenu={targetMenu}
-            onNavigate={handleTabChange}
-          />
-        );
-      case "job":
-        // 채용정보 서브메뉴 처리
-        if (targetMenu === "job-sub-1") {
-          // 전체 공고 페이지
-          return (
-            <AllJobsPage
-              onLogoClick={handleLogoClick}
-              onNavigateToAI={() => handleTabChange("job", "job-sub-2")}
-              onNavigateToPosition={() => handleTabChange("job", "job-sub-3")}
-              onNavigateToLocation={() => handleTabChange("job", "job-sub-4")}
-            />
-          );
-        }
-        if (targetMenu === "job-sub-2") {
-          // AI 추천 공고 페이지
-          return (
-            <AIRecommendedJobsPage
-              onLogoClick={handleLogoClick}
-              onNavigateToAll={() => handleTabChange("job", "job-sub-1")}
-              onNavigateToPosition={() => handleTabChange("job", "job-sub-3")}
-              onNavigateToLocation={() => handleTabChange("job", "job-sub-4")}
-            />
-          );
-        }
-        if (targetMenu === "job-sub-3") {
-          // 직무별 공고 페이지
-          return (
-            <PositionJobsPage
-              onLogoClick={handleLogoClick}
-              onNavigateToAll={() => handleTabChange("job", "job-sub-1")}
-              onNavigateToAI={() => handleTabChange("job", "job-sub-2")}
-              onNavigateToLocation={() => handleTabChange("job", "job-sub-4")}
-            />
-          );
-        }
-        if (targetMenu === "job-sub-4") {
-          // 지역별 공고 페이지
-          return (
-            <LocationJobsPage
-              onLogoClick={handleLogoClick}
-              onNavigateToAll={() => handleTabChange("job", "job-sub-1")}
-              onNavigateToAI={() => handleTabChange("job", "job-sub-2")}
-              onNavigateToPosition={() => handleTabChange("job", "job-sub-3")}
-            />
-          );
-        }
-        // 기본 홈페이지
-        return <HomePage onLoginClick={handleLoginClick} />;
-      case "mypage":
-        // targetMenu가 mypage-sub-3(지원 이력)이면 ApplicationStatusPage
-        if (targetMenu === "mypage-sub-3") {
-          return (
-            <ApplicationStatusPage
-              initialMenu={targetMenu}
-              onNavigate={handleTabChange}
-            />
-          );
-        }
-        return (
-          <MyPage
-            onNavigate={handleTabChange}
-            onEditProfile={() => handleTabChange("profile")}
-            initialMenu={targetMenu}
-          />
-        );
-      case "interview":
-        return (
-          <InterviewPage
-            initialMenu={targetMenu}
-            onNavigate={handleTabChange}
-          />
-        );
-      case "credit":
-        if (targetMenu === "credit-sub-2") {
-          return (
-            <CreditChargePage
-              onBack={() => handleTabChange("credit")}
-              initialMenu={targetMenu}
-              onNavigate={handleTabChange}
-            />
-          );
-        }
-        return (
-          <CreditPage
-            onCharge={handleCreditChargeClick}
-            initialMenu={targetMenu}
-            onNavigate={handleTabChange}
-          />
-        );
-      case "resume":
-        // targetMenu가 자소서 관련이면 CoverLetterPage, 아니면 ResumePage
-        if (targetMenu === "resume-sub-2") {
-          return (
-            <CoverLetterPage
-              key="coverletter"
-              initialMenu={targetMenu}
-              onNavigate={handleTabChange}
-            />
-          );
-        }
-        // targetMenu가 없거나 resume-sub-1이면 ResumePage (기본값)
-        // ✅ key prop: targetMenu 변경 시 컴포넌트를 완전히 새로 마운트하여 내부 상태(isCreating) 초기화
-        return (
-          <ResumePage
-            key={targetMenu || "resume-default"}
-            initialMenu={targetMenu}
-            onNavigate={handleTabChange}
-          />
-        );
-      case "ai-recommend":
-        return (
-          <AIRecommendationPage
-            initialMenu={targetMenu}
-            onNavigate={handleTabChange}
-          />
-        );
-      case "matching":
-        return (
-          <MatchingPage
-            onEditResume={() => handleTabChange("resume")}
-            initialMenu={targetMenu}
-            onNavigate={handleTabChange}
-          />
-        );
-      case "offer":
-        if (targetMenu === "offer-sub-2") {
-          return (
-            <InterviewOfferPage
-              key="interview-offer"
-              initialMenu={targetMenu}
-              onNavigate={handleTabChange}
-            />
-          );
-        }
-        return (
-          <OfferPage
-            key={targetMenu || "offer-default"}
-            initialMenu={targetMenu}
-            onNavigate={handleTabChange}
-          />
-        );
-      default:
-        return <HomePage onLoginClick={handleLoginClick} />;
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header
-        onLogoClick={handleLogoClick}
-        onLoginClick={handleLoginClick}
-        onSignupClick={handleSignupClick}
-        onBusinessServiceClick={handleBusinessServiceClick}
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-      />
-      {renderPage()}
-      <Footer />
-    </div>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* 루트 경로 - /user로 리다이렉트 */}
+          <Route path="/" element={<Navigate to="/user" replace />} />
+
+          {/* OAuth2 콜백 */}
+          <Route path="/oauth2/redirect" element={<OAuth2CallbackPage />} />
+
+          {/* ===== 개인회원 영역 (/user) ===== */}
+          <Route path="/user" element={<UserLayout />}>
+            {/* 공개 페이지 */}
+            <Route index element={<HomePage />} />
+            <Route
+              path="login"
+              element={<LoginPage initialAccountType="personal" />}
+            />
+            <Route
+              path="signup"
+              element={<SignupPage initialAccountType="personal" />}
+            />
+
+            {/* 채용정보 서브 페이지 */}
+            <Route path="jobs/all" element={<AllJobsPage />} />
+            <Route path="jobs/ai" element={<AIRecommendedJobsPage />} />
+            <Route path="jobs/position" element={<PositionJobsPage />} />
+            <Route path="jobs/location" element={<LocationJobsPage />} />
+
+            {/* 보호된 페이지 (로그인 필요 + 개인회원만) */}
+            <Route
+              path="mypage"
+              element={
+                <ProtectedRoute allowedUserType="personal">
+                  <MyPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="profile"
+              element={
+                <ProtectedRoute allowedUserType="personal">
+                  <ProfilePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="credit"
+              element={
+                <ProtectedRoute allowedUserType="personal">
+                  <CreditPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="credit/charge"
+              element={
+                <ProtectedRoute allowedUserType="personal">
+                  <CreditChargePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="interview"
+              element={
+                <ProtectedRoute allowedUserType="personal">
+                  <InterviewPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="resume"
+              element={
+                <ProtectedRoute allowedUserType="personal">
+                  <ResumePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="coverletter"
+              element={
+                <ProtectedRoute allowedUserType="personal">
+                  <CoverLetterPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="ai-recommend"
+              element={
+                <ProtectedRoute allowedUserType="personal">
+                  <AIRecommendationPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="matching"
+              element={
+                <ProtectedRoute allowedUserType="personal">
+                  <MatchingPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="offers"
+              element={
+                <ProtectedRoute allowedUserType="personal">
+                  <OfferPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="offers/interview"
+              element={
+                <ProtectedRoute allowedUserType="personal">
+                  <InterviewOfferPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="application-status"
+              element={
+                <ProtectedRoute allowedUserType="personal">
+                  <ApplicationStatusPage />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
+
+          {/* ===== 기업회원 영역 (/company) ===== */}
+          <Route path="/company" element={<CompanyLayout />}>
+            {/* 공개 페이지 */}
+            <Route index element={<BusinessServicePage />} />
+            <Route
+              path="login"
+              element={<LoginPage initialAccountType="business" />}
+            />
+            <Route
+              path="signup"
+              element={<SignupPage initialAccountType="business" />}
+            />
+
+            {/* 보호된 페이지 (로그인 필요 + 기업회원만) */}
+            <Route
+              path="jobs"
+              element={
+                <ProtectedRoute allowedUserType="company">
+                  <JobManagementPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="jobs/create"
+              element={
+                <ProtectedRoute allowedUserType="company">
+                  <JobPostingCreatePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="jobs/:jobId"
+              element={
+                <ProtectedRoute allowedUserType="company">
+                  <JobPostingDetailPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="applicants"
+              element={
+                <ProtectedRoute allowedUserType="company">
+                  <ApplicantManagementPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="applicants/:applicantId"
+              element={
+                <ProtectedRoute allowedUserType="company">
+                  <ApplicantDetailPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="applicants/:applicantId/compatibility"
+              element={
+                <ProtectedRoute allowedUserType="company">
+                  <ApplicantCompatibilityPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="talent-search"
+              element={
+                <ProtectedRoute allowedUserType="company">
+                  <TalentSearchPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="credit"
+              element={
+                <ProtectedRoute allowedUserType="company">
+                  <BusinessCreditPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="credit/charge"
+              element={
+                <ProtectedRoute allowedUserType="company">
+                  <CreditChargePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="ads"
+              element={
+                <ProtectedRoute allowedUserType="company">
+                  <AdvertisementManagementPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="ads/create"
+              element={
+                <ProtectedRoute allowedUserType="company">
+                  <AdvertisementCreatePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="ads/:adId"
+              element={
+                <ProtectedRoute allowedUserType="company">
+                  <AdvertisementDetailPage />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
+
+          {/* 404 페이지 */}
+          <Route path="*" element={<Navigate to="/user" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

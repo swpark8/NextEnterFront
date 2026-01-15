@@ -1,17 +1,17 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-interface OAuth2CallbackPageProps {
-  onLoginSuccess: () => void;
-}
-
-export default function OAuth2CallbackPage({
-  onLoginSuccess,
-}: OAuth2CallbackPageProps) {
+export default function OAuth2CallbackPage() {
   const { login } = useAuth();
+  const navigate = useNavigate();
+  const hasProcessed = useRef(false);
 
   useEffect(() => {
-    // URL에서 토큰과 사용자 정보 추출
+    if (hasProcessed.current) {
+      return;
+    }
+
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
     const email = params.get("email");
@@ -20,14 +20,14 @@ export default function OAuth2CallbackPage({
     console.log("OAuth2 콜백 - token:", token, "email:", email, "name:", name);
 
     if (token && email && name) {
-      // ✅ URL 디코딩 추가
+      hasProcessed.current = true;
+
       const decodedEmail = decodeURIComponent(email);
       const decodedName = decodeURIComponent(name);
 
       console.log("디코딩된 이메일:", decodedEmail);
       console.log("디코딩된 이름:", decodedName);
 
-      // JWT 토큰 디코딩하여 userId 추출
       try {
         const payload = JSON.parse(atob(token.split(".")[1]));
         const userId = payload.userId;
@@ -35,23 +35,31 @@ export default function OAuth2CallbackPage({
         console.log("JWT payload:", payload);
         console.log("userId:", userId);
 
-        // AuthContext에 로그인 정보 저장
-        login({ userId, email: decodedEmail, name: decodedName }, token);
+        // ✅ 소셜 로그인은 개인회원 전용이므로 userType을 "personal"로 설정
+        login(
+          {
+            userId,
+            email: decodedEmail,
+            name: decodedName,
+            userType: "personal", // ✅ 추가
+          },
+          token
+        );
 
-        // 메인 페이지로 이동
+        // ✅ 개인회원 페이지로 이동
         alert(`${decodedName}님, 환영합니다!`);
-        onLoginSuccess();
+        navigate("/user", { replace: true });
       } catch (error) {
         console.error("JWT 토큰 파싱 오류:", error);
         alert("로그인 처리 중 오류가 발생했습니다.");
-        window.location.href = "/";
+        navigate("/user/login", { replace: true });
       }
     } else {
       console.error("토큰 또는 사용자 정보가 없습니다.");
       alert("로그인에 실패했습니다.");
-      window.location.href = "/";
+      navigate("/user/login", { replace: true });
     }
-  }, [login, onLoginSuccess]);
+  }, [login, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">

@@ -8,6 +8,9 @@ interface BusinessServicePageProps {
   onCreditManagementClick?: () => void;
   onAdvertisementManagementClick?: () => void;
   onJobDetailClick?: (jobId: number) => void;
+  // ✅ 추가
+  onLoginClick?: () => void;
+  onSignupClick?: () => void;
 }
 
 export default function BusinessServicePage({
@@ -17,6 +20,9 @@ export default function BusinessServicePage({
   onCreditManagementClick,
   onAdvertisementManagementClick,
   onJobDetailClick,
+  // ✅ 추가
+  onLoginClick,
+  onSignupClick,
 }: BusinessServicePageProps) {
   const [activeService, setActiveService] = useState<string>("");
 
@@ -128,10 +134,10 @@ export default function BusinessServicePage({
               <span className="text-2xl font-bold text-blue-800">Enter</span>
             </div>
 
-            {/* 네비게이션 */}
+            {/* 중앙 네비게이션 */}
             <nav className="flex space-x-8">
               <button className="px-4 py-2 text-gray-700 hover:text-blue-600">
-                ■ 채용공고
+                채용공고
               </button>
               <button className="px-4 py-2 text-gray-700 hover:text-blue-600">
                 자료
@@ -140,6 +146,22 @@ export default function BusinessServicePage({
                 홍보
               </button>
             </nav>
+
+            {/* ✅ 오른쪽 로그인/회원가입 버튼 추가 */}
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={onLoginClick}
+                className="px-4 py-2 text-gray-700 transition hover:text-blue-600"
+              >
+                로그인
+              </button>
+              <button
+                onClick={onSignupClick}
+                className="px-4 py-2 text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
+              >
+                회원가입
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -239,7 +261,7 @@ export default function BusinessServicePage({
                     <span className="text-xl font-bold text-blue-600">
                       {product.price}
                     </span>
-                    <button 
+                    <button
                       onClick={() => {
                         if (onJobDetailClick) {
                           onJobDetailClick(product.id);
