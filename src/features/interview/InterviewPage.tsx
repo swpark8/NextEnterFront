@@ -2,8 +2,8 @@ import { useState } from "react";
 import InterviewSidebar from "./components/InterviewSidebar";
 import InterviewChatPage from "./components/InterviewChatPage";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
-import MockInterviewHistoryPage from "./components/MockInterviewHistoryPage";
 import MockInterviewResultPage from "./components/MockInterviewResultPage";
+import MockInterviewHistoryPage from "./components/MockInterviewHistoryPage";
 
 interface InterviewPageProps {
   initialMenu?: string;
@@ -26,11 +26,6 @@ export default function InterviewPage({
   const [currentCredit, setCurrentCredit] = useState(200);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-  // 면접 히스토리에서 선택한 면접 ID
-  const [selectedInterviewId, setSelectedInterviewId] = useState<number | null>(
-    null
-  );
-
   const handleCreditClick = () => {
     console.log("보유 크레딧 클릭됨");
   };
@@ -41,7 +36,6 @@ export default function InterviewPage({
       alert("크레딧이 부족합니다!");
       return;
     }
-    // 확인 다이얼로그 표시
     setShowConfirmDialog(true);
   };
 
@@ -57,10 +51,6 @@ export default function InterviewPage({
 
   const handleCancelInterview = () => {
     setShowConfirmDialog(false);
-  };
-
-  const handleBackToPreparation = () => {
-    setIsInterviewStarted(false);
   };
 
   const handleLevelClick = (level: "junior" | "senior") => {
@@ -102,7 +92,7 @@ export default function InterviewPage({
       <InterviewChatPage
         onBack={() => {
           setIsInterviewStarted(false);
-          handleMenuClick("interview-sub-1"); // 모의면접 시작으로 돌아가기
+          handleMenuClick("interview-sub-1");
         }}
         level={selectedLevel}
         activeMenu={activeMenu}
@@ -111,7 +101,7 @@ export default function InterviewPage({
     );
   }
 
-  // interview-sub-3: 면접 결과
+  // interview-sub-3: 면접 결과 (통계 + 점수 목록)
   if (activeMenu === "interview-sub-3") {
     return (
       <MockInterviewResultPage
@@ -122,26 +112,14 @@ export default function InterviewPage({
     );
   }
 
-  // interview-sub-4: 면접 히스토리
+  // interview-sub-4: 면접 히스토리 (Q&A 상세)
   if (activeMenu === "interview-sub-4") {
-    // 특정 면접을 선택한 경우 상세 페이지
-    if (selectedInterviewId !== null) {
-      return (
-        <MockInterviewHistoryPage
-          interviewId={selectedInterviewId}
-          onBack={() => setSelectedInterviewId(null)}
-          activeMenu={activeMenu}
-          onMenuClick={handleMenuClick}
-        />
-      );
-    }
-
-    // 면접 히스토리 목록 (MockInterviewResultPage 재사용)
     return (
-      <MockInterviewResultPage
+      <MockInterviewHistoryPage
+        interviewId={1}
+        onBack={() => handleMenuClick("interview-sub-3")}
         activeMenu={activeMenu}
         onMenuClick={handleMenuClick}
-        onNavigateToInterview={() => handleMenuClick("interview-sub-1")}
       />
     );
   }
@@ -191,9 +169,9 @@ export default function InterviewPage({
             onMenuClick={handleMenuClick}
           />
 
-          {/* 메인 컨텐츠 - 확대된 면접 설정 */}
+          {/* 메인 컨텐츠 */}
           <div className="flex-1">
-            {/* 면접 설정 카드 - 크기 확대 */}
+            {/* 면접 설정 카드 */}
             <div className="p-10 bg-white border-2 border-blue-400 rounded-2xl">
               <h3 className="mb-8 text-2xl font-bold">면접 설정</h3>
 
@@ -231,7 +209,7 @@ export default function InterviewPage({
                 </button>
               </div>
 
-              {/* 면접 시작 박스 - 크기 확대 */}
+              {/* 면접 시작 박스 */}
               <div className="p-12 text-center text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl">
                 <div className="mb-6">
                   <div className="flex items-center justify-center w-20 h-20 mx-auto mb-6 rounded-full bg-white/20">
@@ -253,7 +231,7 @@ export default function InterviewPage({
             </div>
 
             <div className="grid grid-cols-2 gap-6 mt-6">
-              {/* 크레딧 사용 내역 - 크기 확대 */}
+              {/* 크레딧 사용 내역 */}
               <div className="p-8 bg-white border-2 border-blue-400 rounded-2xl">
                 <h3 className="mb-6 text-xl font-bold">크레딧 사용 내역</h3>
                 <div className="space-y-4">
