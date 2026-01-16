@@ -279,11 +279,10 @@ export default function LoginPage({
 
             {/* 하단 링크 */}
             <div className="flex items-center justify-center space-x-3 mt-6 text-xs text-gray-600">
-              <button className="hover:text-blue-600 transition">
-                아이디 찾기
-              </button>
-              <span className="text-gray-300">|</span>
-              <button className="hover:text-blue-600 transition">
+              <button
+                onClick={() => navigate("/user/forgot-password")}
+                className="hover:text-blue-600 transition"
+              >
                 비밀번호 찾기
               </button>
               <span className="text-gray-300">|</span>
