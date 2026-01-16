@@ -38,7 +38,9 @@ export default function AdvertisementCreatePage({
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -49,9 +51,14 @@ export default function AdvertisementCreatePage({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // 필수 입력 검증
-    if (!formData.title || !formData.startDate || !formData.endDate || !formData.budget) {
+    if (
+      !formData.title ||
+      !formData.startDate ||
+      !formData.endDate ||
+      !formData.budget
+    ) {
       alert("필수 항목을 모두 입력해주세요.");
       return;
     }
@@ -81,7 +88,7 @@ export default function AdvertisementCreatePage({
           <div className="flex items-center justify-between">
             <div
               onClick={handleLogoClick}
-              className="cursor-pointer hover:opacity-80 transition-opacity"
+              className="transition-opacity cursor-pointer hover:opacity-80"
             >
               <span className="text-2xl font-bold text-blue-600">Next </span>
               <span className="text-2xl font-bold text-blue-800">Enter</span>
@@ -96,7 +103,7 @@ export default function AdvertisementCreatePage({
               </button>
               <button
                 onClick={handleLogoClick}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition text-gray-700"
+                className="px-4 py-2 text-gray-700 transition bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
               >
                 개인 회원
               </button>
@@ -106,13 +113,13 @@ export default function AdvertisementCreatePage({
       </header>
 
       {/* 메인 콘텐츠 */}
-      <div className="px-4 py-8 mx-auto max-w-5xl">
-        <div className="bg-white rounded-lg shadow p-8">
+      <div className="max-w-5xl px-4 py-8 mx-auto">
+        <div className="p-8 bg-white rounded-lg shadow">
           {/* 상단: 뒤로가기 & 제목 */}
           <div className="flex items-center mb-6">
             <button
               onClick={handleBackClick}
-              className="mr-4 text-gray-600 hover:text-gray-900 text-2xl"
+              className="mr-4 text-2xl text-gray-600 hover:text-gray-900"
             >
               ←
             </button>
@@ -123,7 +130,7 @@ export default function AdvertisementCreatePage({
           <form onSubmit={handleSubmit}>
             {/* 광고 제목 */}
             <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block mb-2 text-sm font-semibold text-gray-700">
                 광고 제목 <span className="text-red-500">*</span>
               </label>
               <input
@@ -139,7 +146,7 @@ export default function AdvertisementCreatePage({
 
             {/* 연결된 공고 */}
             <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block mb-2 text-sm font-semibold text-gray-700">
                 연결된 채용 공고
               </label>
               <select
@@ -158,7 +165,7 @@ export default function AdvertisementCreatePage({
             {/* 광고 기간 */}
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block mb-2 text-sm font-semibold text-gray-700">
                   시작일 <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -171,7 +178,7 @@ export default function AdvertisementCreatePage({
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block mb-2 text-sm font-semibold text-gray-700">
                   종료일 <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -188,7 +195,7 @@ export default function AdvertisementCreatePage({
             {/* 예산 */}
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block mb-2 text-sm font-semibold text-gray-700">
                   총 예산 <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -203,7 +210,7 @@ export default function AdvertisementCreatePage({
                 <p className="mt-1 text-xs text-gray-500">단위: 원</p>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block mb-2 text-sm font-semibold text-gray-700">
                   일일 예산 (선택)
                 </label>
                 <input
@@ -220,7 +227,7 @@ export default function AdvertisementCreatePage({
 
             {/* 광고 타입 */}
             <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block mb-2 text-sm font-semibold text-gray-700">
                 광고 유형
               </label>
               <select
@@ -238,7 +245,7 @@ export default function AdvertisementCreatePage({
 
             {/* 광고 게재 위치 */}
             <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block mb-2 text-sm font-semibold text-gray-700">
                 게재 위치
               </label>
               <select
@@ -256,7 +263,7 @@ export default function AdvertisementCreatePage({
 
             {/* 타겟 대상 */}
             <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block mb-2 text-sm font-semibold text-gray-700">
                 타겟 대상
               </label>
               <input
@@ -271,7 +278,7 @@ export default function AdvertisementCreatePage({
 
             {/* 광고 설명 */}
             <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block mb-2 text-sm font-semibold text-gray-700">
                 광고 설명
               </label>
               <textarea
@@ -280,16 +287,16 @@ export default function AdvertisementCreatePage({
                 onChange={handleChange}
                 rows={4}
                 placeholder="광고에 대한 상세 설명을 입력하세요..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
 
             {/* 예산 가이드 */}
-            <div className="mb-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <h3 className="text-sm font-semibold text-blue-900 mb-2">
+            <div className="p-4 mb-8 border border-blue-200 rounded-lg bg-blue-50">
+              <h3 className="mb-2 text-sm font-semibold text-blue-900">
                 💡 광고 예산 가이드
               </h3>
-              <ul className="text-sm text-blue-800 space-y-1">
+              <ul className="space-y-1 text-sm text-blue-800">
                 <li>• 배너 광고: 클릭당 500원 ~ 1,000원</li>
                 <li>• 검색 광고: 클릭당 1,000원 ~ 2,000원</li>
                 <li>• 프리미엄 노출: 일일 20,000원 ~ 50,000원</li>
@@ -302,13 +309,13 @@ export default function AdvertisementCreatePage({
               <button
                 type="button"
                 onClick={handleCancelClick}
-                className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition"
+                className="flex-1 px-6 py-3 font-semibold text-gray-700 transition bg-gray-100 rounded-lg hover:bg-gray-200"
               >
                 취소
               </button>
               <button
                 type="submit"
-                className="flex-1 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
+                className="flex-1 px-6 py-3 font-semibold text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
               >
                 광고 등록
               </button>
@@ -319,24 +326,24 @@ export default function AdvertisementCreatePage({
 
       {/* 취소 확인 모달 */}
       {showCancelConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-bold text-gray-900 mb-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-md p-6 mx-4 bg-white rounded-lg">
+            <h3 className="mb-2 text-lg font-bold text-gray-900">
               광고 등록 취소
             </h3>
-            <p className="text-gray-600 mb-6">
+            <p className="mb-6 text-gray-600">
               작성 중인 내용이 저장되지 않습니다. 정말로 취소하시겠습니까?
             </p>
             <div className="flex space-x-3">
               <button
                 onClick={handleCancelCancel}
-                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                className="flex-1 px-4 py-2 text-gray-700 transition bg-gray-100 rounded-lg hover:bg-gray-200"
               >
                 계속 작성
               </button>
               <button
                 onClick={handleConfirmCancel}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                className="flex-1 px-4 py-2 text-white transition bg-red-600 rounded-lg hover:bg-red-700"
               >
                 취소하기
               </button>

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import Footer from "../../../components/Footer";
 import InterviewSidebar from "./InterviewSidebar";
 import MockInterviewHistoryPage from "./MockInterviewHistoryPage";
 
@@ -378,7 +377,6 @@ export default function MockInterviewResultPage({
           </div>
         </div>
       </div>
-      <Footer />
     </>
   );
 }

@@ -124,7 +124,7 @@ export default function BusinessServicePage({
             {/* 로고 */}
             <div
               onClick={handleLogoClick}
-              className="cursor-pointer hover:opacity-80 transition-opacity"
+              className="transition-opacity cursor-pointer hover:opacity-80"
             >
               <span className="text-2xl font-bold text-blue-600">Next </span>
               <span className="text-2xl font-bold text-blue-800">Enter</span>
@@ -210,7 +210,7 @@ export default function BusinessServicePage({
             {products.map((product) => (
               <div
                 key={product.id}
-                className="overflow-hidden bg-white border-2 border-gray-200 rounded-xl hover:shadow-lg transition"
+                className="overflow-hidden transition bg-white border-2 border-gray-200 rounded-xl hover:shadow-lg"
               >
                 {/* 상품 배지 */}
                 {product.badge && (
@@ -246,7 +246,7 @@ export default function BusinessServicePage({
                   <div className="pt-3 mb-3 text-sm border-t border-gray-200">
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">{product.seller}</span>
-                      <span className="px-2 py-1 text-xs text-blue-600 bg-blue-50 rounded">
+                      <span className="px-2 py-1 text-xs text-blue-600 rounded bg-blue-50">
                         {product.period}
                       </span>
                     </div>
@@ -274,7 +274,6 @@ export default function BusinessServicePage({
           </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 }

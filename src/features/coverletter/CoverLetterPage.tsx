@@ -31,13 +31,13 @@ export default function CoverLetterPage({
 }: CoverLetterPageProps) {
   // 현재 화면 모드 (목록 / 작성 / 상세보기 / 수정)
   const [viewMode, setViewMode] = useState<ViewMode>("list");
-  
+
   // 선택된 자소서 ID
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  
+
   // 자소서 목록
   const [coverLetterList, setCoverLetterList] = useState<CoverLetterItem[]>([]);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { activeMenu, handleMenuClick } = usePageNavigation(
@@ -103,7 +103,9 @@ export default function CoverLetterPage({
   // 자소서 삭제
   const handleDelete = () => {
     if (selectedId) {
-      setCoverLetterList((prev) => prev.filter((item) => item.id !== selectedId));
+      setCoverLetterList((prev) =>
+        prev.filter((item) => item.id !== selectedId)
+      );
       setSelectedId(null);
       setViewMode("list");
     }

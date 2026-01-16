@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import Footer from "../../components/Footer";
 import MatchingSidebar from "./components/MatchingSidebar";
 import MatchingHistoryPage from "./components/MatchingHistoryPage";
 import ConfirmDialog from "./components/ConfirmDialog";
@@ -31,7 +30,7 @@ export default function MatchingPage({
   // [Auto-Merge] Incoming 브랜치의 usePageNavigation 훅 사용 (사이드바 연동)
   const { activeMenu, handleMenuClick, setActiveMenu } = usePageNavigation(
     "matching",
-    initialMenu,
+    initialMenu || "matching-sub-1",
     onNavigate
   );
 
@@ -60,11 +59,6 @@ export default function MatchingPage({
       name: job.title,
       company: job.job_category, // 직무 카테고리를 회사명처럼 표시
     }));
-
-  // initialMenu가 변경되면 activeMenu 업데이트
-  useEffect(() => {
-    setActiveMenu(initialMenu);
-  }, [initialMenu, setActiveMenu]);
 
   const handleCreditClick = () => {
     // 크레딧 충전 페이지로 이동 가능
@@ -190,8 +184,8 @@ export default function MatchingPage({
   // 히스토리 페이지 표시
   if (activeMenu === "history" || activeMenu === "matching-sub-2") {
     return (
-      <MatchingHistoryPage 
-        onBackToMatching={handleBackToMatching} 
+      <MatchingHistoryPage
+        onBackToMatching={handleBackToMatching}
         activeMenu={activeMenu}
         onMenuClick={handleMenuClick}
       />
@@ -257,7 +251,6 @@ export default function MatchingPage({
           </div>
         </div>
       </div>
-      <Footer />
     </>
   );
 }

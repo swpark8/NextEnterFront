@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePageNavigation } from "../../hooks/usePageNavigation";
 
 interface LocationJobsPageProps {
   onLogoClick?: () => void;
@@ -18,23 +19,21 @@ type JobListing = {
   daysLeft: number;
 };
 
-export default function LocationJobsPage({
-  onLogoClick,
-  onNavigateToAll,
-  onNavigateToAI,
-  onNavigateToPosition,
-}: LocationJobsPageProps) {
-  const [activeTab, setActiveTab] = useState("location");
+// ✅ [수정] 안 쓰는 props 제거
+export default function LocationJobsPage() {
+  const { activeMenu, handleMenuClick } = usePageNavigation("job", "job-sub-4");
+
   const [selectedLocation, setSelectedLocation] = useState("서울 전체");
-  const [sortOrder, setSortOrder] = useState("정렬순서 선택");
-  const [itemsPerPage, setItemsPerPage] = useState(50);
-  const [displayOrder, setDisplayOrder] = useState("주소순");
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
   const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
 
-  // 이력서 목록 샘플 데이터
+  const handleTabClick = (menuId: string) => {
+    handleMenuClick(menuId);
+  };
+
   const resumes = [
     {
       id: 1,
@@ -56,7 +55,6 @@ export default function LocationJobsPage({
     },
   ];
 
-  // 지역별 공고 데이터
   const allJobListings: JobListing[] = [
     {
       id: 1,
@@ -100,13 +98,10 @@ export default function LocationJobsPage({
     },
   ];
 
-  // 페이지네이션 계산
-  const totalJobs = 189; // 지역별 전체 공고 수
+  const totalJobs = 189;
   const totalPages = Math.ceil(totalJobs / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalJobs);
-
-  // 현재 페이지에 표시할 공고
   const currentJobs = allJobListings;
 
   const handlePageChange = (page: number) => {
@@ -115,27 +110,22 @@ export default function LocationJobsPage({
   };
 
   const handleApply = (jobId: number) => {
-    const confirmed = confirm("입사지원 하시겠습니까?");
-    if (confirmed) {
+    if (confirm("입사지원 하시겠습니까?")) {
       setSelectedJobId(jobId);
       setShowResumeModal(true);
     }
   };
 
-  const handleResumeSelect = (resumeId: number) => {
+  const handleResumeSelect = (resumeId: number) =>
     setSelectedResumeId(resumeId);
-  };
 
   const handleFinalSubmit = () => {
     if (!selectedResumeId) {
       alert("이력서를 선택해주세요.");
       return;
     }
-
     const selectedResume = resumes.find((r) => r.id === selectedResumeId);
-    const confirmed = confirm(`"${selectedResume?.title}"로 지원하시겠습니까?`);
-
-    if (confirmed) {
+    if (confirm(`"${selectedResume?.title}"로 지원하시겠습니까?`)) {
       console.log(
         `공고 ${selectedJobId}에 이력서 ${selectedResumeId}로 지원하기`
       );
@@ -152,33 +142,17 @@ export default function LocationJobsPage({
     setSelectedResumeId(null);
   };
 
-  const handleTabClick = (tab: string) => {
-    if (tab === "all" && onNavigateToAll) {
-      onNavigateToAll();
-    } else if (tab === "ai" && onNavigateToAI) {
-      onNavigateToAI();
-    } else if (tab === "position" && onNavigateToPosition) {
-      onNavigateToPosition();
-    } else {
-      setActiveTab(tab);
-    }
-  };
-
-  // 페이지 번호 생성
   const getPageNumbers = () => {
     const pageNumbers = [];
     const maxPagesToShow = 10;
     let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
     let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-
     if (endPage - startPage < maxPagesToShow - 1) {
       startPage = Math.max(1, endPage - maxPagesToShow + 1);
     }
-
     for (let i = startPage; i <= endPage; i++) {
       pageNumbers.push(i);
     }
-
     return pageNumbers;
   };
 
@@ -192,122 +166,75 @@ export default function LocationJobsPage({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 메인 컨텐츠 */}
       <main className="px-6 py-8 mx-auto max-w-[1400px]">
-        {/* 탭 메뉴 */}
         <div className="mb-6">
           <div className="flex border-b-2 border-gray-200">
             <button
-              onClick={() => handleTabClick("all")}
-              className="px-6 py-3 font-medium text-gray-600 transition hover:text-blue-600"
+              onClick={() => handleTabClick("job-sub-1")}
+              className={`px-6 py-3 font-medium transition ${
+                activeMenu === "job-sub-1"
+                  ? "text-blue-600 border-b-2 border-blue-600 -mb-0.5"
+                  : "text-gray-600 hover:text-blue-600"
+              }`}
             >
               전체공고
             </button>
             <button
-              onClick={() => handleTabClick("ai")}
-              className="px-6 py-3 font-medium text-gray-600 transition hover:text-blue-600"
+              onClick={() => handleTabClick("job-sub-2")}
+              className={`px-6 py-3 font-medium transition ${
+                activeMenu === "job-sub-2"
+                  ? "text-blue-600 border-b-2 border-blue-600 -mb-0.5"
+                  : "text-gray-600 hover:text-blue-600"
+              }`}
             >
               AI 추천 공고
             </button>
             <button
-              onClick={() => handleTabClick("position")}
-              className="px-6 py-3 font-medium text-gray-600 transition hover:text-blue-600"
+              onClick={() => handleTabClick("job-sub-3")}
+              className={`px-6 py-3 font-medium transition ${
+                activeMenu === "job-sub-3"
+                  ? "text-blue-600 border-b-2 border-blue-600 -mb-0.5"
+                  : "text-gray-600 hover:text-blue-600"
+              }`}
             >
               직무별 공고
             </button>
             <button
-              onClick={() => handleTabClick("location")}
-              className="px-6 py-3 font-medium text-blue-600 border-b-2 border-blue-600 -mb-0.5"
+              className={`px-6 py-3 font-medium transition ${
+                activeMenu === "job-sub-4"
+                  ? "text-blue-600 border-b-2 border-blue-600 -mb-0.5"
+                  : "text-gray-600 hover:text-blue-600"
+              }`}
             >
               지역별 공고
             </button>
           </div>
         </div>
 
-        {/* 지역 선택 버튼 */}
-        <div className="flex gap-3 mb-6 overflow-x-auto">
-          {locations.map((location) => (
-            <button
-              key={location}
-              onClick={() => setSelectedLocation(location)}
-              className={`px-6 py-2 rounded-full font-medium whitespace-nowrap transition ${
-                selectedLocation === location
-                  ? "bg-blue-600 text-white"
-                  : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-              }`}
-            >
-              {location}
-            </button>
-          ))}
+        <div className="p-4 mb-6 bg-white border border-gray-200 rounded-lg">
+          <div className="flex flex-wrap gap-2">
+            {locations.map((loc) => (
+              <button
+                key={loc}
+                onClick={() => setSelectedLocation(loc)}
+                className={`px-4 py-2 text-sm font-medium rounded-full transition ${
+                  selectedLocation === loc
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                {loc}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* 공고 수 및 필터 */}
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
-            <h2 className="text-lg font-bold text-gray-800">
-              {selectedLocation} 채용정보{" "}
-              <span className="text-blue-600">{totalJobs}</span>건
-            </h2>
-
-            {/* 정렬순서 선택 */}
-            <div className="relative">
-              <select
-                value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value)}
-                className="px-4 py-2 pr-8 text-sm text-gray-700 transition bg-white border border-gray-300 rounded-lg appearance-none cursor-pointer hover:bg-gray-50"
-              >
-                <option value="정렬순서 선택">정렬순서 선택</option>
-                <option value="최신순">최신순</option>
-                <option value="마감임박순">마감임박순</option>
-                <option value="높은연봉순">높은연봉순</option>
-              </select>
-              <svg
-                className="absolute w-4 h-4 transform -translate-y-1/2 pointer-events-none right-2 top-1/2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-4">
-            {/* 50개씩 선택 */}
-            <div className="flex items-center space-x-2">
-              <select
-                value={itemsPerPage}
-                onChange={(e) => {
-                  setItemsPerPage(Number(e.target.value));
-                  setCurrentPage(1);
-                }}
-                className="px-3 py-1 text-sm border border-gray-300 rounded cursor-pointer"
-              >
-                <option value={50}>50개씩</option>
-                <option value={100}>100개씩</option>
-              </select>
-            </div>
-
-            {/* 주소순 선택 */}
-            <div className="flex items-center space-x-2">
-              <select
-                value={displayOrder}
-                onChange={(e) => setDisplayOrder(e.target.value)}
-                className="px-3 py-1 text-sm border border-gray-300 rounded cursor-pointer"
-              >
-                <option value="주소순">주소순</option>
-                <option value="최신순">최신순</option>
-              </select>
-            </div>
-          </div>
+          <h2 className="text-lg font-bold text-gray-800">
+            지역별 채용정보 <span className="text-blue-600">{totalJobs}</span>건
+          </h2>
         </div>
 
-        {/* 공고 리스트 */}
         <div className="space-y-4">
           {currentJobs.map((job) => (
             <div
@@ -316,143 +243,29 @@ export default function LocationJobsPage({
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  {/* 회사명 */}
                   <div className="flex items-center mb-2 space-x-2">
                     <span className="text-sm font-medium text-gray-600">
                       {job.company}
                     </span>
                   </div>
-
-                  {/* 공고 제목 */}
                   <h3 className="mb-3 text-lg font-bold text-gray-900 cursor-pointer hover:text-blue-600">
                     {job.title}
                   </h3>
-
-                  {/* 요구사항 태그 */}
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {job.requirements.map((req, idx) => (
-                      <span
-                        key={idx}
-                        className="px-3 py-1 text-xs text-gray-700 bg-gray-100 rounded-full"
-                      >
-                        {req}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* 추가 태그 */}
-                  {job.tags.length > 0 && (
-                    <div className="flex gap-2 mb-3">
-                      {job.tags.map((tag, idx) => (
-                        <span
-                          key={idx}
-                          className="px-2 py-1 text-xs text-red-600 rounded bg-red-50"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* 하단 정보 */}
                   <div className="flex items-center space-x-4 text-sm text-gray-600">
-                    <div className="flex items-center space-x-1">
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
-                      <span>{job.location}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                      <span>{job.deadline}</span>
-                    </div>
+                    <span>{job.location}</span>
+                    <span>{job.deadline}</span>
                   </div>
                 </div>
-
-                {/* 오른쪽: 상태 및 지원 버튼 */}
                 <div className="flex flex-col items-end space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <button className="flex items-center space-x-1 text-sm text-gray-600 transition hover:text-blue-600">
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                        />
-                      </svg>
-                      <span>지원 관련정</span>
-                    </button>
-                    <button className="flex items-center space-x-1 text-sm text-gray-600 transition hover:text-blue-600">
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                        />
-                      </svg>
-                      <span>관심공고</span>
-                    </button>
-                  </div>
-
                   <button
                     onClick={() => handleApply(job.id)}
                     className="px-6 py-2 text-sm font-medium text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
                   >
                     입사지원
                   </button>
-
                   <div className="text-sm text-gray-500">
                     <span className="font-medium text-blue-600">
                       D-{job.daysLeft}
-                    </span>
-                    <span className="ml-1">
-                      {job.daysLeft} 일 {job.daysLeft > 30 ? "이상" : ""} 남음
                     </span>
                   </div>
                 </div>
@@ -461,22 +274,7 @@ export default function LocationJobsPage({
           ))}
         </div>
 
-        {/* 페이지네이션 */}
         <div className="flex items-center justify-center mt-8 space-x-2">
-          {/* 이전 페이지 */}
-          <button
-            onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
-            className={`px-3 py-2 rounded ${
-              currentPage === 1
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
-            }`}
-          >
-            이전
-          </button>
-
-          {/* 페이지 번호 */}
           {getPageNumbers().map((pageNum) => (
             <button
               key={pageNum}
@@ -490,39 +288,15 @@ export default function LocationJobsPage({
               {pageNum}
             </button>
           ))}
-
-          {/* 다음 페이지 */}
-          <button
-            onClick={() =>
-              handlePageChange(Math.min(totalPages, currentPage + 1))
-            }
-            disabled={currentPage === totalPages}
-            className={`px-3 py-2 rounded ${
-              currentPage === totalPages
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
-            }`}
-          >
-            다음
-          </button>
-        </div>
-
-        {/* 페이지 정보 */}
-        <div className="mt-4 text-sm text-center text-gray-600">
-          전체 {totalJobs}건 중 {startIndex + 1} -{" "}
-          {Math.min(endIndex, totalJobs)}번째 공고 ({currentPage} / {totalPages}{" "}
-          페이지)
         </div>
       </main>
 
-      {/* 이력서 선택 모달 */}
       {showResumeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
             <h3 className="mb-6 text-2xl font-bold text-gray-900">
               지원할 이력서를 선택해주세요
             </h3>
-
             <div className="mb-6 space-y-4">
               {resumes.map((resume) => (
                 <div
@@ -534,50 +308,12 @@ export default function LocationJobsPage({
                       : "border-gray-200 hover:border-blue-300 bg-white"
                   }`}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center mb-2 space-x-2">
-                        <h4 className="text-lg font-bold text-gray-900">
-                          {resume.title}
-                        </h4>
-                        {resume.isDefault && (
-                          <span className="px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded">
-                            기본 이력서
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-600">
-                        마지막 수정: {resume.lastUpdated}
-                      </p>
-                    </div>
-                    <div className="flex items-center">
-                      <div
-                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                          selectedResumeId === resume.id
-                            ? "border-blue-600 bg-blue-600"
-                            : "border-gray-300"
-                        }`}
-                      >
-                        {selectedResumeId === resume.id && (
-                          <svg
-                            className="w-4 h-4 text-white"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  <h4 className="text-lg font-bold text-gray-900">
+                    {resume.title}
+                  </h4>
                 </div>
               ))}
             </div>
-
             <div className="flex space-x-4">
               <button
                 onClick={handleCancelResume}

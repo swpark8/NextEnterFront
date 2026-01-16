@@ -1,13 +1,13 @@
 import Footer from "../components/Footer";
 
 interface ApplicantCompatibilityPageProps {
-  applicantId: number;
+  applicantId?: number;
   onBackClick?: () => void;
   onLogoClick?: () => void;
 }
 
 export default function ApplicantCompatibilityPage({
-  applicantId,
+  applicantId = 1,
   onBackClick,
   onLogoClick,
 }: ApplicantCompatibilityPageProps) {
@@ -32,9 +32,19 @@ export default function ApplicantCompatibilityPage({
           score: 92,
           weight: 25,
           details: [
-            { item: "프론트엔드 개발 경력", required: true, level: "5년", match: 100 },
+            {
+              item: "프론트엔드 개발 경력",
+              required: true,
+              level: "5년",
+              match: 100,
+            },
             { item: "팀 리딩 경험", required: false, level: "있음", match: 85 },
-            { item: "대규모 프로젝트 경험", required: true, level: "있음", match: 90 },
+            {
+              item: "대규모 프로젝트 경험",
+              required: true,
+              level: "있음",
+              match: 90,
+            },
           ],
         },
         {
@@ -42,9 +52,24 @@ export default function ApplicantCompatibilityPage({
           score: 96,
           weight: 25,
           details: [
-            { item: "전자상거래 플랫폼 개발", required: true, level: "상", match: 98 },
-            { item: "마이크로서비스 아키텍처", required: false, level: "중", match: 95 },
-            { item: "성능 최적화 경험", required: true, level: "상", match: 95 },
+            {
+              item: "전자상거래 플랫폼 개발",
+              required: true,
+              level: "상",
+              match: 98,
+            },
+            {
+              item: "마이크로서비스 아키텍처",
+              required: false,
+              level: "중",
+              match: 95,
+            },
+            {
+              item: "성능 최적화 경험",
+              required: true,
+              level: "상",
+              match: 95,
+            },
           ],
         },
         {
@@ -52,9 +77,24 @@ export default function ApplicantCompatibilityPage({
           score: 90,
           weight: 20,
           details: [
-            { item: "애자일/스크럼 경험", required: false, level: "있음", match: 92 },
-            { item: "기술 문서화 능력", required: true, level: "상", match: 88 },
-            { item: "코드 리뷰 경험", required: false, level: "있음", match: 90 },
+            {
+              item: "애자일/스크럼 경험",
+              required: false,
+              level: "있음",
+              match: 92,
+            },
+            {
+              item: "기술 문서화 능력",
+              required: true,
+              level: "상",
+              match: 88,
+            },
+            {
+              item: "코드 리뷰 경험",
+              required: false,
+              level: "있음",
+              match: 90,
+            },
           ],
         },
       ],
@@ -88,9 +128,24 @@ export default function ApplicantCompatibilityPage({
           score: 88,
           weight: 25,
           details: [
-            { item: "프론트엔드 개발 경력", required: true, level: "3년", match: 85 },
-            { item: "UI/UX 구현 경험", required: true, level: "있음", match: 92 },
-            { item: "반응형 웹 개발", required: true, level: "있음", match: 88 },
+            {
+              item: "프론트엔드 개발 경력",
+              required: true,
+              level: "3년",
+              match: 85,
+            },
+            {
+              item: "UI/UX 구현 경험",
+              required: true,
+              level: "있음",
+              match: 92,
+            },
+            {
+              item: "반응형 웹 개발",
+              required: true,
+              level: "있음",
+              match: 88,
+            },
           ],
         },
         {
@@ -99,8 +154,18 @@ export default function ApplicantCompatibilityPage({
           weight: 25,
           details: [
             { item: "SPA 개발 경험", required: true, level: "상", match: 90 },
-            { item: "디자인 시스템 구축", required: false, level: "중", match: 88 },
-            { item: "크로스 브라우저 호환성", required: true, level: "상", match: 89 },
+            {
+              item: "디자인 시스템 구축",
+              required: false,
+              level: "중",
+              match: 88,
+            },
+            {
+              item: "크로스 브라우저 호환성",
+              required: true,
+              level: "상",
+              match: 89,
+            },
           ],
         },
         {
@@ -108,9 +173,24 @@ export default function ApplicantCompatibilityPage({
           score: 85,
           weight: 20,
           details: [
-            { item: "디자이너와 협업 경험", required: true, level: "있음", match: 90 },
-            { item: "Git 협업 프로세스", required: true, level: "있음", match: 85 },
-            { item: "코드 리뷰 참여", required: false, level: "있음", match: 80 },
+            {
+              item: "디자이너와 협업 경험",
+              required: true,
+              level: "있음",
+              match: 90,
+            },
+            {
+              item: "Git 협업 프로세스",
+              required: true,
+              level: "있음",
+              match: 85,
+            },
+            {
+              item: "코드 리뷰 참여",
+              required: false,
+              level: "있음",
+              match: 80,
+            },
           ],
         },
       ],
@@ -210,7 +290,7 @@ export default function ApplicantCompatibilityPage({
             </div>
           </div>
 
-          <div className="space-y-8 mb-8">
+          <div className="mb-8 space-y-8">
             {data.categories.map((category, idx) => (
               <div
                 key={idx}
@@ -270,7 +350,7 @@ export default function ApplicantCompatibilityPage({
                           </td>
                           <td className="px-4 py-3 text-center">
                             <div className="flex items-center justify-center space-x-2">
-                              <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                              <div className="w-24 h-2 overflow-hidden bg-gray-200 rounded-full">
                                 <div
                                   className="h-full bg-blue-600 rounded-full"
                                   style={{ width: `${detail.match}%` }}
@@ -302,9 +382,7 @@ export default function ApplicantCompatibilityPage({
                     key={idx}
                     className="flex items-start space-x-2 text-sm text-gray-700"
                   >
-                    <span className="flex-shrink-0 mt-1 text-green-600">
-                      •
-                    </span>
+                    <span className="flex-shrink-0 mt-1 text-green-600">•</span>
                     <span>{strength}</span>
                   </li>
                 ))}
@@ -339,7 +417,7 @@ export default function ApplicantCompatibilityPage({
             >
               목록으로
             </button>
-            <button 
+            <button
               onClick={handleInterviewRequest}
               className="flex-1 px-6 py-3 font-semibold text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
             >

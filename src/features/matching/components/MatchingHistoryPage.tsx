@@ -1,5 +1,4 @@
 import { useState } from "react";
-import Footer from "../../../components/Footer";
 import MatchingSidebar from "./MatchingSidebar";
 import { useApp } from "../../../context/AppContext";
 
@@ -249,7 +248,6 @@ export default function MatchingHistoryPage({
           </div>
         </div>
       </div>
-      <Footer />
     </>
   );
 }

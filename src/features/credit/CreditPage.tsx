@@ -1,25 +1,23 @@
 import { useState } from "react";
-import Footer from "../../components/Footer";
+
 import CreditSidebar from "./components/CreditSidebar";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 
+// ✅ [수정 1] App.tsx와 연결하기 위한 인터페이스 추가
 interface CreditPageProps {
-  onLogoClick?: () => void;
-  onCharge?: () => void;
-  initialMenu?: string;
   onNavigate?: (page: string, subMenu?: string) => void;
+  initialMenu?: string;
 }
 
+// ✅ [수정 2] props로 onNavigate를 받아옵니다.
 export default function CreditPage({
-  onLogoClick,
-  onCharge,
-  initialMenu,
   onNavigate,
+  initialMenu,
 }: CreditPageProps) {
-  // ✅ 커스텀 훅 사용
+  // ✅ [수정 3] 받아온 onNavigate를 훅에 넣어줘서, 버튼 클릭 시 이동되게 만듭니다.
   const { activeMenu, handleMenuClick } = usePageNavigation(
     "credit",
-    initialMenu,
+    initialMenu || "credit-sub-1",
     onNavigate
   );
 
@@ -41,9 +39,8 @@ export default function CreditPage({
 
   const handlePromote = () => {
     console.log("충전하기 클릭됨");
-    if (onCharge) {
-      onCharge();
-    }
+    // 이제 onNavigate가 연결되었으므로, 실제로 페이지가 이동합니다.
+    handleMenuClick("credit-sub-2");
   };
 
   const handleJobClick = () => {
@@ -54,7 +51,6 @@ export default function CreditPage({
     <>
       <div className="min-h-screen bg-gray-50">
         <div className="px-4 py-5 mx-auto max-w-7xl">
-          {/* ✅ [수정] 헤더 영역: 다른 페이지와 똑같은 스타일 및 여백(mb-6) 적용 */}
           <div className="flex items-end justify-between mb-6">
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold">보유 크레딧</h1>
@@ -203,7 +199,6 @@ export default function CreditPage({
           </div>
         </div>
       </div>
-      <Footer />
     </>
   );
 }

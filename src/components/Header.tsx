@@ -2,9 +2,10 @@ import { useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import HoverMenu from "../features/navigation-menu/components/HoverMenu";
 import DropdownMenu from "../features/navigation-menu/components/DropdownMenu";
-import { navigationMenuData } from "../features/navigation-menu/data/menuData";
 import { useAuth } from "../context/AuthContext";
 import { logout as logoutApi } from "../api/auth";
+// ✅ [추가 1] 방어 로직 임포트
+import { checkNavigationBlocked } from "../utils/navigationBlocker";
 
 const MENU_CLOSE_DELAY = 150;
 
@@ -28,11 +29,10 @@ export default function Header() {
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 현재 활성 탭 결정
   const getActiveTab = () => {
     const path = location.pathname;
     if (path.startsWith("/user/jobs")) return "job";
-    if (path.startsWith("/user/mypage")) return "mypage";
+    if (path.startsWith("/user/mypage") || path.startsWith("/user/profile")) return "mypage";
     if (path.startsWith("/user/credit")) return "credit";
     if (path.startsWith("/user/interview")) return "interview";
     if (path.startsWith("/user/resume") || path.startsWith("/user/coverletter"))
@@ -67,6 +67,9 @@ export default function Header() {
   };
 
   const handleLogout = async () => {
+    // ✅ [추가 2] 로그아웃 시에도 방어 로직 체크
+    if (checkNavigationBlocked()) return;
+
     try {
       await logoutApi();
     } catch (error) {
@@ -79,34 +82,59 @@ export default function Header() {
   };
 
   const handleMenuClick = (tabId: string, menuId?: string) => {
-    if (LOGIN_REQUIRED_MENUS.includes(tabId) && !isAuthenticated) {
+    // ✅ [추가 3] 메뉴 이동 전 방어 로직 체크! (여기서 막히면 아래 코드 실행 안 됨)
+    if (checkNavigationBlocked()) return;
+
+    const checkTabId = menuId ? menuId.split("-sub-")[0] : tabId;
+    if (LOGIN_REQUIRED_MENUS.includes(checkTabId) && !isAuthenticated) {
       alert("로그인이 필요한 기능입니다.");
       navigate("/user/login");
       return;
     }
 
-    // 메뉴별 라우팅
-    const routes: { [key: string]: string } = {
+    const defaultSubMenus: { [key: string]: string } = {
+      job: "job-sub-1",
+      resume: "resume-sub-1",
+      matching: "matching-sub-1",
+      interview: "interview-sub-1",
+      offer: "offer-sub-1",
+      mypage: "mypage-home",
+      credit: "credit-sub-1",
+    };
+
+    const baseRoutes: { [key: string]: string } = {
       job: "/user",
+      resume: "/user/resume",
+      matching: "/user/matching",
+      interview: "/user/interview",
+      offer: "/user/offers",
+      mypage: "/user/mypage",
+      credit: "/user/credit",
+    };
+
+    const separateRoutes: { [key: string]: string } = {
       "job-sub-1": "/user/jobs/all",
       "job-sub-2": "/user/jobs/ai",
       "job-sub-3": "/user/jobs/position",
       "job-sub-4": "/user/jobs/location",
-      mypage: "/user/mypage",
-      credit: "/user/credit",
-      "credit-sub-2": "/user/credit/charge",
-      interview: "/user/interview",
-      resume: "/user/resume",
       "resume-sub-2": "/user/coverletter",
-      matching: "/user/matching",
-      offer: "/user/offers",
       "offer-sub-2": "/user/offers/interview",
+      "credit-sub-2": "/user/credit/charge",
+      "mypage-sub-2": "/user/profile",
     };
 
-    const route = menuId ? routes[menuId] : routes[tabId];
-    if (route) {
-      navigate(route);
+    const targetMenuId = menuId || defaultSubMenus[tabId];
+    const targetPath = separateRoutes[targetMenuId] || baseRoutes[tabId];
+
+    if (targetPath) {
+      navigate(`${targetPath}?menu=${targetMenuId}`);
     }
+  };
+
+  // ✅ [추가 4] 로고 클릭 핸들러 (로고 눌러서 도망가는 것 방지)
+  const handleLogoClick = () => {
+    if (checkNavigationBlocked()) return;
+    navigate("/user");
   };
 
   const navItems = [
@@ -141,7 +169,7 @@ export default function Header() {
                 </svg>
               </button>
               <div
-                onClick={() => navigate("/user")}
+                onClick={handleLogoClick} // ✅ 수정됨
                 className="transition cursor-pointer hover:opacity-80"
               >
                 <span className="text-2xl font-bold text-blue-600">
@@ -180,7 +208,7 @@ export default function Header() {
                 <div className="relative">
                   <button
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center space-x-2 px-4 py-2 text-gray-700 transition hover:text-blue-600"
+                    className="flex items-center px-4 py-2 space-x-2 text-gray-700 transition hover:text-blue-600"
                   >
                     <svg
                       className="w-5 h-5"
@@ -218,24 +246,26 @@ export default function Header() {
                       <button
                         onClick={() => {
                           setIsUserMenuOpen(false);
-                          navigate("/user/profile");
+                          if (!checkNavigationBlocked())
+                            navigate("/user/profile");
                         }}
-                        className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 transition"
+                        className="w-full px-4 py-2 text-left text-gray-700 transition hover:bg-gray-50"
                       >
                         내 정보
                       </button>
                       <button
                         onClick={() => {
                           setIsUserMenuOpen(false);
-                          navigate("/user/mypage");
+                          if (!checkNavigationBlocked())
+                            navigate("/user/mypage?menu=mypage-home");
                         }}
-                        className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 transition"
+                        className="w-full px-4 py-2 text-left text-gray-700 transition hover:bg-gray-50"
                       >
                         마이페이지
                       </button>
                       <button
                         onClick={handleLogout}
-                        className="w-full px-4 py-2 text-left text-red-600 hover:bg-gray-50 transition"
+                        className="w-full px-4 py-2 text-left text-red-600 transition hover:bg-gray-50"
                       >
                         로그아웃
                       </button>
@@ -260,7 +290,7 @@ export default function Header() {
               )}
               <button
                 onClick={() => navigate("/company")}
-                className="px-4 py-2 transition bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
+                className="px-4 py-2 transition bg-white border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50"
               >
                 기업 서비스
               </button>
@@ -317,7 +347,6 @@ export default function Header() {
                 >
                   {item.label}
                 </button>
-
                 {hoveredTab === item.id && (
                   <HoverMenu
                     tabId={item.id}
@@ -336,8 +365,10 @@ export default function Header() {
         <DropdownMenu
           isOpen={isDropdownOpen}
           onMenuClick={(menuId) => {
+            // DropdownMenu 내부에서 클릭 시에도 handleMenuClick이 호출되므로 방어 로직 적용됨
             setIsDropdownOpen(false);
-            handleMenuClick(menuId);
+            const tabId = menuId.split("-sub-")[0];
+            handleMenuClick(tabId, menuId);
           }}
         />
       </div>

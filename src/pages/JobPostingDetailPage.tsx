@@ -2,7 +2,7 @@ import { useState } from "react";
 import Footer from "../components/Footer";
 
 interface JobPostingDetailPageProps {
-  jobId: number;
+  jobId?: number;
   onBackClick?: () => void;
   onLogoClick?: () => void;
   onEditClick?: (id: number) => void;
@@ -33,7 +33,7 @@ interface JobDetail {
 }
 
 export default function JobPostingDetailPage({
-  jobId,
+  jobId = 1,
   onBackClick,
   onLogoClick,
   onEditClick,
@@ -153,7 +153,7 @@ export default function JobPostingDetailPage({
     },
   };
 
-  const job = jobData[jobId] || jobData[1];
+  const job = jobData[jobId || 1];
 
   const handleBackClick = () => {
     if (onBackClick) {
@@ -208,7 +208,7 @@ export default function JobPostingDetailPage({
           <div className="flex items-center justify-between">
             <div
               onClick={handleLogoClick}
-              className="cursor-pointer hover:opacity-80 transition-opacity"
+              className="transition-opacity cursor-pointer hover:opacity-80"
             >
               <span className="text-2xl font-bold text-blue-600">Next </span>
               <span className="text-2xl font-bold text-blue-800">Enter</span>
@@ -223,7 +223,7 @@ export default function JobPostingDetailPage({
               </button>
               <button
                 onClick={handleLogoClick}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition text-gray-700"
+                className="px-4 py-2 text-gray-700 transition bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
               >
                 개인 회원
               </button>
@@ -255,13 +255,13 @@ export default function JobPostingDetailPage({
           <div className="flex space-x-3">
             <button
               onClick={handleEditClick}
-              className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
+              className="px-6 py-2 font-semibold text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
             >
               수정
             </button>
             <button
               onClick={handleDeleteClick}
-              className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition"
+              className="px-6 py-2 font-semibold text-white transition bg-red-600 rounded-lg hover:bg-red-700"
             >
               삭제
             </button>
@@ -270,20 +270,20 @@ export default function JobPostingDetailPage({
 
         {/* 주요 통계 */}
         <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="text-sm text-gray-500 mb-1">조회수</div>
+          <div className="p-6 bg-white rounded-lg shadow">
+            <div className="mb-1 text-sm text-gray-500">조회수</div>
             <div className="text-3xl font-bold text-gray-900">
               {job.viewCount}
             </div>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="text-sm text-gray-500 mb-1">지원자</div>
+          <div className="p-6 bg-white rounded-lg shadow">
+            <div className="mb-1 text-sm text-gray-500">지원자</div>
             <div className="text-3xl font-bold text-blue-600">
               {job.applicantCount}
             </div>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="text-sm text-gray-500 mb-1">북마크</div>
+          <div className="p-6 bg-white rounded-lg shadow">
+            <div className="mb-1 text-sm text-gray-500">북마크</div>
             <div className="text-3xl font-bold text-orange-600">
               {job.bookmarkCount}
             </div>
@@ -291,41 +291,41 @@ export default function JobPostingDetailPage({
         </div>
 
         {/* 공고 기본 정보 */}
-        <div className="bg-white rounded-lg shadow p-8 mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">공고 정보</h2>
+        <div className="p-8 mb-6 bg-white rounded-lg shadow">
+          <h2 className="mb-6 text-2xl font-bold text-gray-900">공고 정보</h2>
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <div className="text-sm text-gray-500 mb-1">회사명</div>
+              <div className="mb-1 text-sm text-gray-500">회사명</div>
               <div className="text-base font-medium text-gray-900">
                 {job.company}
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500 mb-1">직무</div>
+              <div className="mb-1 text-sm text-gray-500">직무</div>
               <div className="text-base font-medium text-gray-900">
                 {job.jobCategory}
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500 mb-1">근무지</div>
+              <div className="mb-1 text-sm text-gray-500">근무지</div>
               <div className="text-base font-medium text-gray-900">
                 {job.location}
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500 mb-1">고용 형태</div>
+              <div className="mb-1 text-sm text-gray-500">고용 형태</div>
               <div className="text-base font-medium text-gray-900">
                 {job.employmentType}
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500 mb-1">경력</div>
+              <div className="mb-1 text-sm text-gray-500">경력</div>
               <div className="text-base font-medium text-gray-900">
                 {job.experienceMin}년 이상
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500 mb-1">급여</div>
+              <div className="mb-1 text-sm text-gray-500">급여</div>
               <div className="text-base font-medium text-gray-900">
                 {job.salaryMin}
                 {job.salaryMax && job.salaryMax !== job.salaryMin
@@ -335,25 +335,25 @@ export default function JobPostingDetailPage({
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500 mb-1">모집 인원</div>
+              <div className="mb-1 text-sm text-gray-500">모집 인원</div>
               <div className="text-base font-medium text-gray-900">
                 {job.recruits}명
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500 mb-1">근무 시간</div>
+              <div className="mb-1 text-sm text-gray-500">근무 시간</div>
               <div className="text-base font-medium text-gray-900">
                 {job.workingHours}
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500 mb-1">등록일</div>
+              <div className="mb-1 text-sm text-gray-500">등록일</div>
               <div className="text-base font-medium text-gray-900">
                 {job.createdAt}
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500 mb-1">마감일</div>
+              <div className="mb-1 text-sm text-gray-500">마감일</div>
               <div className="text-base font-medium text-gray-900">
                 {job.deadline}
               </div>
@@ -362,22 +362,18 @@ export default function JobPostingDetailPage({
         </div>
 
         {/* 공고 설명 */}
-        <div className="bg-white rounded-lg shadow p-8 mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            공고 설명
-          </h2>
-          <p className="text-gray-700 leading-relaxed">{job.description}</p>
+        <div className="p-8 mb-6 bg-white rounded-lg shadow">
+          <h2 className="mb-4 text-2xl font-bold text-gray-900">공고 설명</h2>
+          <p className="leading-relaxed text-gray-700">{job.description}</p>
         </div>
 
         {/* 자격 요건 */}
-        <div className="bg-white rounded-lg shadow p-8 mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            자격 요건
-          </h2>
+        <div className="p-8 mb-6 bg-white rounded-lg shadow">
+          <h2 className="mb-4 text-2xl font-bold text-gray-900">자격 요건</h2>
           <ul className="space-y-3">
             {job.requirements.map((req, idx) => (
               <li key={idx} className="flex items-start space-x-3">
-                <span className="text-blue-600 mt-1">✓</span>
+                <span className="mt-1 text-blue-600">✓</span>
                 <span className="text-gray-700">{req}</span>
               </li>
             ))}
@@ -385,15 +381,13 @@ export default function JobPostingDetailPage({
         </div>
 
         {/* 복리후생 */}
-        <div className="bg-white rounded-lg shadow p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            복리후생
-          </h2>
+        <div className="p-8 bg-white rounded-lg shadow">
+          <h2 className="mb-4 text-2xl font-bold text-gray-900">복리후생</h2>
           <div className="grid grid-cols-2 gap-3">
             {job.benefits.map((benefit, idx) => (
               <div
                 key={idx}
-                className="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg"
+                className="flex items-center p-3 space-x-2 rounded-lg bg-blue-50"
               >
                 <span className="text-blue-600">•</span>
                 <span className="text-gray-700">{benefit}</span>
@@ -405,24 +399,22 @@ export default function JobPostingDetailPage({
 
       {/* 삭제 확인 모달 */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-bold text-gray-900 mb-2">
-              공고 삭제
-            </h3>
-            <p className="text-gray-600 mb-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-md p-6 mx-4 bg-white rounded-lg">
+            <h3 className="mb-2 text-lg font-bold text-gray-900">공고 삭제</h3>
+            <p className="mb-6 text-gray-600">
               정말로 이 공고를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
             </p>
             <div className="flex space-x-3">
               <button
                 onClick={handleCancelDelete}
-                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                className="flex-1 px-4 py-2 text-gray-700 transition bg-gray-100 rounded-lg hover:bg-gray-200"
               >
                 취소
               </button>
               <button
                 onClick={handleConfirmDelete}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                className="flex-1 px-4 py-2 text-white transition bg-red-600 rounded-lg hover:bg-red-700"
               >
                 삭제
               </button>
