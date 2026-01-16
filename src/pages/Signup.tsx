@@ -489,7 +489,7 @@ export default function SignupPage({
             이미 계정이 있으신가요?{" "}
             <button
               onClick={() => {
-                if (location.pathname.includes('/company')) {
+                if (location.pathname.includes("/company")) {
                   navigate("/company/login");
                 } else {
                   navigate("/user/login");

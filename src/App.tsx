@@ -8,6 +8,7 @@ import CompanyLayout from "./layouts/CompanyLayout";
 import HomePage from "./features/home/HomePage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/Signup";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import MyPage from "./features/mypage/MyPage";
 import CreditPage from "./features/credit/CreditPage";
 import CreditChargePage from "./features/credit-charge/CreditChargePage";
@@ -63,6 +64,7 @@ function App() {
               path="signup"
               element={<SignupPage initialAccountType="personal" />}
             />
+            <Route path="forgot-password" element={<ForgotPasswordPage />} />
 
             {/* 채용정보 서브 페이지 */}
             <Route path="jobs/all" element={<AllJobsPage />} />

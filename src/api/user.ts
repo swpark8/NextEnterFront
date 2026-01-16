@@ -32,7 +32,7 @@ export const getUserProfile = async (
   userId: number
 ): Promise<ApiResponse<UserProfile>> => {
   const response = await api.get<ApiResponse<UserProfile>>(
-    `/api/auth/user/${userId}` // ✅ /api/auth/user 로 수정
+    `/api/auth/user/${userId}`
   );
   return response.data;
 };
@@ -43,7 +43,7 @@ export const updateUserProfile = async (
   data: UpdateUserRequest
 ): Promise<ApiResponse<UserProfile>> => {
   const response = await api.put<ApiResponse<UserProfile>>(
-    `/api/auth/user/${userId}`, // ✅ /api/auth/user 로 수정
+    `/api/auth/user/${userId}`,
     data
   );
   return response.data;
@@ -58,13 +58,48 @@ export const uploadProfileImage = async (
   formData.append("file", file);
 
   const response = await api.post<ApiResponse<{ profileImage: string }>>(
-    `/api/auth/user/${userId}/profile-image`, // ✅ /api/auth/user 로 수정
+    `/api/auth/user/${userId}/profile-image`,
     formData,
     {
       headers: {
         "Content-Type": "multipart/form-data",
       },
     }
+  );
+  return response.data;
+};
+
+// ✅ 아래 비밀번호 변경 관련 함수 추가
+
+// 비밀번호 변경 인증코드 발송
+export interface SendVerificationRequest {
+  email: string;
+  type: string;
+}
+
+export const sendPasswordChangeCode = async (
+  email: string
+): Promise<ApiResponse<null>> => {
+  const response = await api.post<ApiResponse<null>>(
+    `/api/auth/user/password-change/request`,
+    { email, type: "PASSWORD_CHANGE" }
+  );
+  return response.data;
+};
+
+// 비밀번호 변경
+export interface ChangePasswordRequest {
+  email: string;
+  verificationCode: string;
+  newPassword: string;
+}
+
+export const changePassword = async (
+  data: ChangePasswordRequest
+): Promise<ApiResponse<null>> => {
+  const response = await api.post<ApiResponse<null>>(
+    `/api/auth/user/password-change`,
+    data
   );
   return response.data;
 };
