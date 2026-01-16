@@ -1,7 +1,8 @@
 import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import Footer from "../components/Footer";
 import { signup } from "../api/auth";
-import { registerCompany } from "../api/company"; // ✅ 추가
+import { registerCompany } from "../api/company";
 
 interface SignupPageProps {
   onLogoClick?: () => void;
@@ -15,6 +16,8 @@ export default function SignupPage({
   onLoginClick,
   initialAccountType = "personal",
 }: SignupPageProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [accountType, setAccountType] = useState<"personal" | "business">(
     initialAccountType || "personal"
   );
@@ -128,7 +131,6 @@ export default function SignupPage({
     return Object.keys(newErrors).length === 0;
   };
 
-  // ✅ 직원수 문자열을 숫자로 변환하는 함수
   const parseEmployeeCount = (value: string): number | undefined => {
     if (!value) return undefined;
 
@@ -143,7 +145,6 @@ export default function SignupPage({
     return rangeMap[value];
   };
 
-  // ✅ 회원가입 API 호출
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -153,7 +154,6 @@ export default function SignupPage({
     setApiError("");
 
     try {
-      // ✅ 개인회원 가입
       if (accountType === "personal") {
         const genderValue = gender ? gender.toUpperCase() : undefined;
 
@@ -170,15 +170,11 @@ export default function SignupPage({
 
         if (response.success) {
           alert("회원가입이 완료되었습니다! 로그인 페이지로 이동합니다.");
-          if (onLoginClick) {
-            onLoginClick();
-          }
+          navigate("/user/login");
         } else {
           setApiError(response.message || "회원가입에 실패했습니다.");
         }
-      }
-      // ✅ 기업회원 가입
-      else {
+      } else {
         const companyData = {
           email: email.trim(),
           password: password,
@@ -196,9 +192,7 @@ export default function SignupPage({
 
         if (response.success) {
           alert("기업 회원가입이 완료되었습니다! 로그인 페이지로 이동합니다.");
-          if (onLoginClick) {
-            onLoginClick();
-          }
+          navigate("/company/login");
         } else {
           setApiError(response.message || "기업 회원가입에 실패했습니다.");
         }
@@ -220,7 +214,6 @@ export default function SignupPage({
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* 상단 로고 영역 */}
       <div className="w-full bg-white border-b border-gray-200 py-6 flex justify-center">
         <div
           className="w-32 h-12 border-2 border-gray-300 rounded flex items-center justify-center cursor-pointer hover:border-gray-400 transition"
@@ -230,7 +223,6 @@ export default function SignupPage({
         </div>
       </div>
 
-      {/* 메인 컨텐츠 */}
       <div className="flex-1 flex flex-col items-center px-4 py-8">
         <div className="w-full max-w-md">
           <div className="flex mb-6">
@@ -264,7 +256,6 @@ export default function SignupPage({
             </button>
           </div>
 
-          {/* API 에러 메시지 표시 */}
           {apiError && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded">
               <p className="text-red-600 text-sm">{apiError}</p>
@@ -497,7 +488,13 @@ export default function SignupPage({
           <div className="text-center mt-6 text-sm text-gray-600">
             이미 계정이 있으신가요?{" "}
             <button
-              onClick={onLoginClick}
+              onClick={() => {
+                if (location.pathname.includes('/company')) {
+                  navigate("/company/login");
+                } else {
+                  navigate("/user/login");
+                }
+              }}
               className="text-blue-600 hover:text-blue-700 font-medium"
             >
               로그인

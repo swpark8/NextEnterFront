@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Footer from "../components/Footer";
 
 interface BusinessServicePageProps {
@@ -8,9 +9,6 @@ interface BusinessServicePageProps {
   onCreditManagementClick?: () => void;
   onAdvertisementManagementClick?: () => void;
   onJobDetailClick?: (jobId: number) => void;
-  // ✅ 추가
-  onLoginClick?: () => void;
-  onSignupClick?: () => void;
 }
 
 export default function BusinessServicePage({
@@ -20,11 +18,9 @@ export default function BusinessServicePage({
   onCreditManagementClick,
   onAdvertisementManagementClick,
   onJobDetailClick,
-  // ✅ 추가
-  onLoginClick,
-  onSignupClick,
 }: BusinessServicePageProps) {
   const [activeService, setActiveService] = useState<string>("");
+  const navigate = useNavigate();
 
   const services = [
     {
@@ -147,16 +143,16 @@ export default function BusinessServicePage({
               </button>
             </nav>
 
-            {/* ✅ 오른쪽 로그인/회원가입 버튼 추가 */}
+            {/* 오른쪽 로그인/회원가입 버튼 */}
             <div className="flex items-center space-x-4">
               <button
-                onClick={onLoginClick}
+                onClick={() => navigate("/company/login")}
                 className="px-4 py-2 text-gray-700 transition hover:text-blue-600"
               >
                 로그인
               </button>
               <button
-                onClick={onSignupClick}
+                onClick={() => navigate("/company/signup")}
                 className="px-4 py-2 text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
               >
                 회원가입
