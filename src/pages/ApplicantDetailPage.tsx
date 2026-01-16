@@ -1,4 +1,6 @@
 import Footer from "../components/Footer";
+import { useApp } from "../context/AppContext";
+import type { InterviewOffer } from "../context/AppContext";
 
 interface ApplicantDetailPageProps {
   applicantId?: number;
@@ -13,6 +15,8 @@ export default function ApplicantDetailPage({
   onLogoClick,
   onCompatibilityClick,
 }: ApplicantDetailPageProps) {
+  const { addInterviewOffer } = useApp();
+  
   // 지원자 상세 데이터 (실제로는 API에서 가져올 데이터)
   const applicantData = {
     1: {
@@ -103,8 +107,22 @@ export default function ApplicantDetailPage({
 
   const handleInterviewRequest = () => {
     if (window.confirm(`${data.name}님에게 면접 요청을 하시겠습니까?`)) {
-      alert("면접 요청이 성공적으로 전송되었습니다.");
-      // 여기에 실제 면접 요청 API 호출 로직 추가
+      // 면접 제안 데이터 생성
+      const newInterviewOffer: InterviewOffer = {
+        id: Date.now(),
+        company: "(주)등록기업", // 실제로는 기업명을 저장해야 함
+        position: "프론트엔드 개발자", // 실제로는 공고 정보에서 가져와야 함
+        date: new Date().toISOString().split('T')[0],
+        status: "면접 대기",
+        content: `안녕하세요 ${data.name}님, (주)등록기업 채용 담당자입니다.\n\n귀하의 이력서를 보고 큰 인상을 받아 면접 제안을 드립니다. 저희 팀과 적합한 분이라고 판단되며, 자세한 내용은 면접에서 말씩드리고 싶습니다.`,
+        location: "서울특별시 강남구 테헤란로 123", // 실제로는 기업 위치
+        jobId: undefined, // 실제 공고 ID
+      };
+      
+      // AppContext에 면접 제안 추가
+      addInterviewOffer(newInterviewOffer);
+      
+      alert("면접 요청이 성공적으로 전송되었습니다.\n개인 회원은 '받은 제안' 페이지에서 확인할 수 있습니다.");
     }
   };
 

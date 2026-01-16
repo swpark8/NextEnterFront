@@ -86,6 +86,33 @@ export interface InterviewHistory {
   qaList: InterviewQA[];
 }
 
+// 포지션 제안 타입
+export interface PositionOffer {
+  id: number;
+  company: string;
+  sender: string;
+  position: string;
+  date: string;
+  message: string;
+  jobTitle: string;
+  salary: string;
+  location: string;
+  tags: string[];
+  jobId?: number;
+}
+
+// 면접 제안 타입
+export interface InterviewOffer {
+  id: number;
+  company: string;
+  position: string;
+  date: string;
+  status: string;
+  content: string;
+  location: string;
+  jobId?: number;
+}
+
 interface AppContextType {
   resumes: Resume[];
   jobListings: JobListing[];
@@ -93,6 +120,8 @@ interface AppContextType {
   matchingHistory: MatchingHistory[];
   interviewResults: InterviewResult[];
   interviewHistories: InterviewHistory[];
+  positionOffers: PositionOffer[];
+  interviewOffers: InterviewOffer[];
   addResume: (resume: Resume) => void;
   updateResume: (id: number, resume: Resume) => void;
   deleteResume: (id: number) => void;
@@ -108,6 +137,10 @@ interface AppContextType {
   clearInterviewResults: () => void;
   addInterviewHistory: (history: InterviewHistory) => void;
   clearInterviewHistories: () => void;
+  addPositionOffer: (offer: PositionOffer) => void;
+  deletePositionOffer: (id: number) => void;
+  addInterviewOffer: (offer: InterviewOffer) => void;
+  deleteInterviewOffer: (id: number) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -192,6 +225,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const [interviewHistories, setInterviewHistoriesState] = useState<InterviewHistory[]>(loadInterviewHistoriesFromStorage());
+
+  // 포지션 제안 데이터
+  const loadPositionOffersFromStorage = () => {
+    try {
+      const savedOffers = localStorage.getItem('nextenter_position_offers');
+      if (savedOffers) {
+        return JSON.parse(savedOffers);
+      }
+    } catch (error) {
+      console.error('포지션 제안 로드 실패:', error);
+    }
+    return [];
+  };
+
+  const [positionOffers, setPositionOffersState] = useState<PositionOffer[]>(loadPositionOffersFromStorage());
+
+  // 면접 제안 데이터
+  const loadInterviewOffersFromStorage = () => {
+    try {
+      const savedOffers = localStorage.getItem('nextenter_interview_offers');
+      if (savedOffers) {
+        return JSON.parse(savedOffers);
+      }
+    } catch (error) {
+      console.error('면접 제안 로드 실패:', error);
+    }
+    return [];
+  };
+
+  const [interviewOffers, setInterviewOffersState] = useState<InterviewOffer[]>(loadInterviewOffersFromStorage());
 
   const addResume = (resume: Resume) => {
     setResumesState(prev => {
@@ -364,6 +427,54 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const addPositionOffer = (offer: PositionOffer) => {
+    setPositionOffersState(prev => {
+      const updated = [offer, ...prev];
+      try {
+        localStorage.setItem('nextenter_position_offers', JSON.stringify(updated));
+      } catch (error) {
+        console.error('포지션 제안 저장 실패:', error);
+      }
+      return updated;
+    });
+  };
+
+  const deletePositionOffer = (id: number) => {
+    setPositionOffersState(prev => {
+      const updated = prev.filter(o => o.id !== id);
+      try {
+        localStorage.setItem('nextenter_position_offers', JSON.stringify(updated));
+      } catch (error) {
+        console.error('포지션 제안 삭제 실패:', error);
+      }
+      return updated;
+    });
+  };
+
+  const addInterviewOffer = (offer: InterviewOffer) => {
+    setInterviewOffersState(prev => {
+      const updated = [offer, ...prev];
+      try {
+        localStorage.setItem('nextenter_interview_offers', JSON.stringify(updated));
+      } catch (error) {
+        console.error('면접 제안 저장 실패:', error);
+      }
+      return updated;
+    });
+  };
+
+  const deleteInterviewOffer = (id: number) => {
+    setInterviewOffersState(prev => {
+      const updated = prev.filter(o => o.id !== id);
+      try {
+        localStorage.setItem('nextenter_interview_offers', JSON.stringify(updated));
+      } catch (error) {
+        console.error('면접 제안 삭제 실패:', error);
+      }
+      return updated;
+    });
+  };
+
   return (
     <AppContext.Provider 
       value={{ 
@@ -373,6 +484,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         matchingHistory,
         interviewResults,
         interviewHistories,
+        positionOffers,
+        interviewOffers,
         addResume, 
         updateResume, 
         deleteResume,
@@ -387,7 +500,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         addInterviewResult,
         clearInterviewResults,
         addInterviewHistory,
-        clearInterviewHistories
+        clearInterviewHistories,
+        addPositionOffer,
+        deletePositionOffer,
+        addInterviewOffer,
+        deleteInterviewOffer
       }}
     >
       {children}

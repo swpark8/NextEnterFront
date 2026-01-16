@@ -1,7 +1,7 @@
 import { useState } from "react";
 import OfferSidebar from "./components/OfferSidebar";
-// ✅ 커스텀 훅 경로 확인해주세요
 import { usePageNavigation } from "../../hooks/usePageNavigation";
+import { useApp } from "../../context/AppContext";
 
 interface InterviewOfferPageProps {
   initialMenu?: string;
@@ -14,43 +14,23 @@ export default function InterviewOfferPage({
 }: InterviewOfferPageProps) {
   // 1. 네비게이션 훅
   const { activeMenu, handleMenuClick } = usePageNavigation(
-    "offer-sub-2",
-    initialMenu,
+    "offer",
+    initialMenu || "offer-sub-2",
     onNavigate
   );
 
-  // 2. 상태 관리 (Logic은 InterviewPage, Style용 state 추가)
+  // 2. AppContext에서 면접 제안 데이터 가져오기
+  const { interviewOffers, deleteInterviewOffer } = useApp();
+
+  // 3. 상태 관리
   const [selectedOfferId, setSelectedOfferId] = useState<number | null>(null);
-  const [hoveredId, setHoveredId] = useState<number | null>(null); // ✅ 호버 효과용 (OfferPage 스타일)
+  const [hoveredId, setHoveredId] = useState<number | null>(null);
 
-  const [interviewOffers, setInterviewOffers] = useState([
-    {
-      id: 1,
-      company: "(주)네이버",
-      position: "프론트엔드 개발자",
-      date: "2026.01.12",
-      status: "면접 대기",
-      content:
-        "안녕하세요 김유연님, 네이버 FE 채용 담당자입니다. 실무 면접을 진행하고 싶어 연락드립니다.",
-      location: "경기도 성남시 분당구 정자일로 95",
-    },
-    {
-      id: 2,
-      company: "(주)우아한형제들",
-      position: "React 개발자",
-      date: "2026.01.10",
-      status: "일정 조율중",
-      content:
-        "안녕하세요, 우아한형제들입니다. React 개발자 포지션에 적합하다고 판단되어 면접 제안을 드립니다.",
-      location: "서울 송파구 위례성대로 2",
-    },
-  ]);
-
-  // 3. 핸들러
+  // 4. 핸들러
   const handleDelete = (id: number, event: React.MouseEvent) => {
     event.stopPropagation(); // 카드 클릭 방지
     if (window.confirm("제안을 삭제하시겠습니까?")) {
-      setInterviewOffers(interviewOffers.filter((item) => item.id !== id));
+      deleteInterviewOffer(id);
       if (selectedOfferId === id) {
         setSelectedOfferId(null);
       }
@@ -70,14 +50,14 @@ export default function InterviewOfferPage({
         <OfferSidebar activeMenu={activeMenu} onMenuClick={handleMenuClick} />
         {/* 메인 컨텐츠 */}
         <div className="flex-1">
-          {/* 포지션 제안 섹션 */}
+          {/* 면접 제안 섹션 */}
           <div className="mb-6">
             <h3 className="pb-2 mb-4 text-lg font-bold text-blue-600 border-b-2 border-blue-600">
               면접 제안
             </h3>
 
             {selectedOfferId && selectedOffer ? (
-              // 🟦 상세 화면 (기존 로직 유지)
+              // 🟦 상세 화면
               <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
                 <div className="flex items-center justify-between pb-6 mb-8 border-b border-gray-100">
                   <div>
@@ -141,7 +121,7 @@ export default function InterviewOfferPage({
                 </div>
               </section>
             ) : (
-              // 🟦 목록 화면 (✨ 여기가 중요: OfferPage 스타일 적용됨)
+              // 🟦 목록 화면
               <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
                 <div className="space-y-4">
                   {interviewOffers.length === 0 ? (
@@ -174,7 +154,7 @@ export default function InterviewOfferPage({
                             >
                               {offer.company}
                             </h4>
-                            {/* 면접 상태 배지 (디자인 유지하면서 추가) */}
+                            {/* 면접 상태 배지 */}
                             <span className="px-2 py-0.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-md border border-blue-100">
                               {offer.status}
                             </span>
@@ -184,7 +164,7 @@ export default function InterviewOfferPage({
                           </p>
                         </div>
 
-                        {/* 오른쪽 쓰레기통 아이콘 (SVG 적용) */}
+                        {/* 오른쪽 쓰레기통 아이콘 */}
                         <button
                           onClick={(e) => handleDelete(offer.id, e)}
                           className="p-2 text-gray-400 transition-all rounded-lg hover:text-red-600 hover:bg-red-50"
