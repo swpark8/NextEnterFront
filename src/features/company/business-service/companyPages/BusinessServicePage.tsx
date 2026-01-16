@@ -1,5 +1,4 @@
 import { useState } from "react";
-import Footer from "../../../../components/Footer";
 
 interface BusinessServicePageProps {
   onJobManagementClick?: () => void;
@@ -278,7 +277,6 @@ export default function BusinessServicePage({
           </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 }
