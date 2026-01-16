@@ -44,7 +44,6 @@ export default function InterviewChatPage({
   const handleSend = () => {
     if (!inputText.trim()) return;
 
-    // 사용자 메시지 추가
     const userMessage: Message = {
       id: messages.length + 1,
       sender: 'user',
@@ -55,7 +54,6 @@ export default function InterviewChatPage({
     setMessages([...messages, userMessage]);
     setInputText('');
 
-    // AI 응답 시뮬레이션 (2초 후)
     setTimeout(() => {
       const aiResponses = [
         '좋습니다. 잘 답변하셨습니다.',
@@ -84,12 +82,10 @@ export default function InterviewChatPage({
     }
   };
 
-  // 사이드바 클릭 시 확인 후 이동
+  // 사이드바 클릭 시 바로 이동
   const handleSidebarClick = (menuId: string) => {
-    if (window.confirm("면접을 종료하고 페이지를 이동하시겠습니까?\n진행 중인 면접 내용은 저장되지 않습니다.")) {
-      if (onMenuClick) {
-        onMenuClick(menuId);
-      }
+    if (onMenuClick) {
+      onMenuClick(menuId);
     }
   };
 
@@ -152,7 +148,6 @@ export default function InterviewChatPage({
                     message.sender === 'user' ? 'flex-row-reverse' : ''
                   }`}
                 >
-                  {/* 아바타 */}
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
                       message.sender === 'ai' ? 'bg-blue-500' : 'bg-gray-400'
@@ -163,7 +158,6 @@ export default function InterviewChatPage({
                     </span>
                   </div>
 
-                  {/* 메시지 박스 */}
                   <div
                     className={`flex flex-col max-w-2xl ${
                       message.sender === 'user' ? 'items-end' : 'items-start'

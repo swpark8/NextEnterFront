@@ -2,7 +2,7 @@ import { useState } from "react";
 import Footer from "../components/Footer";
 
 interface AdvertisementDetailPageProps {
-  advertisementId: number;
+  advertisementId?: number;
   onBackClick?: () => void;
   onLogoClick?: () => void;
   onEditClick?: (id: number) => void;
@@ -35,7 +35,7 @@ interface AdvertisementDetail {
 }
 
 export default function AdvertisementDetailPage({
-  advertisementId,
+  advertisementId = 1,
   onBackClick,
   onLogoClick,
   onEditClick,
@@ -56,7 +56,8 @@ export default function AdvertisementDetailPage({
       adType: "배너 광고",
       placement: "메인페이지",
       targetAudience: "프론트엔드 개발자, 5년 이상 경력자",
-      description: "시니어 프론트엔드 개발자를 채용하기 위한 메인페이지 배너 광고입니다. React와 TypeScript 경험이 있는 개발자를 타겟으로 합니다.",
+      description:
+        "시니어 프론트엔드 개발자를 채용하기 위한 메인페이지 배너 광고입니다. React와 TypeScript 경험이 있는 개발자를 타겟으로 합니다.",
       clicks: 234,
       impressions: 5420,
       spent: "187,000원",
@@ -149,7 +150,7 @@ export default function AdvertisementDetailPage({
           <div className="flex items-center justify-between">
             <div
               onClick={handleLogoClick}
-              className="cursor-pointer hover:opacity-80 transition-opacity"
+              className="transition-opacity cursor-pointer hover:opacity-80"
             >
               <span className="text-2xl font-bold text-blue-600">Next </span>
               <span className="text-2xl font-bold text-blue-800">Enter</span>
@@ -164,7 +165,7 @@ export default function AdvertisementDetailPage({
               </button>
               <button
                 onClick={handleLogoClick}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition text-gray-700"
+                className="px-4 py-2 text-gray-700 transition bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
               >
                 개인 회원
               </button>
@@ -196,13 +197,13 @@ export default function AdvertisementDetailPage({
           <div className="flex space-x-3">
             <button
               onClick={handleEditClick}
-              className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
+              className="px-6 py-2 font-semibold text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
             >
               수정
             </button>
             <button
               onClick={handleDeleteClick}
-              className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition"
+              className="px-6 py-2 font-semibold text-white transition bg-red-600 rounded-lg hover:bg-red-700"
             >
               삭제
             </button>
@@ -211,26 +212,24 @@ export default function AdvertisementDetailPage({
 
         {/* 주요 성과 지표 */}
         <div className="grid grid-cols-4 gap-4 mb-6">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="text-sm text-gray-500 mb-1">노출수</div>
+          <div className="p-6 bg-white rounded-lg shadow">
+            <div className="mb-1 text-sm text-gray-500">노출수</div>
             <div className="text-3xl font-bold text-gray-900">
               {data.impressions.toLocaleString()}
             </div>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="text-sm text-gray-500 mb-1">클릭수</div>
+          <div className="p-6 bg-white rounded-lg shadow">
+            <div className="mb-1 text-sm text-gray-500">클릭수</div>
             <div className="text-3xl font-bold text-blue-600">
               {data.clicks.toLocaleString()}
             </div>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="text-sm text-gray-500 mb-1">클릭률 (CTR)</div>
-            <div className="text-3xl font-bold text-green-600">
-              {data.ctr}%
-            </div>
+          <div className="p-6 bg-white rounded-lg shadow">
+            <div className="mb-1 text-sm text-gray-500">클릭률 (CTR)</div>
+            <div className="text-3xl font-bold text-green-600">{data.ctr}%</div>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="text-sm text-gray-500 mb-1">지출액</div>
+          <div className="p-6 bg-white rounded-lg shadow">
+            <div className="mb-1 text-sm text-gray-500">지출액</div>
             <div className="text-3xl font-bold text-purple-600">
               {data.spent}
             </div>
@@ -238,83 +237,85 @@ export default function AdvertisementDetailPage({
         </div>
 
         {/* 광고 정보 */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">광고 정보</h2>
+        <div className="p-6 mb-6 bg-white rounded-lg shadow">
+          <h2 className="mb-4 text-xl font-bold text-gray-900">광고 정보</h2>
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <div className="text-sm text-gray-500 mb-1">연결된 공고</div>
+              <div className="mb-1 text-sm text-gray-500">연결된 공고</div>
               <div className="text-base font-medium text-gray-900">
                 {data.jobPosting}
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500 mb-1">광고 유형</div>
+              <div className="mb-1 text-sm text-gray-500">광고 유형</div>
               <div className="text-base font-medium text-gray-900">
                 {data.adType}
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500 mb-1">게재 위치</div>
+              <div className="mb-1 text-sm text-gray-500">게재 위치</div>
               <div className="text-base font-medium text-gray-900">
                 {data.placement}
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500 mb-1">광고 기간</div>
+              <div className="mb-1 text-sm text-gray-500">광고 기간</div>
               <div className="text-base font-medium text-gray-900">
                 {data.startDate} ~ {data.endDate}
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500 mb-1">총 예산</div>
+              <div className="mb-1 text-sm text-gray-500">총 예산</div>
               <div className="text-base font-medium text-gray-900">
                 {data.budget}
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500 mb-1">일일 예산</div>
+              <div className="mb-1 text-sm text-gray-500">일일 예산</div>
               <div className="text-base font-medium text-gray-900">
                 {data.dailyBudget}
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500 mb-1">클릭당 비용 (CPC)</div>
+              <div className="mb-1 text-sm text-gray-500">
+                클릭당 비용 (CPC)
+              </div>
               <div className="text-base font-medium text-gray-900">
                 {data.cpc}원
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500 mb-1">타겟 대상</div>
+              <div className="mb-1 text-sm text-gray-500">타겟 대상</div>
               <div className="text-base font-medium text-gray-900">
                 {data.targetAudience}
               </div>
             </div>
           </div>
           <div className="mt-6">
-            <div className="text-sm text-gray-500 mb-2">광고 설명</div>
-            <div className="text-base text-gray-700 leading-relaxed">
+            <div className="mb-2 text-sm text-gray-500">광고 설명</div>
+            <div className="text-base leading-relaxed text-gray-700">
               {data.description}
             </div>
           </div>
         </div>
 
         {/* 일별 성과 */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">일별 성과</h2>
+        <div className="p-6 bg-white rounded-lg shadow">
+          <h2 className="mb-4 text-xl font-bold text-gray-900">일별 성과</h2>
           <div className="overflow-hidden border border-gray-200 rounded-lg">
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                  <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">
                     날짜
                   </th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">
+                  <th className="px-6 py-3 text-sm font-semibold text-center text-gray-700">
                     노출수
                   </th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">
+                  <th className="px-6 py-3 text-sm font-semibold text-center text-gray-700">
                     클릭수
                   </th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">
+                  <th className="px-6 py-3 text-sm font-semibold text-center text-gray-700">
                     지출액
                   </th>
                 </tr>
@@ -325,13 +326,13 @@ export default function AdvertisementDetailPage({
                     <td className="px-6 py-4 text-sm text-gray-900">
                       {stat.date}
                     </td>
-                    <td className="px-6 py-4 text-center text-sm text-gray-900">
+                    <td className="px-6 py-4 text-sm text-center text-gray-900">
                       {stat.impressions.toLocaleString()}
                     </td>
-                    <td className="px-6 py-4 text-center text-sm text-gray-900">
+                    <td className="px-6 py-4 text-sm text-center text-gray-900">
                       {stat.clicks.toLocaleString()}
                     </td>
-                    <td className="px-6 py-4 text-center text-sm text-gray-900">
+                    <td className="px-6 py-4 text-sm text-center text-gray-900">
                       {stat.spent}
                     </td>
                   </tr>
@@ -344,24 +345,22 @@ export default function AdvertisementDetailPage({
 
       {/* 삭제 확인 모달 */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-bold text-gray-900 mb-2">
-              광고 삭제
-            </h3>
-            <p className="text-gray-600 mb-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-md p-6 mx-4 bg-white rounded-lg">
+            <h3 className="mb-2 text-lg font-bold text-gray-900">광고 삭제</h3>
+            <p className="mb-6 text-gray-600">
               정말로 이 광고를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
             </p>
             <div className="flex space-x-3">
               <button
                 onClick={handleCancelDelete}
-                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                className="flex-1 px-4 py-2 text-gray-700 transition bg-gray-100 rounded-lg hover:bg-gray-200"
               >
                 취소
               </button>
               <button
                 onClick={handleConfirmDelete}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                className="flex-1 px-4 py-2 text-white transition bg-red-600 rounded-lg hover:bg-red-700"
               >
                 삭제
               </button>

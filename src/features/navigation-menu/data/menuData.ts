@@ -22,7 +22,6 @@ export const navigationMenuData = {
   matching: {
     id: "matching",
     title: "매칭분석",
-    // ✅ 아까 비어있어서 안 보였던 부분입니다. 채워넣었습니다.
     items: [
       { id: "matching-sub-1", label: "매칭결과 리포트" },
       { id: "matching-sub-2", label: "매칭 히스토리" },
@@ -33,7 +32,6 @@ export const navigationMenuData = {
     title: "모의면접",
     items: [
       { id: "interview-sub-1", label: "모의면접 시작" },
-      { id: "interview-sub-2", label: "모의면접 진행" },
       { id: "interview-sub-3", label: "면접 결과" },
       { id: "interview-sub-4", label: "면접 히스토리" },
     ],
@@ -50,9 +48,8 @@ export const navigationMenuData = {
     id: "mypage",
     title: "마이페이지",
     items: [
-      { id: "mypage-sub-1", label: "나의 정보" },
-      { id: "mypage-sub-2", label: "프로필 수정" },
-      { id: "mypage-sub-3", label: "지원 이력" },
+      { id: "mypage-sub-1", label: "마이페이지" },
+      { id: "mypage-sub-2", label: "내 정보" },
     ],
   },
   credit: {

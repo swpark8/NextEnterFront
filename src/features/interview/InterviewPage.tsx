@@ -1,24 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react"; // ✅ useEffect 추가
 import InterviewSidebar from "./components/InterviewSidebar";
 import InterviewChatPage from "./components/InterviewChatPage";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 import MockInterviewResultPage from "./components/MockInterviewResultPage";
 import MockInterviewHistoryPage from "./components/MockInterviewHistoryPage";
+// ✅ [추가 1] 방어막 켜는 함수 임포트
+import { setNavigationBlocker } from "../../utils/navigationBlocker";
 
 interface InterviewPageProps {
-  initialMenu?: string;
   onNavigate?: (page: string, subMenu?: string) => void;
+  initialMenu?: string;
 }
 
 export default function InterviewPage({
-  initialMenu,
   onNavigate,
+  initialMenu,
 }: InterviewPageProps) {
   const { activeMenu, handleMenuClick } = usePageNavigation(
     "interview",
-    initialMenu,
+    initialMenu || "interview-sub-1",
     onNavigate
   );
+
   const [selectedLevel, setSelectedLevel] = useState<"junior" | "senior">(
     "junior"
   );
@@ -26,8 +29,34 @@ export default function InterviewPage({
   const [currentCredit, setCurrentCredit] = useState(200);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-  const handleCreditClick = () => {
-    console.log("보유 크레딧 클릭됨");
+  // ✅ [추가 2] 면접 상태에 따라 전역 방어막(Header 차단) 켜고 끄기
+  useEffect(() => {
+    if (isInterviewStarted) {
+      setNavigationBlocker(
+        true,
+        "면접이 진행 중입니다. 페이지를 이동하면 진행 상황이 저장되지 않습니다. 이동하시겠습니까?"
+      );
+    } else {
+      setNavigationBlocker(false);
+    }
+
+    // 컴포넌트가 사라질 때(언마운트) 방어막 해제 (안전장치)
+    return () => setNavigationBlocker(false);
+  }, [isInterviewStarted]);
+
+  // ✅ [추가 3] 사이드바 클릭 시 방어 로직 (이전 코드 유지/보완)
+  const handleSidebarMenuClick = (menuId: string) => {
+    if (isInterviewStarted) {
+      const confirmMove = window.confirm(
+        "면접이 진행 중입니다. 페이지를 이동하면 현재 진행 상황이 저장되지 않을 수 있습니다. 이동하시겠습니까?"
+      );
+      if (confirmMove) {
+        setIsInterviewStarted(false); // 여기서 false 되면 useEffect가 감지해서 방어막도 꺼짐
+        handleMenuClick(menuId);
+      }
+    } else {
+      handleMenuClick(menuId);
+    }
   };
 
   const handleStartInterview = () => {
@@ -49,18 +78,11 @@ export default function InterviewPage({
     setShowConfirmDialog(false);
   };
 
-  const handleCancelInterview = () => {
-    setShowConfirmDialog(false);
-  };
-
-  const handleLevelClick = (level: "junior" | "senior") => {
+  const handleCancelInterview = () => setShowConfirmDialog(false);
+  const handleLevelClick = (level: "junior" | "senior") =>
     setSelectedLevel(level);
-    console.log(`${level} 선택됨`);
-  };
-
-  const handleCreditUsageClick = (id: number) => {
+  const handleCreditUsageClick = (id: number) =>
     console.log(`크레딧 사용 내역 ${id} 클릭됨`);
-  };
 
   const creditUsages = [
     { id: 1, title: "AI 모의 면접 (주니어 차감 - 10)", date: "2025.12.15" },
@@ -82,26 +104,22 @@ export default function InterviewPage({
     },
   ];
 
-  // ============================================
-  // 서브메뉴별 페이지 렌더링
-  // ============================================
-
-  // interview-sub-2: 모의면접 진행 (채팅 화면)
   if (activeMenu === "interview-sub-2" || isInterviewStarted) {
     return (
       <InterviewChatPage
         onBack={() => {
-          setIsInterviewStarted(false);
-          handleMenuClick("interview-sub-1");
+          if (confirm("면접을 종료하시겠습니까?")) {
+            setIsInterviewStarted(false);
+            handleMenuClick("interview-sub-1");
+          }
         }}
         level={selectedLevel}
         activeMenu={activeMenu}
-        onMenuClick={handleMenuClick}
+        onMenuClick={handleSidebarMenuClick}
       />
     );
   }
 
-  // interview-sub-3: 면접 결과 (통계 + 점수 목록)
   if (activeMenu === "interview-sub-3") {
     return (
       <MockInterviewResultPage
@@ -112,7 +130,6 @@ export default function InterviewPage({
     );
   }
 
-  // interview-sub-4: 면접 히스토리 (Q&A 상세)
   if (activeMenu === "interview-sub-4") {
     return (
       <MockInterviewHistoryPage
@@ -124,10 +141,8 @@ export default function InterviewPage({
     );
   }
 
-  // interview-sub-1 또는 기본: 모의면접 시작
   return (
     <>
-      {/* 확인 다이얼로그 */}
       {showConfirmDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="w-full max-w-md p-8 mx-4 bg-white shadow-2xl rounded-2xl">
@@ -161,20 +176,14 @@ export default function InterviewPage({
 
       <div className="px-4 py-8 mx-auto max-w-7xl">
         <h2 className="inline-block mb-6 text-2xl font-bold">모의면접</h2>
-
         <div className="flex gap-6">
-          {/* 왼쪽 사이드바 */}
           <InterviewSidebar
             activeMenu={activeMenu}
             onMenuClick={handleMenuClick}
           />
-
-          {/* 메인 컨텐츠 */}
           <div className="flex-1">
-            {/* 면접 설정 카드 */}
             <div className="p-10 bg-white border-2 border-blue-400 rounded-2xl">
               <h3 className="mb-8 text-2xl font-bold">면접 설정</h3>
-
               <div className="grid grid-cols-2 gap-6 mb-10">
                 <button
                   onClick={() => handleLevelClick("junior")}
@@ -190,7 +199,6 @@ export default function InterviewPage({
                     (- 10 크레딧 차감)
                   </div>
                 </button>
-
                 <button
                   onClick={() => handleLevelClick("senior")}
                   className={`p-10 rounded-xl border-2 transition ${
@@ -208,8 +216,6 @@ export default function InterviewPage({
                   </div>
                 </button>
               </div>
-
-              {/* 면접 시작 박스 */}
               <div className="p-12 text-center text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl">
                 <div className="mb-6">
                   <div className="flex items-center justify-center w-20 h-20 mx-auto mb-6 rounded-full bg-white/20">
@@ -229,9 +235,7 @@ export default function InterviewPage({
                 </button>
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-6 mt-6">
-              {/* 크레딧 사용 내역 */}
               <div className="p-8 bg-white border-2 border-blue-400 rounded-2xl">
                 <h3 className="mb-6 text-xl font-bold">크레딧 사용 내역</h3>
                 <div className="space-y-4">
@@ -249,8 +253,6 @@ export default function InterviewPage({
                   ))}
                 </div>
               </div>
-
-              {/* 최근 면접 기록 */}
               <div className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
                 <h3 className="mb-6 text-xl font-bold">최근 면접 기록</h3>
                 <div className="space-y-3">

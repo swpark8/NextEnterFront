@@ -1,58 +1,62 @@
 import { useState, useEffect } from "react";
+// ✅ 1. useLocation 추가 (현재 내 위치 확인용)
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { navigationMenuData } from "../features/navigation-menu/data/menuData";
 
-/**
- * 페이지 네비게이션 커스텀 훅
- * 
- * @param currentPageId - 현재 페이지 ID (예: "resume", "credit", "interview")
- * @param initialMenu - 초기 활성 메뉴 ID (App.tsx의 targetMenu에서 전달)
- * @param onNavigate - 페이지 이동 핸들러 (App.tsx의 handleTabChange)
- * @returns { activeMenu, handleMenuClick }
- * 
- * @example
- * ```tsx
- * const { activeMenu, handleMenuClick } = usePageNavigation(
- *   "resume",
- *   initialMenu,
- *   onNavigate
- * );
- * 
- * return (
- *   <ResumeSidebar activeMenu={activeMenu} onMenuClick={handleMenuClick} />
- * );
- * ```
- */
 export const usePageNavigation = (
   currentPageId: string,
-  initialMenu?: string,
+  initialMenuOrDefault?: string,
   onNavigate?: (page: string, subMenu?: string) => void
 ) => {
-  // 활성 메뉴 상태 관리
-  const [activeMenu, setActiveMenu] = useState(initialMenu || currentPageId);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  // ✅ 2. 현재 위치 가져오기
+  const location = useLocation();
 
-  // initialMenu가 변경되면 activeMenu 업데이트
+  const menuFromUrl = searchParams.get("menu");
+
+  const [activeMenu, setActiveMenu] = useState(
+    menuFromUrl || initialMenuOrDefault || currentPageId
+  );
+
   useEffect(() => {
-    if (initialMenu) {
-      setActiveMenu(initialMenu);
+    const newMenu = searchParams.get("menu");
+    if (newMenu) {
+      setActiveMenu(newMenu);
     }
-  }, [initialMenu]);
+  }, [searchParams]);
 
-  /**
-   * 메뉴 클릭 핸들러
-   * 1. activeMenu 상태 업데이트
-   * 2. 클릭한 메뉴가 속한 탭(대분류) 찾기
-   * 3. 현재 페이지가 아닌 다른 페이지라면 onNavigate 호출
-   * 4. 같은 페이지라도 서브 메뉴가 다르면 onNavigate 호출 (예: 이력서 관리 → 자소서 관리)
-   */
-  const handleMenuClick = (menuId: string) => {
-    setActiveMenu(menuId);
+  useEffect(() => {
+    if (initialMenuOrDefault && !menuFromUrl) {
+      setActiveMenu(initialMenuOrDefault);
+    }
+  }, [initialMenuOrDefault, menuFromUrl]);
 
-    // 클릭한 메뉴가 어느 탭에 속하는지 찾기
+  const handleMenuClick = (
+    menuId: string,
+    navigateCallback?: (page: string, subMenu: string) => void
+  ) => {
+    // 3. 별도 페이지로 가야 하는 메뉴들 (여기는 잘 되어 있음)
+    const separateRoutes: { [key: string]: string } = {
+      "job-sub-1": "/user/jobs/all",
+      "job-sub-2": "/user/jobs/ai",
+      "job-sub-3": "/user/jobs/position",
+      "job-sub-4": "/user/jobs/location",
+      "resume-sub-2": "/user/coverletter",
+      "offer-sub-2": "/user/offers/interview",
+      "credit-sub-2": "/user/credit/charge",
+    };
+
+    if (separateRoutes[menuId]) {
+      navigate(`${separateRoutes[menuId]}?menu=${menuId}`);
+      return;
+    }
+
+    // 4. 같은 탭 안에서 이동할 때의 로직
     let targetTab = "";
     const sections = Object.values(navigationMenuData) as any[];
 
     for (const section of sections) {
-      // section.id가 일치하거나, section.items 중에 menuId가 있으면
       if (
         section.id === menuId ||
         section.items?.some((item: any) => item.id === menuId)
@@ -62,10 +66,48 @@ export const usePageNavigation = (
       }
     }
 
-    // ✅ 수정: 다른 탭으로 이동하거나, 같은 탭이라도 항상 onNavigate 호출
-    // (같은 탭 내에서 서브 페이지 전환을 위해)
-    if (targetTab && onNavigate) {
-      onNavigate(targetTab, menuId);
+    if (targetTab === currentPageId) {
+      // ✅ [핵심 수정] "같은 탭이지만, 내가 지금 딴 데(별도 페이지) 와있나?" 체크
+      const baseRoutes: { [key: string]: string } = {
+        job: "/user",
+        resume: "/user/resume",
+        matching: "/user/matching",
+        interview: "/user/interview",
+        offer: "/user/offers",
+        mypage: "/user/mypage",
+        credit: "/user/credit",
+      };
+
+      const targetBaseRoute = baseRoutes[targetTab];
+
+      // "목적지가 기본 페이지인데, 현재 내 주소가 거기가 아니라면?" -> 이동해라!
+      if (targetBaseRoute && location.pathname !== targetBaseRoute) {
+        navigate(`${targetBaseRoute}?menu=${menuId}`);
+      } else {
+        // 이미 기본 페이지에 있으면 쿼리만 변경
+        setActiveMenu(menuId);
+        setSearchParams({ menu: menuId });
+      }
+    } else {
+      // 다른 탭으로 이동 (기존 로직 유지)
+      const callback = navigateCallback || onNavigate;
+      if (callback) {
+        callback(targetTab, menuId);
+      } else {
+        const routes: { [key: string]: string } = {
+          job: "/user",
+          resume: "/user/resume",
+          matching: "/user/matching",
+          interview: "/user/interview",
+          offer: "/user/offers",
+          mypage: "/user/mypage",
+          credit: "/user/credit",
+        };
+        const route = routes[targetTab];
+        if (route) {
+          navigate(`${route}?menu=${menuId}`);
+        }
+      }
     }
   };
 

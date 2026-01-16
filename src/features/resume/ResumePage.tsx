@@ -4,24 +4,16 @@ import { getResumeList, deleteResume, ResumeListItem } from "../../api/resume";
 import ResumeSidebar from "./components/ResumeSidebar";
 import ResumeFormPage from "./ResumeFormPage";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
-interface ResumePageProps {
-  initialMenu?: string;
-  onApplicationStatusClick?: () => void;
-  onNavigate?: (page: string, subMenu?: string) => void;
-}
 
-export default function ResumePage({
-  initialMenu,
-  onApplicationStatusClick,
-  onNavigate,
-}: ResumePageProps) {
+export default function ResumePage() {
   const { user } = useAuth();
-  // ✅ 커스텀 훅 사용으로 변경
+
+  // 쿼리 파라미터에서 메뉴 상태 읽기 (기본값: resume-sub-1)
   const { activeMenu, handleMenuClick } = usePageNavigation(
     "resume",
-    initialMenu,
-    onNavigate
+    "resume-sub-1"
   );
+
   const [isCreating, setIsCreating] = useState(false);
   const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -37,43 +29,26 @@ export default function ResumePage({
 
   // 이력서 목록 불러오기
   useEffect(() => {
-    console.log("📌 useEffect 실행 - user:", user);
-    console.log("📌 userId:", user?.userId);
-
     if (user?.userId) {
-      console.log("✅ userId 존재 - 이력서 로드");
       loadResumes();
-    } else {
-      console.log("❌ userId 없음 - 로드 스킵");
     }
   }, [user?.userId]);
 
   const loadResumes = async () => {
-    if (!user?.userId) {
-      console.log("❌ userId가 없습니다:", user);
-      return;
-    }
+    if (!user?.userId) return;
 
-    console.log("✅ 이력서 목록 로드 시작 - userId:", user.userId);
     setIsLoading(true);
     setError("");
 
     try {
       const data = await getResumeList(user.userId);
-      console.log("✅ API 응답 데이터:", data);
-      console.log("✅ 데이터 타입:", typeof data);
-      console.log("✅ 배열 여부:", Array.isArray(data));
-
       if (Array.isArray(data)) {
         setResumes(data);
-        console.log("✅ 이력서 목록 설정 완료:", data.length, "개");
       } else {
-        console.error("❌ 응답이 배열이 아닙니다:", data);
         setError("잘못된 응답 형식입니다.");
       }
     } catch (err: any) {
-      console.error("❌ 이력서 목록 로드 오류:", err);
-      console.error("❌ 에러 응답:", err.response?.data);
+      console.error("이력서 목록 로드 오류:", err);
       setError("이력서 목록을 불러오는 중 오류가 발생했습니다.");
     } finally {
       setIsLoading(false);
@@ -81,7 +56,6 @@ export default function ResumePage({
   };
 
   const handleFileUpload = () => {
-    console.log("파일 선택 클릭됨");
     fileInputRef.current?.click();
   };
 
@@ -89,12 +63,10 @@ export default function ResumePage({
     const file = e.target.files?.[0];
     if (file) {
       console.log("파일 업로드됨:", file.name);
-      // TODO: 파일 업로드 API 구현 필요
     }
   };
 
   const handleEdit = (id: number) => {
-    console.log(`이력서 ${id} 수정 클릭됨`);
     setSelectedResumeId(id);
     setIsCreating(true);
   };
@@ -104,16 +76,13 @@ export default function ResumePage({
     setShowDeleteConfirm(true);
   };
 
-  // 이력서 삭제 API 호출
   const handleConfirmDelete = async () => {
     if (deleteTargetId !== null && user?.userId) {
       setIsLoading(true);
       try {
         const response = await deleteResume(deleteTargetId, user.userId);
         if (response.message === "deleted") {
-          // 목록에서 제거
           setResumes(resumes.filter((r) => r.resumeId !== deleteTargetId));
-          console.log(`✅ 이력서 ${deleteTargetId} 삭제 완료`);
         } else {
           alert("이력서 삭제에 실패했습니다.");
         }
@@ -134,25 +103,18 @@ export default function ResumePage({
   };
 
   const handleCreateResume = () => {
-    setSelectedResumeId(null); // 새 이력서 작성
+    setSelectedResumeId(null);
     setIsCreating(true);
   };
 
   const handleBackToList = () => {
     setIsCreating(false);
     setSelectedResumeId(null);
-    // 목록 새로고침
-    console.log("🔄 목록 페이지로 돌아가기 - 목록 새로고침");
     loadResumes();
   };
 
-  // 지원 내역 클릭 핸들러
   const handleApplicationClick = (resumeId: number) => {
-    if (onApplicationStatusClick) {
-      onApplicationStatusClick();
-    } else {
-      console.log(`이력서 ${resumeId}의 지원 내역 페이지로 이동`);
-    }
+    handleMenuClick("mypage-sub-3");
   };
 
   // 이력서 작성/수정 페이지 표시
@@ -162,7 +124,6 @@ export default function ResumePage({
         onBack={handleBackToList}
         resumeId={selectedResumeId}
         initialMenu={activeMenu}
-        onNavigate={onNavigate}
       />
     );
   }
@@ -213,7 +174,6 @@ export default function ResumePage({
 
             {/* 메인 컨텐츠 */}
             <div className="flex-1 space-y-8">
-              {/* 섹션 1: 이력서 관리 */}
               <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold">이력서 관리</h2>
@@ -225,7 +185,6 @@ export default function ResumePage({
                   </button>
                 </div>
 
-                {/* 에러 메시지 */}
                 {error && (
                   <div className="p-4 mb-6 border border-red-200 rounded-lg bg-red-50">
                     <p className="text-sm text-red-600">{error}</p>
@@ -237,14 +196,12 @@ export default function ResumePage({
                     총 {resumes.length}건
                   </div>
 
-                  {/* 로딩 상태 */}
                   {isLoading && resumes.length === 0 ? (
                     <div className="p-12 text-center text-gray-500">
                       <div className="mb-4 text-4xl">⏳</div>
                       <p>이력서 목록을 불러오는 중...</p>
                     </div>
                   ) : resumes.length === 0 ? (
-                    // 이력서가 없을 때
                     <div className="p-12 text-center text-gray-500">
                       <div className="mb-4 text-4xl">📄</div>
                       <p className="mb-4">등록된 이력서가 없습니다.</p>
@@ -256,7 +213,6 @@ export default function ResumePage({
                       </button>
                     </div>
                   ) : (
-                    // 이력서 목록 - 스크롤 가능
                     <div className="p-2 space-y-3 overflow-y-auto max-h-96">
                       {resumes.map((resume) => (
                         <div
@@ -321,7 +277,6 @@ export default function ResumePage({
                   )}
                 </div>
 
-                {/* 파일 업로드 영역 */}
                 <div className="p-12 border-2 border-blue-300 border-dashed rounded-2xl bg-blue-50">
                   <div className="text-center">
                     <div className="mb-4 text-6xl">📁</div>
@@ -349,7 +304,6 @@ export default function ResumePage({
                   </div>
                 </div>
 
-                {/* 업로드 후 자동으로 전환됩니다 */}
                 <div className="p-4 mt-6 border-l-4 border-red-400 bg-red-50">
                   <h4 className="mb-2 font-bold">
                     업로드 후 자동으로 전환됩니다

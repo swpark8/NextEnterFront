@@ -27,7 +27,7 @@ export default function OfferPage({ initialMenu, onNavigate }: OfferPageProps) {
   const [isMessageExpanded, setIsMessageExpanded] = useState(false);
   const { activeMenu, handleMenuClick } = usePageNavigation(
     "offer",
-    initialMenu,
+    initialMenu || "offer-sub-1",
     onNavigate
   );
   // 샘플 제안 데이터

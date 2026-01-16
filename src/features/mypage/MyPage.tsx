@@ -1,37 +1,43 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { getUserProfile, UserProfile } from "../../api/user";
-import Footer from "../../components/Footer";
+import { usePageNavigation } from "../../hooks/usePageNavigation";
+
 
 interface MyPageProps {
-  onNavigate: (page: string, subMenu?: string) => void;
+  // ✅ [수정] 여기에 물음표(?)를 붙였습니다. 이제 App.tsx에서 에러가 나지 않습니다.
+  onNavigate?: (page: string, subMenu?: string) => void;
   onEditProfile?: () => void;
   initialMenu?: string;
 }
 
-export default function MyPage({ onNavigate, onEditProfile, initialMenu }: MyPageProps) {
+export default function MyPage({
+  onNavigate,
+  onEditProfile,
+  initialMenu,
+}: MyPageProps) {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [resumeCount] = useState(2);
-  const [activeMenu, setActiveMenu] = useState("home");
+
+  // ✅ [변수 사용 1] 훅에서 가져온 변수들을 아래에서 실제로 사용합니다.
+  const { activeMenu, handleMenuClick } = usePageNavigation(
+    "mypage",
+    initialMenu || "mypage-sub-1",
+    onNavigate
+  );
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // 프로필 정보 불러오기
   useEffect(() => {
-    if (initialMenu) {
-      setActiveMenu(initialMenu);
-    }
-  }, [initialMenu]);
-
-  // ✅ 프로필 정보 불러오기 (로그인한 경우에만)
-  useEffect(() => {
     const loadProfile = async () => {
       if (!user?.userId) return;
-
       setLoading(true);
       setError(null);
-
       try {
         const response = await getUserProfile(user.userId);
         if (response.success && response.data) {
@@ -55,16 +61,18 @@ export default function MyPage({ onNavigate, onEditProfile, initialMenu }: MyPag
 
     switch (item) {
       case "입사 지원 현황":
-        onNavigate("application-status");
+        // ✅ [변수 사용 2] onNavigate 대신 handleMenuClick을 사용해 연결합니다.
+        // (Header.tsx 로직에 따라 자동으로 해당 페이지로 이동됨)
+        handleMenuClick("application-status");
         break;
       case "모의 면접":
-        onNavigate("interview");
+        handleMenuClick("interview");
         break;
       case "이력서 열람":
-        onNavigate("resume");
+        handleMenuClick("resume");
         break;
       case "AI 맞춤 공고":
-        onNavigate("ai-recommend");
+        handleMenuClick("ai-recommend"); // 별도 페이지가 없다면 job-sub-2 등으로 연결
         break;
       case "스크랩 현황":
         console.log("스크랩 현황 페이지 이동");
@@ -84,7 +92,6 @@ export default function MyPage({ onNavigate, onEditProfile, initialMenu }: MyPag
     { id: 4, title: "AI\n맞춤 공고", icon: "🔔" },
   ];
 
-  // ✅ 로딩 중 표시
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -96,7 +103,6 @@ export default function MyPage({ onNavigate, onEditProfile, initialMenu }: MyPag
     );
   }
 
-  // ✅ 에러 표시
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -114,6 +120,10 @@ export default function MyPage({ onNavigate, onEditProfile, initialMenu }: MyPag
     );
   }
 
+  // ✅ [변수 사용 3] activeMenu를 이용해 화면을 분기처리 (InterviewPage처럼)
+  // 현재는 '나의 정보(mypage-sub-1)'만 구현되어 있으므로 이것만 보여줌
+  // 추후 '프로필 수정(sub-2)' 등이 생기면 if문으로 추가하면 됩니다.
+
   return (
     <>
       <div className="min-h-screen bg-gray-50">
@@ -122,15 +132,14 @@ export default function MyPage({ onNavigate, onEditProfile, initialMenu }: MyPag
             {/* 왼쪽 사이드바 */}
             <aside className="w-52">
               <div className="p-6 space-y-4 bg-white border-2 border-purple-500 rounded-lg">
-                {/* 프로필 이미지 */}
                 <div className="flex flex-col items-center space-y-2">
                   <div className="relative w-24 h-24 mx-auto mb-4">
-                    <div className="flex items-center justify-center w-full h-full bg-gray-200 border-2 border-blue-400 rounded-full overflow-hidden">
+                    <div className="flex items-center justify-center w-full h-full overflow-hidden bg-gray-200 border-2 border-blue-400 rounded-full">
                       {profile?.profileImage ? (
                         <img
                           src={profile.profileImage}
                           alt="프로필"
-                          className="w-full h-full object-cover"
+                          className="object-cover w-full h-full"
                         />
                       ) : (
                         <svg
@@ -143,7 +152,7 @@ export default function MyPage({ onNavigate, onEditProfile, initialMenu }: MyPag
                       )}
                     </div>
                     <button
-                      onClick={onEditProfile}
+                      onClick={() => navigate("/user/profile")}
                       className="absolute bottom-0 right-0 p-1.5 bg-orange-500 rounded-full hover:bg-orange-600 transition"
                       title="내 정보 수정"
                     >
@@ -167,7 +176,6 @@ export default function MyPage({ onNavigate, onEditProfile, initialMenu }: MyPag
                   </div>
                 </div>
 
-                {/* 버튼들 */}
                 <button
                   onClick={() => handleClick("스크랩 현황")}
                   className="flex items-center justify-center w-full gap-2 py-3 transition bg-white border-2 border-blue-400 rounded-lg hover:bg-blue-50"
@@ -188,7 +196,12 @@ export default function MyPage({ onNavigate, onEditProfile, initialMenu }: MyPag
 
             {/* 메인 컨텐츠 */}
             <main className="flex-1">
-              {/* 이력서 섹션 */}
+              {/* 만약 나중에 다른 탭(프로필 수정 등)을 추가하고 싶다면
+                  if (activeMenu === 'mypage-sub-2') return <ProfileEditPage ... /> 
+                  형태로 여기에 추가하면 됩니다.
+              */}
+
+              {/* 기본 화면 (mypage-sub-1) */}
               <div className="p-8 mb-6 bg-white border-2 border-blue-500 rounded-lg">
                 <h2 className="mb-6 text-2xl font-bold text-center">이력서</h2>
 
@@ -220,20 +233,20 @@ export default function MyPage({ onNavigate, onEditProfile, initialMenu }: MyPag
                 </div>
 
                 <div className="space-y-4">
-                  {/* ✅ 이력서 목록 카드 (1개만 유지) */}
                   <div className="p-6 bg-white border-2 border-blue-400 rounded-lg">
                     <div className="flex items-center justify-between">
                       <h4 className="text-lg font-bold">이력서 목록</h4>
                       <div className="flex gap-2">
                         <button
-                          onClick={() => onNavigate("resume")}
-                          className="px-4 py-2 text-sm bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition cursor-pointer"
+                          // ✅ [변수 사용 4] 버튼 클릭 시 훅 사용
+                          onClick={() => handleMenuClick("resume")}
+                          className="px-4 py-2 text-sm transition bg-gray-100 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-200"
                         >
                           수정
                         </button>
                         <button
-                          onClick={() => onNavigate("resume")}
-                          className="px-6 py-2 text-sm text-white transition bg-blue-500 rounded-lg hover:bg-blue-600 cursor-pointer"
+                          onClick={() => handleMenuClick("resume")}
+                          className="px-6 py-2 text-sm text-white transition bg-blue-500 rounded-lg cursor-pointer hover:bg-blue-600"
                         >
                           이력서 공개
                         </button>
@@ -246,7 +259,6 @@ export default function MyPage({ onNavigate, onEditProfile, initialMenu }: MyPag
           </div>
         </div>
       </div>
-      <Footer />
     </>
   );
 }

@@ -105,12 +105,12 @@ export default function BusinessServicePage({
     <div className="min-h-screen bg-gray-50">
       {/* 헤더 */}
       <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="px-4 py-4 mx-auto max-w-7xl">
           <div className="flex items-center justify-between">
             {/* 로고 */}
             <div
               onClick={onLogoClick}
-              className="cursor-pointer hover:opacity-80 transition"
+              className="transition cursor-pointer hover:opacity-80"
             >
               <div className="flex items-center space-x-2">
                 <span className="text-2xl font-bold text-purple-600">
@@ -120,7 +120,7 @@ export default function BusinessServicePage({
             </div>
 
             {/* 네비게이션 */}
-            <nav className="hidden md:flex items-center space-x-8">
+            <nav className="items-center hidden space-x-8 md:flex">
               <a href="#" className="text-gray-700 hover:text-purple-600">
                 채용정보
               </a>
@@ -152,8 +152,8 @@ export default function BusinessServicePage({
       </header>
 
       {/* 메인 배너 */}
-      <div className="bg-gradient-to-r from-purple-600 to-blue-500 text-white py-6">
-        <div className="max-w-7xl mx-auto px-4 text-center">
+      <div className="py-6 text-white bg-gradient-to-r from-purple-600 to-blue-500">
+        <div className="px-4 mx-auto text-center max-w-7xl">
           <h1 className="text-2xl font-bold">
             더 빨리한 조직으로 이동을 보고 싶다면?
           </h1>
@@ -161,9 +161,9 @@ export default function BusinessServicePage({
       </div>
 
       {/* 카테고리 섹션 */}
-      <div className="bg-white border-b border-gray-200 py-8">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="py-8 bg-white border-b border-gray-200">
+        <div className="px-4 mx-auto max-w-7xl">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             {categories.map((category, index) => (
               <button
                 key={index}
@@ -174,8 +174,8 @@ export default function BusinessServicePage({
                     : "border-gray-200"
                 }`}
               >
-                <div className="text-4xl mb-3">{category.icon}</div>
-                <h3 className="text-lg font-bold mb-2">{category.title}</h3>
+                <div className="mb-3 text-4xl">{category.icon}</div>
+                <h3 className="mb-2 text-lg font-bold">{category.title}</h3>
                 <div className="space-y-1 text-sm text-gray-600">
                   {category.items.map((item, idx) => (
                     <div key={idx}>{item}</div>
@@ -184,7 +184,7 @@ export default function BusinessServicePage({
               </button>
             ))}
             <div className="p-6 border-2 border-gray-200 rounded-xl bg-gray-50">
-              <div className="text-sm text-gray-600 mb-2">
+              <div className="mb-2 text-sm text-gray-600">
                 좋은 서비스들이{" "}
                 <span className="font-bold text-blue-600">무료</span>로 계속
                 업로드됩니다.
@@ -195,13 +195,13 @@ export default function BusinessServicePage({
       </div>
 
       {/* 서비스 목록 */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <h2 className="text-2xl font-bold mb-6">서울상품</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="px-4 py-8 mx-auto max-w-7xl">
+        <h2 className="mb-6 text-2xl font-bold">서울상품</h2>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {services.map((service) => (
             <div
               key={service.id}
-              className="bg-white border-2 border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition"
+              className="overflow-hidden transition bg-white border-2 border-gray-200 rounded-xl hover:shadow-lg"
             >
               {/* 카드 헤더 */}
               <div className="p-4 border-b border-gray-200">
@@ -212,12 +212,12 @@ export default function BusinessServicePage({
                     {service.badge}
                   </span>
                 )}
-                <h3 className="font-bold text-lg mb-1">{service.title}</h3>
+                <h3 className="mb-1 text-lg font-bold">{service.title}</h3>
                 <p className="text-sm text-gray-600">{service.subtitle}</p>
               </div>
 
               {/* 태그 */}
-              <div className="px-4 py-2 flex gap-2">
+              <div className="flex gap-2 px-4 py-2">
                 <span
                   className={`px-2 py-1 text-xs text-white rounded ${service.tag1Color}`}
                 >
@@ -236,17 +236,17 @@ export default function BusinessServicePage({
               <div className="px-4 py-3 space-y-2">
                 {service.features.map((feature, idx) => (
                   <div key={idx} className="flex items-start gap-2">
-                    <span className="text-purple-500 mt-1">•</span>
+                    <span className="mt-1 text-purple-500">•</span>
                     <span className="text-sm text-gray-700">{feature}</span>
                   </div>
                 ))}
               </div>
 
               {/* 통계 */}
-              <div className="px-4 py-3 bg-gray-50 space-y-1">
+              <div className="px-4 py-3 space-y-1 bg-gray-50">
                 {service.stats.map((stat, idx) => (
                   <div key={idx} className="flex items-start gap-2">
-                    <span className="text-blue-500 mt-1">✓</span>
+                    <span className="mt-1 text-blue-500">✓</span>
                     <span className="text-xs text-gray-600">{stat}</span>
                   </div>
                 ))}
@@ -254,15 +254,15 @@ export default function BusinessServicePage({
 
               {/* 하단 정보 */}
               <div className="px-4 py-3 border-t border-gray-200">
-                <div className="text-sm text-gray-600 mb-2">
+                <div className="mb-2 text-sm text-gray-600">
                   {service.instructor}
                 </div>
-                <div className="text-sm text-gray-600 mb-3">
+                <div className="mb-3 text-sm text-gray-600">
                   {service.duration}
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xl font-bold">{service.price}</span>
-                  <button className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+                  <button className="px-6 py-2 text-white transition bg-purple-600 rounded-lg hover:bg-purple-700">
                     신청하기
                   </button>
                 </div>
