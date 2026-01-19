@@ -4,42 +4,41 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import UserLayout from "./layouts/UserLayout";
 import CompanyLayout from "./layouts/CompanyLayout";
 
-// 개인회원 페이지들
-import HomePage from "./features/home/HomePage";
+// 공통 페이지
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/Signup";
+import OAuth2CallbackPage from "./pages/OAuth2CallbackPage";
+
+// 개인회원 페이지들
+import HomePage from "./features/home/HomePage";
 import MyPage from "./features/mypage/MyPage";
+import ProfilePage from "./features/mypage/ProfilePage";
 import CreditPage from "./features/credit/CreditPage";
 import CreditChargePage from "./features/credit-charge/CreditChargePage";
 import InterviewPage from "./features/interview/InterviewPage";
+import InterviewResultPage from "./features/interview/InterviewResultPage";
 import ResumePage from "./features/resume/ResumePage";
 import CoverLetterPage from "./features/coverletter/CoverLetterPage";
 import AIRecommendationPage from "./features/ai-recommendation/AIRecommendationPage";
 import MatchingPage from "./features/matching/MatchingPage";
 import OfferPage from "./features/offer/OfferPage";
 import InterviewOfferPage from "./features/offer/InterViewOfferPage";
-import ProfilePage from "./pages/ProfilePage";
 import ApplicationStatusPage from "./features/application-status/ApplicationStatusPage";
 import AllJobsPage from "./features/all-jobs/AllJobsPage";
 import AIRecommendedJobsPage from "./features/all-jobs/AIRecommendedJobsPage";
 import PositionJobsPage from "./features/all-jobs/PositionJobsPage";
 import LocationJobsPage from "./features/all-jobs/LocationJobsPage";
-import OAuth2CallbackPage from "./pages/OAuth2CallbackPage";
 
 // 기업회원 페이지들
 import CompanyHomePage from "./features-company/home/CompanyHomePage";
-import JobManagementPage from "./pages/JobManagementPage";
-import JobPostingCreatePage from "./pages/JobPostingCreatePage";
-import JobPostingDetailPage from "./pages/JobPostingDetailPage";
-import ApplicantManagementPage from "./pages/ApplicantManagementPage";
-import ApplicantDetailPage from "./pages/ApplicantDetailPage";
-import ApplicantCompatibilityPage from "./pages/ApplicantCompatibilityPage";
-import TalentSearchPage from "./pages/TalentSearchPage";
+import JobManagementPage from "./features-company/jobs/JobManagementPage";
+import JobPostingCreatePage from "./features-company/jobs/JobPostingCreatePage";
+import JobPostingDetailPage from "./features-company/jobs/JobPostingDetailPage";
+import ApplicantManagementPage from "./features-company/applicants/ApplicantManagementPage";
+import ApplicantDetailPage from "./features-company/applicants/ApplicantDetailPage";
+import ApplicantCompatibilityPage from "./features-company/applicants/ApplicantCompatibilityPage";
+import TalentSearchPage from "./features-company/talent-search/TalentSearchPage";
 import BusinessCreditPage from "./features-company/credit/BusinessCreditPage";
-import AdvertisementManagementPage from "./pages/AdvertisementManagementPage";
-import AdvertisementCreatePage from "./pages/AdvertisementCreatePage";
-import AdvertisementDetailPage from "./pages/AdvertisementDetailPage";
-
 function App() {
   return (
     <AuthProvider>
@@ -108,6 +107,14 @@ function App() {
               element={
                 <ProtectedRoute allowedUserType="personal">
                   <InterviewPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="interview/result"
+              element={
+                <ProtectedRoute allowedUserType="personal">
+                  <InterviewResultPage />
                 </ProtectedRoute>
               }
             />
@@ -252,30 +259,6 @@ function App() {
               element={
                 <ProtectedRoute allowedUserType="company">
                   <CreditChargePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="ads"
-              element={
-                <ProtectedRoute allowedUserType="company">
-                  <AdvertisementManagementPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="ads/create"
-              element={
-                <ProtectedRoute allowedUserType="company">
-                  <AdvertisementCreatePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="ads/:adId"
-              element={
-                <ProtectedRoute allowedUserType="company">
-                  <AdvertisementDetailPage />
                 </ProtectedRoute>
               }
             />

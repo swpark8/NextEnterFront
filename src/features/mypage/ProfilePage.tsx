@@ -1,25 +1,22 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../../context/AuthContext";
 import {
   getUserProfile,
   updateUserProfile,
   uploadProfileImage,
   UserProfile,
-} from "../api/user";
-import LeftSidebar from "../components/LeftSidebar";
-import { usePageNavigation } from "../hooks/usePageNavigation";
+} from "../../api/user";
+import LeftSidebar from "../../components/LeftSidebar";
+import { usePageNavigation } from "../../hooks/usePageNavigation";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-
+  
   // 쿼리 파라미터에서 메뉴 상태 읽기 (기본값: mypage-sub-2)
-  const { activeMenu, handleMenuClick } = usePageNavigation(
-    "mypage",
-    "mypage-sub-2"
-  );
-
+  const { activeMenu, handleMenuClick } = usePageNavigation("mypage", "mypage-sub-2");
+  
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -156,10 +153,13 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-gray-50">
       <div className="px-4 py-8 mx-auto max-w-7xl">
         <h1 className="mb-6 text-2xl font-bold">내 정보</h1>
-
+        
         <div className="flex gap-6">
           {/* 왼쪽 사이드바 */}
-          <LeftSidebar activeMenu={activeMenu} onMenuClick={handleMenuClick} />
+          <LeftSidebar
+            activeMenu={activeMenu}
+            onMenuClick={handleMenuClick}
+          />
 
           {/* 메인 컨텐츠 */}
           <div className="flex-1">
@@ -405,9 +405,7 @@ export default function ProfilePage() {
                     {profile?.createdAt && (
                       <p>
                         <span className="font-medium">가입일:</span>{" "}
-                        {new Date(profile.createdAt).toLocaleDateString(
-                          "ko-KR"
-                        )}
+                        {new Date(profile.createdAt).toLocaleDateString("ko-KR")}
                       </p>
                     )}
                   </div>

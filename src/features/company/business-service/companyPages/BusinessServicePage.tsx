@@ -35,14 +35,6 @@ export default function BusinessServicePage() {
       path: "/company/talent-search",
     },
     {
-      id: "service",
-      icon: "⭐",
-      title: "광고 관리",
-      description: "지원 확인",
-      features: ["지원 확인", "지원 예약", "지원 예약"],
-      path: "/company/ads",
-    },
-    {
       id: "credit",
       icon: "💳",
       title: "크레딧",
@@ -127,23 +119,19 @@ export default function BusinessServicePage() {
 
             {/* 중앙 네비게이션 */}
             <nav className="flex space-x-8">
-              <button 
+              <button
                 onClick={() => handleProtectedNavigation("/company/jobs")}
                 className="px-4 py-2 text-gray-700 hover:text-blue-600"
               >
                 채용공고
               </button>
-              <button 
-                onClick={() => handleProtectedNavigation("/company/talent-search")}
+              <button
+                onClick={() =>
+                  handleProtectedNavigation("/company/talent-search")
+                }
                 className="px-4 py-2 text-gray-700 hover:text-blue-600"
               >
                 인재검색
-              </button>
-              <button 
-                onClick={() => handleProtectedNavigation("/company/ads")}
-                className="px-4 py-2 text-gray-700 hover:text-blue-600"
-              >
-                광고관리
               </button>
             </nav>
 

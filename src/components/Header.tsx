@@ -32,7 +32,8 @@ export default function Header() {
   const getActiveTab = () => {
     const path = location.pathname;
     if (path.startsWith("/user/jobs")) return "job";
-    if (path.startsWith("/user/mypage") || path.startsWith("/user/profile")) return "mypage";
+    if (path.startsWith("/user/mypage") || path.startsWith("/user/profile"))
+      return "mypage";
     if (path.startsWith("/user/credit")) return "credit";
     if (path.startsWith("/user/interview")) return "interview";
     if (path.startsWith("/user/resume") || path.startsWith("/user/coverletter"))
@@ -304,7 +305,7 @@ export default function Header() {
           <div className="flex items-center space-x-8">
             <button
               onClick={toggleDropdown}
-              className="p-4 transition hover:bg-gray-50"
+              className="p-4 transition border-t-2 border-b-2 border-transparent hover:bg-gray-50"
             >
               <svg
                 className="w-6 h-6"
@@ -342,7 +343,7 @@ export default function Header() {
                   className={`py-4 px-2 font-medium transition whitespace-nowrap ${
                     activeTab === item.id
                       ? "text-blue-600 border-b-2 border-blue-600"
-                      : "text-gray-700 hover:text-blue-600"
+                      : "text-gray-700 hover:text-blue-600 border-b-2 border-transparent"
                   }`}
                 >
                   {item.label}

@@ -35,12 +35,12 @@ export default function CompanyHomePage() {
       path: "/company/talent-search",
     },
     {
-      id: "service",
-      icon: "⭐",
-      title: "광고 관리",
-      description: "채용 광고 관리",
-      features: ["광고 등록", "노출 현황", "광고 효과 분석"],
-      path: "/company/ads",
+      id: "applicants",
+      icon: "📂",
+      title: "지원자 관리",
+      description: "지원 현황 및 분석",
+      features: ["지원자 목록", "적합도 분석", "면접 제안"],
+      path: "/company/applicants",
     },
     {
       id: "credit",
@@ -139,7 +139,9 @@ export default function CompanyHomePage() {
             >
               <div className="mb-2 text-4xl">{service.icon}</div>
               <h3 className="mb-1 text-lg font-bold">{service.title}</h3>
-              <p className="mb-3 text-sm text-gray-600">{service.description}</p>
+              <p className="mb-3 text-sm text-gray-600">
+                {service.description}
+              </p>
               <div className="space-y-1 text-xs text-gray-500">
                 {service.features.map((feature, idx) => (
                   <div key={idx}>• {feature}</div>
@@ -170,13 +172,17 @@ export default function CompanyHomePage() {
                   <h3 className="mb-2 text-lg font-bold">{product.title}</h3>
 
                   <div className="mb-3">
-                    <p className="text-sm text-gray-700">{product.description}</p>
+                    <p className="text-sm text-gray-700">
+                      {product.description}
+                    </p>
                   </div>
 
                   <div className="mb-4 space-y-1">
                     {product.tags.map((tag, idx) => (
                       <div key={idx} className="flex items-start space-x-2">
-                        <span className="flex-shrink-0 mt-1 text-purple-600">•</span>
+                        <span className="flex-shrink-0 mt-1 text-purple-600">
+                          •
+                        </span>
                         <span className="text-xs text-gray-600">{tag}</span>
                       </div>
                     ))}

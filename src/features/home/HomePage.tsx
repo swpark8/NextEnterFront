@@ -327,13 +327,13 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
                   {/* 네이버 */}
                   <button
                     onClick={() => handleSocialLogin("naver")}
-                    className="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden hover:opacity-80 transition-opacity shadow-md"
+                    className="flex items-center justify-center w-10 h-10 overflow-hidden transition-opacity rounded-full shadow-md hover:opacity-80"
                     title="네이버 로그인"
                   >
                     <img
                       src="/images/naver-icon.png"
                       alt="네이버 로그인"
-                      className="w-full h-full object-cover"
+                      className="object-cover w-full h-full"
                     />
                   </button>
 
@@ -346,20 +346,20 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
                     <img
                       src="/images/kakao-icon.png"
                       alt="카카오 로그인"
-                      className="w-12 h-12 object-contain"
+                      className="object-contain w-12 h-12"
                     />
                   </button>
 
                   {/* 구글 */}
                   <button
                     onClick={() => handleSocialLogin("google")}
-                    className="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden hover:opacity-80 transition-opacity shadow-md"
+                    className="flex items-center justify-center w-10 h-10 overflow-hidden transition-opacity rounded-full shadow-md hover:opacity-80"
                     title="구글 로그인"
                   >
                     <img
                       src="/images/google-icon.png"
                       alt="구글 로그인"
-                      className="w-full h-full object-cover"
+                      className="object-cover w-full h-full"
                     />
                   </button>
                 </div>

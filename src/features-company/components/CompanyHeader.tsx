@@ -1,7 +1,10 @@
 import { useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import CompanyHoverMenu from "../navigation-menu/components/CompanyHoverMenu";
+import CompanyDropdownMenu from "../navigation-menu/components/CompanyDropdownMenu";
 import { useAuth } from "../../context/AuthContext";
 import { logout as logoutApi } from "../../api/auth";
+import { checkNavigationBlocked } from "../../utils/navigationBlocker";
 
 const MENU_CLOSE_DELAY = 150;
 
@@ -13,6 +16,7 @@ export default function CompanyHeader() {
   const location = useLocation();
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
@@ -48,7 +52,13 @@ export default function CompanyHeader() {
     }, MENU_CLOSE_DELAY);
   };
 
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
+
   const handleLogout = async () => {
+    if (checkNavigationBlocked()) return;
+
     try {
       await logoutApi();
     } catch (error) {
@@ -60,14 +70,25 @@ export default function CompanyHeader() {
     }
   };
 
-  const handleMenuClick = (tabId: string) => {
-    if (LOGIN_REQUIRED_MENUS.includes(tabId) && !isAuthenticated) {
+  const handleMenuClick = (tabId: string, menuId?: string) => {
+    if (checkNavigationBlocked()) return;
+
+    const checkTabId = menuId ? menuId.split("-sub-")[0] : tabId;
+    if (LOGIN_REQUIRED_MENUS.includes(checkTabId) && !isAuthenticated) {
       alert("로그인이 필요한 기능입니다.");
       navigate("/company/login");
       return;
     }
 
-    const routes: { [key: string]: string } = {
+    const defaultSubMenus: { [key: string]: string } = {
+      jobs: "jobs-sub-1",
+      applicants: "applicants-sub-1",
+      talent: "talent-sub-1",
+      ads: "ads-sub-1",
+      credit: "credit-sub-1",
+    };
+
+    const baseRoutes: { [key: string]: string } = {
       jobs: "/company/jobs",
       applicants: "/company/applicants",
       talent: "/company/talent-search",
@@ -75,13 +96,22 @@ export default function CompanyHeader() {
       credit: "/company/credit",
     };
 
-    const targetPath = routes[tabId];
+    const separateRoutes: { [key: string]: string } = {
+      "jobs-sub-2": "/company/jobs/create",
+      "credit-sub-2": "/company/credit/charge",
+      "applicants-sub-2": "/company/applicants/1/compatibility",
+    };
+
+    const targetMenuId = menuId || defaultSubMenus[tabId];
+    const targetPath = separateRoutes[targetMenuId] || baseRoutes[tabId];
+
     if (targetPath) {
-      navigate(targetPath);
+      navigate(`${targetPath}?menu=${targetMenuId}`);
     }
   };
 
   const handleLogoClick = () => {
+    if (checkNavigationBlocked()) return;
     navigate("/company");
   };
 
@@ -89,41 +119,35 @@ export default function CompanyHeader() {
     { id: "jobs", label: "채용공고 관리" },
     { id: "applicants", label: "지원자 관리" },
     { id: "talent", label: "인재 검색" },
-    { id: "ads", label: "광고 관리" },
     { id: "credit", label: "크레딧" },
   ];
 
-  // 서브메뉴 데이터
-  const subMenus: { [key: string]: { id: string; label: string; path: string }[] } = {
-    jobs: [
-      { id: "jobs-list", label: "공고 목록", path: "/company/jobs" },
-      { id: "jobs-create", label: "공고 등록", path: "/company/jobs/create" },
-    ],
-    applicants: [
-      { id: "applicants-list", label: "지원자 목록", path: "/company/applicants" },
-    ],
-    talent: [
-      { id: "talent-search", label: "인재 검색", path: "/company/talent-search" },
-    ],
-    ads: [
-      { id: "ads-list", label: "광고 목록", path: "/company/ads" },
-      { id: "ads-create", label: "광고 등록", path: "/company/ads/create" },
-    ],
-    credit: [
-      { id: "credit-main", label: "크레딧 관리", path: "/company/credit" },
-      { id: "credit-charge", label: "크레딧 충전", path: "/company/credit/charge" },
-    ],
-  };
-
   return (
     <>
+      {/* Top Header (Logo Area) */}
       <header className="bg-white border-b border-gray-200">
         <div className="px-4 py-4 mx-auto max-w-7xl">
           <div className="flex items-center justify-between">
+            {/* Logo */}
             <div className="flex items-center space-x-4">
+              <button className="lg:hidden">
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
+              </button>
               <div
                 onClick={handleLogoClick}
-                className="transition cursor-pointer hover:opacity-80"
+                className="flex items-center transition cursor-pointer hover:opacity-80"
               >
                 <span className="text-2xl font-bold text-purple-600">
                   NextEnter
@@ -134,6 +158,7 @@ export default function CompanyHeader() {
               </div>
             </div>
 
+            {/* Search Bar */}
             <form onSubmit={handleSearch} className="flex-1 max-w-md mx-8">
               <div className="relative">
                 <svg
@@ -159,6 +184,7 @@ export default function CompanyHeader() {
               </div>
             </form>
 
+            {/* Right Buttons */}
             <div className="flex items-center space-x-4">
               {isAuthenticated ? (
                 <div className="relative">
@@ -179,7 +205,9 @@ export default function CompanyHeader() {
                         d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
                       />
                     </svg>
-                    <span className="font-medium">{user?.name || "기업"}</span>
+                    <span className="font-medium">
+                      {user?.name || "기업"}님
+                    </span>
                     <svg
                       className={`w-4 h-4 transition-transform ${
                         isUserMenuOpen ? "rotate-180" : ""
@@ -202,7 +230,8 @@ export default function CompanyHeader() {
                       <button
                         onClick={() => {
                           setIsUserMenuOpen(false);
-                          navigate("/company/credit");
+                          if (!checkNavigationBlocked())
+                            navigate("/company/credit");
                         }}
                         className="w-full px-4 py-2 text-left text-gray-700 transition hover:bg-gray-50"
                       >
@@ -244,9 +273,38 @@ export default function CompanyHeader() {
         </div>
       </header>
 
+      {/* Navigation Bar (Category) */}
       <nav className="relative z-50 bg-white border-b-2 border-purple-600">
         <div className="px-4 mx-auto max-w-7xl">
           <div className="flex items-center space-x-8">
+            <button
+              onClick={toggleDropdown}
+              className="p-4 transition border-t-2 border-b-2 border-transparent hover:bg-gray-50"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                {isDropdownOpen ? (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                ) : (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                )}
+              </svg>
+            </button>
+
             {navItems.map((item) => (
               <div
                 key={item.id}
@@ -256,45 +314,39 @@ export default function CompanyHeader() {
               >
                 <button
                   onClick={() => handleMenuClick(item.id)}
+                  // ✅ User Header와 완전히 동일한 클래스 적용 (py-4 px-2 font-medium)
                   className={`py-4 px-2 font-medium transition whitespace-nowrap ${
                     activeTab === item.id
                       ? "text-purple-600 border-b-2 border-purple-600"
-                      : "text-gray-700 hover:text-purple-600"
+                      : "text-gray-700 hover:text-purple-600 border-b-2 border-transparent"
                   }`}
                 >
                   {item.label}
                 </button>
-
-                {/* 서브메뉴 호버 */}
-                {hoveredTab === item.id && subMenus[item.id] && (
-                  <div
-                    className="absolute left-0 mt-0 bg-white border border-gray-200 rounded-lg shadow-lg min-w-48 z-[100]"
-                    onMouseEnter={() => handleMouseEnter(item.id)}
-                    onMouseLeave={handleMouseLeave}
-                  >
-                    {subMenus[item.id].map((sub) => (
-                      <button
-                        key={sub.id}
-                        onClick={() => {
-                          if (!isAuthenticated) {
-                            alert("로그인이 필요한 기능입니다.");
-                            navigate("/company/login");
-                            return;
-                          }
-                          navigate(sub.path);
-                        }}
-                        className="block w-full px-4 py-3 text-left text-gray-700 transition hover:bg-purple-50 hover:text-purple-600"
-                      >
-                        {sub.label}
-                      </button>
-                    ))}
-                  </div>
+                {hoveredTab === item.id && (
+                  <CompanyHoverMenu
+                    tabId={item.id}
+                    onSubMenuClick={(tabId, subId) =>
+                      handleMenuClick(tabId, subId)
+                    }
+                  />
                 )}
               </div>
             ))}
           </div>
         </div>
       </nav>
+
+      <div className="relative z-[45]">
+        <CompanyDropdownMenu
+          isOpen={isDropdownOpen}
+          onMenuClick={(menuId) => {
+            setIsDropdownOpen(false);
+            const tabId = menuId.split("-sub-")[0];
+            handleMenuClick(tabId, menuId);
+          }}
+        />
+      </div>
     </>
   );
 }
