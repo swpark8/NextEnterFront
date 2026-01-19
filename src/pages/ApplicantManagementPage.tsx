@@ -1,161 +1,165 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import Footer from "../components/Footer";
+import {
+  getApplies,
+  updateApplyStatus,
+  type ApplyListResponse,
+} from "../api/apply";
 
-interface Applicant {
-  id: number;
-  name: string;
-  age: number;
-  jobPosting: string; // 지원한 공고
-  jobCategory: string; // 직무
-  skills: string[];
-  experience: string;
-  score: number;
-  appliedDate: string;
-}
+export default function ApplicantManagementPage() {
+  const navigate = useNavigate();
+  const { isAuthenticated, user, logout } = useAuth();
 
-interface ApplicantManagementPageProps {
-  onLogoClick?: () => void;
-  onApplicantClick?: (applicantId: number) => void;
-}
-
-export default function ApplicantManagementPage({
-  onLogoClick,
-  onApplicantClick,
-}: ApplicantManagementPageProps) {
   const [selectedJobPosting, setSelectedJobPosting] = useState("전체");
   const [selectedJobCategory, setSelectedJobCategory] = useState("전체");
   const [experienceRange, setExperienceRange] = useState("전체");
 
-  const applicants: Applicant[] = [
-    {
-      id: 1,
-      name: "김민준",
-      age: 28,
-      jobPosting: "시니어 프론트엔드 개발자 채용",
-      jobCategory: "프론트엔드 개발자",
-      skills: ["React", "TypeScript", "Node.js"],
-      experience: "5년",
-      score: 92,
-      appliedDate: "2024.12.19",
-    },
-    {
-      id: 2,
-      name: "이서윤",
-      age: 26,
-      jobPosting: "주니어 프론트엔드 개발자",
-      jobCategory: "프론트엔드 개발자",
-      skills: ["Vue.js", "JavaScript", "CSS"],
-      experience: "3년",
-      score: 88,
-      appliedDate: "2024.12.14",
-    },
-    {
-      id: 3,
-      name: "박지후",
-      age: 32,
-      jobPosting: "백엔드 개발자 (Node.js)",
-      jobCategory: "백엔드 개발자",
-      skills: ["React", "Next.js", "GraphQL"],
-      experience: "7년",
-      score: 95,
-      appliedDate: "2024.12.13",
-    },
-    {
-      id: 4,
-      name: "최수아",
-      age: 24,
-      jobPosting: "주니어 프론트엔드 개발자",
-      jobCategory: "프론트엔드 개발자",
-      skills: ["React", "TypeScript", "Tailwind"],
-      experience: "2년",
-      score: 85,
-      appliedDate: "2024.12.12",
-    },
-    {
-      id: 5,
-      name: "정현우",
-      age: 29,
-      jobPosting: "풀스택 개발자 (React + Spring)",
-      jobCategory: "풀스택 개발자",
-      skills: ["Angular", "TypeScript", "RxJS"],
-      experience: "4년",
-      score: 90,
-      appliedDate: "2024.12.11",
-    },
-    {
-      id: 6,
-      name: "김예은",
-      age: 27,
-      jobPosting: "시니어 프론트엔드 개발자 채용",
-      jobCategory: "프론트엔드 개발자",
-      skills: ["React", "Redux", "Jest"],
-      experience: "4년",
-      score: 87,
-      appliedDate: "2024.12.10",
-    },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [applicants, setApplicants] = useState<ApplyListResponse[]>([]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
-  // 고유한 공고 목록 추출
-  const uniqueJobPostings = [
-    "전체",
-    ...Array.from(new Set(applicants.map((a) => a.jobPosting))),
-  ];
+  // 지원자 목록 로드
+  useEffect(() => {
+    const loadApplicants = async () => {
+      if (!user?.companyId) {
+        alert("기업 정보를 찾을 수 없습니다.");
+        navigate("/company/login");
+        return;
+      }
+
+      try {
+        setLoading(true);
+
+        const params: any = {
+          page: currentPage,
+          size: 20,
+        };
+
+        const response = await getApplies(user.companyId, params);
+        setApplicants(response.content);
+        setTotalPages(response.totalPages);
+      } catch (error: any) {
+        console.error("지원자 목록 조회 실패:", error);
+        alert(error.response?.data?.message || "지원자 목록을 불러오는데 실패했습니다.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadApplicants();
+  }, [currentPage, user, navigate]);
+
+  const handleApplicantClick = (applyId: number) => {
+    navigate(`/company/applicants/${applyId}`);
+  };
+
+  const handleAccept = async (applyId: number) => {
+    if (!user?.companyId) return;
+
+    if (window.confirm("이 지원자를 합격 처리하시겠습니까?")) {
+      try {
+        await updateApplyStatus(applyId, user.companyId, {
+          status: "ACCEPTED",
+        });
+        alert("합격 처리되었습니다.");
+
+        // 목록 새로고침
+        const response = await getApplies(user.companyId, {
+          page: currentPage,
+          size: 20,
+        });
+        setApplicants(response.content);
+      } catch (error: any) {
+        console.error("상태 변경 실패:", error);
+        alert(error.response?.data?.message || "상태 변경에 실패했습니다.");
+      }
+    }
+  };
+
+  const handleReject = async (applyId: number) => {
+    if (!user?.companyId) return;
+
+    if (window.confirm("이 지원자를 불합격 처리하시겠습니까?")) {
+      try {
+        await updateApplyStatus(applyId, user.companyId, {
+          status: "REJECTED",
+        });
+        alert("불합격 처리되었습니다.");
+
+        // 목록 새로고침
+        const response = await getApplies(user.companyId, {
+          page: currentPage,
+          size: 20,
+        });
+        setApplicants(response.content);
+      } catch (error: any) {
+        console.error("상태 변경 실패:", error);
+        alert(error.response?.data?.message || "상태 변경에 실패했습니다.");
+      }
+    }
+  };
 
   const handleLogoClick = () => {
-    if (onLogoClick) {
-      onLogoClick();
+    navigate("/company");
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return "bg-yellow-100 text-yellow-700";
+      case "REVIEWING":
+        return "bg-blue-100 text-blue-700";
+      case "ACCEPTED":
+        return "bg-green-100 text-green-700";
+      case "REJECTED":
+        return "bg-red-100 text-red-700";
+      default:
+        return "bg-gray-100 text-gray-700";
     }
   };
 
-  const getInitials = (name: string) => {
-    return name.charAt(0);
-  };
-
-  const getAvatarColor = (id: number) => {
-    const colors = [
-      "bg-blue-500",
-      "bg-purple-500",
-      "bg-pink-500",
-      "bg-indigo-500",
-      "bg-cyan-500",
-      "bg-teal-500",
-    ];
-    return colors[id % colors.length];
-  };
-
-  const handleApplicantClick = (applicantId: number) => {
-    if (onApplicantClick) {
-      onApplicantClick(applicantId);
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return "대기중";
+      case "REVIEWING":
+        return "검토중";
+      case "ACCEPTED":
+        return "합격";
+      case "REJECTED":
+        return "불합격";
+      default:
+        return status;
     }
   };
 
-  const handleJobPostingClick = (jobPosting: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSelectedJobPosting(jobPosting);
-  };
-
-  // 필터링 로직
+  // 클라이언트 측 필터링
   const filteredApplicants = applicants.filter((applicant) => {
-    const jobPostingMatch =
-      selectedJobPosting === "전체" ||
-      applicant.jobPosting === selectedJobPosting;
-
-    const jobCategoryMatch =
+    const categoryMatch =
       selectedJobCategory === "전체" ||
       applicant.jobCategory === selectedJobCategory;
 
-    const experienceMatch =
+    const expYears = parseInt(applicant.experience) || 0;
+    const expMatch =
       experienceRange === "전체" ||
-      (experienceRange === "1-3년" &&
-        parseInt(applicant.experience) >= 1 &&
-        parseInt(applicant.experience) <= 3) ||
-      (experienceRange === "3-5년" &&
-        parseInt(applicant.experience) >= 3 &&
-        parseInt(applicant.experience) <= 5) ||
-      (experienceRange === "5년+" && parseInt(applicant.experience) >= 5);
+      (experienceRange === "신입" && expYears === 0) ||
+      (experienceRange === "3년 이하" && expYears > 0 && expYears <= 3) ||
+      (experienceRange === "3-5년" && expYears > 3 && expYears <= 5) ||
+      (experienceRange === "5년 이상" && expYears > 5);
 
-    return jobPostingMatch && jobCategoryMatch && experienceMatch;
+    return categoryMatch && expMatch;
   });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-xl font-semibold text-gray-600">로딩 중...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -163,7 +167,6 @@ export default function ApplicantManagementPage({
       <header className="bg-white border-b border-gray-200">
         <div className="px-4 py-4 mx-auto max-w-7xl">
           <div className="flex items-center justify-between">
-            {/* 로고 */}
             <div
               onClick={handleLogoClick}
               className="transition-opacity cursor-pointer hover:opacity-80"
@@ -174,7 +177,10 @@ export default function ApplicantManagementPage({
 
             {/* 네비게이션 */}
             <nav className="flex space-x-8">
-              <button className="px-4 py-2 text-gray-700 hover:text-blue-600">
+              <button
+                onClick={() => navigate("/company/jobs")}
+                className="px-4 py-2 text-gray-700 hover:text-blue-600"
+              >
                 ■ 채용공고
               </button>
               <button className="px-4 py-2 text-gray-700 hover:text-blue-600">
@@ -187,14 +193,39 @@ export default function ApplicantManagementPage({
 
             {/* 오른쪽 버튼 */}
             <div className="flex items-center space-x-4">
-              <button className="px-4 py-2 text-gray-700 hover:text-blue-600">
-                로그인
-              </button>
-              <button className="px-4 py-2 text-gray-700 hover:text-blue-600">
-                회원가입
-              </button>
+              {isAuthenticated && user?.userType === "company" ? (
+                <>
+                  <span className="text-gray-700 font-medium">
+                    {user.companyName || user.name}님
+                  </span>
+                  <button
+                    onClick={() => {
+                      logout();
+                      navigate("/company/login");
+                    }}
+                    className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition"
+                  >
+                    로그아웃
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => navigate("/company/login")}
+                    className="px-4 py-2 text-gray-700 hover:text-blue-600"
+                  >
+                    로그인
+                  </button>
+                  <button
+                    onClick={() => navigate("/company/signup")}
+                    className="px-4 py-2 text-gray-700 hover:text-blue-600"
+                  >
+                    회원가입
+                  </button>
+                </>
+              )}
               <button
-                onClick={handleLogoClick}
+                onClick={() => navigate("/user")}
                 className="px-4 py-2 transition bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
               >
                 개인 회원
@@ -204,181 +235,183 @@ export default function ApplicantManagementPage({
         </div>
       </header>
 
-      {/* 메인 콘텐츠 */}
+      {/* 메인 컨텐츠 */}
       <div className="px-4 py-8 mx-auto max-w-7xl">
-        <div className="p-8 bg-white shadow-lg rounded-2xl">
-          {/* 타이틀 */}
-          <h1 className="mb-8 text-2xl font-bold">지원자 관리</h1>
+        <h1 className="mb-6 text-2xl font-bold">지원자 관리</h1>
 
-          {/* 필터 섹션 - 순서: 공고선택 - 직무선택 - 경력범위 */}
-          <div className="grid grid-cols-3 gap-4 mb-8">
-            {/* 공고 선택 (기존 평점 위치) */}
-            <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700">
-                공고 선택
-              </label>
-              <select
-                value={selectedJobPosting}
-                onChange={(e) => setSelectedJobPosting(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-              >
-                {uniqueJobPostings.map((posting, idx) => (
-                  <option key={idx} value={posting}>
-                    {posting}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* 직무 선택 */}
-            <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700">
-                직무 선택
-              </label>
-              <select
-                value={selectedJobCategory}
-                onChange={(e) => setSelectedJobCategory(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-              >
-                <option value="전체">전체</option>
-                <option value="프론트엔드 개발자">프론트엔드 개발자</option>
-                <option value="백엔드 개발자">백엔드 개발자</option>
-                <option value="풀스택 개발자">풀스택 개발자</option>
-                <option value="PM">PM</option>
-                <option value="데이터 분석가">데이터 분석가</option>
-                <option value="디자이너">디자이너</option>
-              </select>
-            </div>
-
-            {/* 경력 범위 */}
-            <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700">
-                경력 범위
-              </label>
-              <select
-                value={experienceRange}
-                onChange={(e) => setExperienceRange(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-              >
-                <option value="전체">전체</option>
-                <option value="1-3년">1-3년</option>
-                <option value="3-5년">3-5년</option>
-                <option value="5년+">5년 이상</option>
-              </select>
-            </div>
+        {/* 필터 섹션 */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <div>
+            <label className="block mb-2 text-sm font-medium text-gray-700">
+              공고
+            </label>
+            <select
+              value={selectedJobPosting}
+              onChange={(e) => setSelectedJobPosting(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+            >
+              <option value="전체">전체</option>
+            </select>
           </div>
 
-          {/* 지원자 테이블 */}
-          <div className="overflow-hidden border border-gray-200 rounded-lg">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">
-                    지원 공고
-                  </th>
-                  <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">
-                    지원자
-                  </th>
-                  <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">
-                    나이
-                  </th>
-                  <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">
-                    주요 스킬
-                  </th>
-                  <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">
-                    경력
-                  </th>
-                  <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700">
-                    지원일
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredApplicants.map((applicant) => (
-                  <tr
-                    key={applicant.id}
-                    onClick={() => handleApplicantClick(applicant.id)}
-                    className="transition cursor-pointer hover:bg-gray-50"
-                  >
-                    {/* 지원 공고 */}
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={(e) =>
-                          handleJobPostingClick(applicant.jobPosting, e)
-                        }
-                        className="px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition"
-                      >
-                        {applicant.jobPosting}
-                      </button>
-                    </td>
+          <div>
+            <label className="block mb-2 text-sm font-medium text-gray-700">
+              직무
+            </label>
+            <select
+              value={selectedJobCategory}
+              onChange={(e) => setSelectedJobCategory(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+            >
+              <option value="전체">전체</option>
+              <option value="프론트엔드 개발자">프론트엔드 개발자</option>
+              <option value="백엔드 개발자">백엔드 개발자</option>
+              <option value="풀스택 개발자">풀스택 개발자</option>
+            </select>
+          </div>
 
-                    {/* 지원자 */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-3">
-                        <div
-                          className={`w-10 h-10 rounded-full ${getAvatarColor(
-                            applicant.id
-                          )} flex items-center justify-center text-white font-bold`}
-                        >
-                          {getInitials(applicant.name)}
-                        </div>
-                        <span className="font-medium text-gray-900">
-                          {applicant.name}
-                        </span>
-                      </div>
-                    </td>
+          <div>
+            <label className="block mb-2 text-sm font-medium text-gray-700">
+              경력
+            </label>
+            <select
+              value={experienceRange}
+              onChange={(e) => setExperienceRange(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+            >
+              <option value="전체">전체</option>
+              <option value="신입">신입</option>
+              <option value="3년 이하">3년 이하</option>
+              <option value="3-5년">3-5년</option>
+              <option value="5년 이상">5년 이상</option>
+            </select>
+          </div>
+        </div>
 
-                    {/* 나이 */}
-                    <td className="px-6 py-4">
-                      <span className="font-semibold text-blue-600">
-                        {applicant.age}세
+        {/* 지원자 목록 */}
+        <div className="space-y-4">
+          {filteredApplicants.map((applicant) => (
+            <div
+              key={applicant.applyId}
+              className="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition"
+            >
+              <div className="flex items-start justify-between">
+                {/* 왼쪽: 지원자 정보 */}
+                <div
+                  className="flex-1 cursor-pointer"
+                  onClick={() => handleApplicantClick(applicant.applyId)}
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <h3 className="text-xl font-bold">{applicant.userName}</h3>
+                    <span className="text-gray-600">({applicant.userAge}세)</span>
+                    <span
+                      className={`px-3 py-1 text-sm font-medium rounded ${getStatusColor(
+                        applicant.status
+                      )}`}
+                    >
+                      {getStatusText(applicant.status)}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4 mb-4 text-sm">
+                    <div>
+                      <span className="text-gray-500">지원 공고:</span>
+                      <span className="ml-2 font-medium">
+                        {applicant.jobTitle}
                       </span>
-                    </td>
-
-                    {/* 주요 스킬 */}
-                    <td className="px-6 py-4">
-                      <div className="flex flex-wrap gap-2">
-                        {applicant.skills.map((skill, idx) => (
-                          <span
-                            key={idx}
-                            className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-full"
-                          >
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-
-                    {/* 경력 */}
-                    <td className="px-6 py-4">
-                      <span className="px-3 py-1 text-sm font-semibold text-white bg-blue-500 rounded-full">
+                    </div>
+                    <div>
+                      <span className="text-gray-500">직무:</span>
+                      <span className="ml-2 font-medium">
+                        {applicant.jobCategory}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">경력:</span>
+                      <span className="ml-2 font-medium">
                         {applicant.experience}
                       </span>
-                    </td>
+                    </div>
+                  </div>
 
-                    {/* 지원일 */}
-                    <td className="px-6 py-4">
-                      <span className="text-sm text-gray-500">
-                        {applicant.appliedDate}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                  {/* 기술 스택 */}
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {applicant.skills && applicant.skills.length > 0 ? (
+                      applicant.skills.map((skill, idx) => (
+                        <span
+                          key={idx}
+                          className="px-3 py-1 text-sm text-gray-700 bg-gray-100 rounded-full"
+                        >
+                          {skill}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-sm text-gray-400">등록된 기술 스택이 없습니다</span>
+                    )}
+                  </div>
 
-          {/* 검색 결과 없음 */}
-          {filteredApplicants.length === 0 && (
-            <div className="py-20 text-center text-gray-500">
-              <div className="mb-4 text-4xl">📭</div>
-              <div className="text-lg font-medium">
-                해당 조건의 지원자가 없습니다
+                  <div className="text-sm text-gray-500">
+                    지원일: {new Date(applicant.appliedAt).toLocaleDateString()}
+                  </div>
+                </div>
+
+                {/* 오른쪽: 점수 및 버튼 */}
+                <div className="flex flex-col items-center gap-4 ml-6">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-blue-600">
+                      {applicant.aiScore || 0}
+                    </div>
+                    <div className="text-sm text-gray-500">매칭 점수</div>
+                  </div>
+
+                  <div className="flex flex-col gap-2 w-32">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAccept(applicant.applyId);
+                      }}
+                      disabled={applicant.status === "ACCEPTED" || applicant.status === "REJECTED"}
+                      className={`px-4 py-2 font-semibold transition rounded-lg ${
+                        applicant.status === "ACCEPTED"
+                          ? "bg-green-600 text-white cursor-default shadow-lg"
+                          : applicant.status === "REJECTED"
+                          ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                          : "bg-green-600 text-white hover:bg-green-700"
+                      }`}
+                    >
+                      합격
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleReject(applicant.applyId);
+                      }}
+                      disabled={applicant.status === "ACCEPTED" || applicant.status === "REJECTED"}
+                      className={`px-4 py-2 font-semibold transition rounded-lg ${
+                        applicant.status === "REJECTED"
+                          ? "bg-red-600 text-white cursor-default shadow-lg"
+                          : applicant.status === "ACCEPTED"
+                          ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                          : "bg-red-600 text-white hover:bg-red-700"
+                      }`}
+                    >
+                      불합격
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div className="text-sm">다른 조건으로 검색해보세요</div>
             </div>
-          )}
+          ))}
         </div>
+
+        {/* 검색 결과 없음 */}
+        {filteredApplicants.length === 0 && (
+          <div className="py-20 text-center text-gray-500">
+            <div className="mb-4 text-4xl">📭</div>
+            <div className="text-lg font-medium">지원자가 없습니다</div>
+            <div className="text-sm">아직 지원한 사람이 없습니다</div>
+          </div>
+        )}
       </div>
       <Footer />
     </div>

@@ -27,6 +27,7 @@ import AllJobsPage from "./features/all-jobs/AllJobsPage";
 import AIRecommendedJobsPage from "./features/all-jobs/AIRecommendedJobsPage";
 import PositionJobsPage from "./features/all-jobs/PositionJobsPage";
 import LocationJobsPage from "./features/all-jobs/LocationJobsPage";
+import UserJobDetailPage from "./pages/UserJobDetailPage";
 import OAuth2CallbackPage from "./pages/OAuth2CallbackPage";
 
 // 기업회원 페이지들
@@ -73,6 +74,7 @@ function App() {
             <Route path="jobs/ai" element={<AIRecommendedJobsPage />} />
             <Route path="jobs/position" element={<PositionJobsPage />} />
             <Route path="jobs/location" element={<LocationJobsPage />} />
+            <Route path="jobs/:jobId" element={<UserJobDetailPage />} />
 
             {/* 보호된 페이지 (로그인 필요 + 개인회원만) */}
             <Route

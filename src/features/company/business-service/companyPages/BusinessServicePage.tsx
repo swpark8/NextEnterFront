@@ -59,20 +59,18 @@ export default function BusinessServicePage({
       },
     },
     {
-      id: "service",
-      icon: "⭐",
-      title: "광고 관리",
+      id: "applicant",
+      icon: "👥",
+      title: "지원자 관리",
       description: "지원 확인",
       features: ["지원 확인", "지원 예약", "지원 예약"],
       onClick: () => {
-        // 로그인 체크
         if (!isAuthenticated || user?.userType !== "company") {
           alert("기업 회원 로그인이 필요합니다.");
           navigate("/company/login");
           return;
         }
-        // 광고 관리 페이지로 이동
-        navigate("/company/ads");
+        navigate("/company/applicants");
       },
     },
     {

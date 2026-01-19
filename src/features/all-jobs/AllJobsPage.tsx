@@ -1,7 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 import { useApp } from "../../context/AppContext";
+import { useAuth } from "../../context/AuthContext";
 import JobsSidebar from "./components/JobsSidebar";
+import { getJobPostings, JobPostingListResponse } from "../../api/job";
+import { createApply, type ApplyCreateRequest } from "../../api/apply";
 
 interface AllJobsPageProps {
   onLogoClick?: () => void;
@@ -22,7 +26,9 @@ type JobListing = {
 };
 
 export default function AllJobsPage() {
+  const navigate = useNavigate();
   const { activeMenu, handleMenuClick } = usePageNavigation("job", "job-sub-1");
+  const { user } = useAuth();
 
   const [locationFilter, setLocationFilter] = useState("위치기준 선택");
   const [sortOrder, setSortOrder] = useState("정렬순서 선택");
@@ -32,36 +38,68 @@ export default function AllJobsPage() {
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
   const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  // ✅ AppContext에서 데이터 가져오기 (addJobApplication 추가)
-  const { resumes, jobListings, businessJobs, addJobApplication } = useApp();
+  // ✅ 백엔드에서 가져온 채용공고 데이터
+  const [apiJobListings, setApiJobListings] = useState<JobListing[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // ✅ AppContext에서 데이터 가져오기
+  const { resumes, addJobApplication } = useApp();
   
-  // businessJobs를 JobListing 형식으로 변환
-  const convertedBusinessJobs: JobListing[] = businessJobs.map(job => {
-    const deadline = new Date(job.deadline);
-    const today = new Date();
-    const diffTime = deadline.getTime() - today.getTime();
-    const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    return {
-      id: job.id,
-      company: "등록 기업",
-      title: job.title,
-      requirements: [],
-      tags: [job.job_category],
-      location: job.location,
-      deadline: job.deadline,
-      daysLeft: daysLeft > 0 ? daysLeft : 0,
+  // ✅ 백엔드 API 호출하여 채용공고 데이터 가져오기
+  useEffect(() => {
+    const fetchJobPostings = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // API 호출
+        const response = await getJobPostings({
+          page: 0,
+          size: 1000 // 모든 공고를 가져오기 위해 큰 값 설정
+        });
+        
+        // 백엔드 응답을 JobListing 형식으로 변환
+        const convertedJobs: JobListing[] = response.content.map((job: JobPostingListResponse) => {
+          const deadline = new Date(job.deadline);
+          const today = new Date();
+          const diffTime = deadline.getTime() - today.getTime();
+          const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          return {
+            id: job.jobId,
+            company: job.companyName || "회사명",
+            title: job.title,
+            requirements: [],
+            tags: [job.jobCategory],
+            location: job.location,
+            deadline: job.deadline,
+            daysLeft: daysLeft > 0 ? daysLeft : 0,
+          };
+        });
+        
+        setApiJobListings(convertedJobs);
+      } catch (err) {
+        console.error("채용공고 조회 실패:", err);
+        setError("채용공고를 불러오는데 실패했습니다.");
+      } finally {
+        setLoading(false);
+      }
     };
-  });
+    
+    fetchJobPostings();
+  }, []);
   
-  const allJobListings = [...jobListings, ...convertedBusinessJobs];
+  // ✅ API에서 가져온 데이터 사용
+  const allJobListings = apiJobListings;
 
   const totalJobs = allJobListings.length;
   const totalPages = Math.ceil(totalJobs / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalJobs);
-  const currentJobs = allJobListings;
+  const currentJobs = allJobListings.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -78,26 +116,45 @@ export default function AllJobsPage() {
   const handleResumeSelect = (resumeId: number) =>
     setSelectedResumeId(resumeId);
 
-  // ✅ 지원하기 함수 수정 - 지원 내역 저장
-  const handleFinalSubmit = () => {
+  const handleFinalSubmit = async () => {
     if (!selectedResumeId || !selectedJobId) {
       alert("이력서를 선택해주세요.");
       return;
     }
-
+  
+    if (!user?.userId) {
+      alert("로그인이 필요합니다.");
+      navigate("/user/login");
+      return;
+    }
+  
     const selectedResume = resumes.find((r) => r.id === selectedResumeId);
     const selectedJob = allJobListings.find((j) => j.id === selectedJobId);
-
+  
     if (!selectedJob) {
       alert("공고 정보를 찾을 수 없습니다.");
       return;
     }
-
-    if (confirm(`"${selectedResume?.title}"로 지원하시겠습니까?`)) {
-      // ✅ 지원 내역 생성 및 저장
+  
+    if (!confirm(`"${selectedResume?.title}"로 지원하시겠습니까?`)) {
+      return;
+    }
+  
+    try {
+      setSubmitting(true);
+  
+      // 백엔드 API 호출
+      const applyRequest: ApplyCreateRequest = {
+        jobId: selectedJob.id,
+        resumeId: selectedResumeId,
+      };
+  
+      await createApply(user.userId, applyRequest);
+  
+      // localStorage에도 저장 (화면 표시용)
       const today = new Date();
-      const applicationId = Date.now(); // 임시 ID 생성
-
+      const applicationId = Date.now();
+  
       addJobApplication({
         id: applicationId,
         jobId: selectedJob.id,
@@ -105,18 +162,27 @@ export default function AllJobsPage() {
         date: today.toISOString().split('T')[0].replace(/-/g, '.'),
         company: selectedJob.company,
         position: selectedJob.title,
-        jobType: "정규직", // 실제로는 공고에서 가져와야 함
+        jobType: "정규직",
         location: selectedJob.location,
         deadline: selectedJob.deadline,
         viewed: false,
         status: "지원완료",
         canCancel: true,
       });
-
+  
       alert("지원이 완료되었습니다!");
       setShowResumeModal(false);
       setSelectedJobId(null);
       setSelectedResumeId(null);
+    } catch (error: any) {
+      console.error("지원 실패:", error);
+      if (error.response?.status === 409 || error.response?.data?.message?.includes("이미 지원")) {
+        alert("이미 지원한 공고입니다.");
+      } else {
+        alert(error.response?.data?.message || "지원에 실패했습니다.");
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -193,10 +259,11 @@ export default function AllJobsPage() {
                   </button>
                   <button
                     onClick={handleFinalSubmit}
-                    className="flex-1 px-6 py-3 font-medium text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
+                    disabled={submitting}
+                    className="flex-1 px-6 py-3 font-medium text-white transition bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
-                    지원하기
-                  </button>
+                  {submitting ? "지원 중..." : "지원하기"}
+                </button>
                 </div>
               </>
             )}
@@ -223,7 +290,17 @@ export default function AllJobsPage() {
                   </h2>
                 </div>
 
-                {allJobListings.length === 0 ? (
+                {loading ? (
+                  <div className="p-12 text-center text-gray-500">
+                    <div className="mb-4 text-4xl">⏳</div>
+                    <p>채용공고를 불러오는 중...</p>
+                  </div>
+                ) : error ? (
+                  <div className="p-12 text-center text-red-500">
+                    <div className="mb-4 text-4xl">⚠️</div>
+                    <p>{error}</p>
+                  </div>
+                ) : allJobListings.length === 0 ? (
                   <div className="p-12 text-center text-gray-500">
                     <div className="mb-4 text-4xl">📋</div>
                     <p>등록된 채용공고가 없습니다.</p>
@@ -242,7 +319,10 @@ export default function AllJobsPage() {
                                 {job.company}
                               </span>
                             </div>
-                            <h3 className="mb-3 text-lg font-bold text-gray-900 cursor-pointer hover:text-blue-600">
+                            <h3 
+                              onClick={() => navigate(`/user/jobs/${job.id}`)}
+                              className="mb-3 text-lg font-bold text-gray-900 cursor-pointer hover:text-blue-600"
+                            >
                               {job.title}
                             </h3>
                             <div className="flex items-center space-x-4 text-sm text-gray-600">
