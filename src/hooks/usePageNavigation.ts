@@ -36,7 +36,7 @@ export const usePageNavigation = (
     menuId: string,
     navigateCallback?: (page: string, subMenu: string) => void
   ) => {
-    // 3. 별도 페이지로 가야 하는 메뉴들 (여기는 잘 되어 있음)
+    // 3. 별도 페이지로 가야 하는 메뉴들
     const separateRoutes: { [key: string]: string } = {
       "job-sub-1": "/user/jobs/all",
       "job-sub-2": "/user/jobs/ai",
@@ -45,7 +45,21 @@ export const usePageNavigation = (
       "resume-sub-2": "/user/coverletter",
       "offer-sub-2": "/user/offers/interview",
       "credit-sub-2": "/user/credit/charge",
+      "mypage-sub-2": "/user/profile",
+      "mypage-sub-3": "/user/application-status", // ✅ 입사지원 현황 추가
     };
+
+    // ✅ 특별 처리: 페이지 ID로 직접 이동하는 경우
+    const specialRoutes: { [key: string]: string } = {
+      "application-status": "/user/application-status",
+      "ai-recommend": "/user/jobs/ai", // AI 추천 공고
+    };
+
+    // 먼저 특별 라우트 체크
+    if (specialRoutes[menuId]) {
+      navigate(specialRoutes[menuId]);
+      return;
+    }
 
     if (separateRoutes[menuId]) {
       navigate(`${separateRoutes[menuId]}?menu=${menuId}`);

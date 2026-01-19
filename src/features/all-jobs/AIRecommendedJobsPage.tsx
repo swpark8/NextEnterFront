@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 import { useApp } from "../../context/AppContext";
+import JobsSidebar from "./components/JobsSidebar";
 
 // ✅ 인터페이스는 유지 (App.tsx 에러 방지용)
 interface AIRecommendedJobsPageProps {
@@ -33,10 +34,6 @@ export default function AIRecommendedJobsPage() {
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
   const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
-
-  const handleTabClick = (menuId: string) => {
-    handleMenuClick(menuId);
-  };
 
   // AppContext에서 데이터 가져오기
   const { resumes, jobListings, businessJobs } = useApp();
@@ -114,82 +111,7 @@ export default function AIRecommendedJobsPage() {
 
   if (!hasAccess) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <main className="px-6 py-8 mx-auto max-w-[1400px]">
-          <div className="mb-6">
-            <div className="flex border-b-2 border-gray-200">
-              <button
-                onClick={() => handleTabClick("job-sub-1")}
-                className="px-6 py-3 font-medium text-gray-600 transition hover:text-blue-600"
-              >
-                전체공고
-              </button>
-              <button className="px-6 py-3 font-medium text-blue-600 border-b-2 border-blue-600 -mb-0.5">
-                AI 추천 공고
-              </button>
-              <button
-                onClick={() => handleTabClick("job-sub-3")}
-                className="px-6 py-3 font-medium text-gray-600 transition hover:text-blue-600"
-              >
-                직무별 공고
-              </button>
-              <button
-                onClick={() => handleTabClick("job-sub-4")}
-                className="px-6 py-3 font-medium text-gray-600 transition hover:text-blue-600"
-              >
-                지역별 공고
-              </button>
-            </div>
-          </div>
-          <div className="flex items-center justify-center min-h-[600px]">
-            <div className="max-w-2xl p-12 text-center bg-white border-2 border-blue-500 shadow-xl rounded-2xl">
-              <div className="mb-6">
-                <svg
-                  className="w-24 h-24 mx-auto text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                  />
-                </svg>
-              </div>
-              <h2 className="mb-4 text-3xl font-bold text-gray-900">
-                AI 맞춤 추천 공고
-              </h2>
-              <p className="mb-3 text-lg text-gray-600">
-                회원님의 이력서와 선호도를 분석하여
-              </p>
-              <p className="mb-8 text-lg text-gray-600">
-                최적의 채용공고를 추천해 드립니다
-              </p>
-              <div className="p-6 mb-8 bg-blue-50 rounded-xl">
-                <div className="flex items-center justify-center mb-4 space-x-2">
-                  <span className="text-2xl font-bold text-blue-600">
-                    크레딧 10개
-                  </span>
-                </div>
-                <p className="text-sm text-gray-600">
-                  AI 추천 공고를 확인하시려면 크레딧이 필요합니다
-                </p>
-              </div>
-              <button
-                onClick={handleAccessRequest}
-                className="px-12 py-4 text-xl font-bold text-white transition bg-blue-600 shadow-lg rounded-xl hover:bg-blue-700"
-              >
-                AI 공고 보기
-              </button>
-              <p className="mt-6 text-sm text-gray-500">
-                현재 보유 크레딧:{" "}
-                <span className="font-bold">{userCredit}</span>
-              </p>
-            </div>
-          </div>
-        </main>
+      <>
         {showConfirmModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
             <div className="max-w-md p-8 bg-white shadow-2xl rounded-2xl">
@@ -220,102 +142,79 @@ export default function AIRecommendedJobsPage() {
             </div>
           </div>
         )}
-      </div>
+
+        <div className="min-h-screen bg-gray-50">
+          <div className="px-4 py-8 mx-auto max-w-7xl">
+            <h1 className="mb-6 text-2xl font-bold">채용정보</h1>
+            <div className="flex gap-6">
+              {/* 왼쪽 사이드바 */}
+              <JobsSidebar
+                activeMenu={activeMenu}
+                onMenuClick={handleMenuClick}
+              />
+
+              {/* 메인 컨텐츠 */}
+              <div className="flex-1 space-y-8">
+                <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
+                  <div className="flex items-center justify-center min-h-[600px]">
+                    <div className="max-w-2xl p-12 text-center bg-white border-2 border-blue-500 shadow-xl rounded-2xl">
+                      <div className="mb-6">
+                        <svg
+                          className="w-24 h-24 mx-auto text-blue-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                          />
+                        </svg>
+                      </div>
+                      <h2 className="mb-4 text-3xl font-bold text-gray-900">
+                        AI 맞춤 추천 공고
+                      </h2>
+                      <p className="mb-3 text-lg text-gray-600">
+                        회원님의 이력서와 선호도를 분석하여
+                      </p>
+                      <p className="mb-8 text-lg text-gray-600">
+                        최적의 채용공고를 추천해 드립니다
+                      </p>
+                      <div className="p-6 mb-8 bg-blue-50 rounded-xl">
+                        <div className="flex items-center justify-center mb-4 space-x-2">
+                          <span className="text-2xl font-bold text-blue-600">
+                            크레딧 10개
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          AI 추천 공고를 확인하시려면 크레딧이 필요합니다
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleAccessRequest}
+                        className="px-12 py-4 text-xl font-bold text-white transition bg-blue-600 shadow-lg rounded-xl hover:bg-blue-700"
+                      >
+                        AI 공고 보기
+                      </button>
+                      <p className="mt-6 text-sm text-gray-500">
+                        현재 보유 크레딧:{" "}
+                        <span className="font-bold">{userCredit}</span>
+                      </p>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="px-6 py-8 mx-auto max-w-[1400px]">
-        <div className="mb-6">
-          <div className="flex border-b-2 border-gray-200">
-            <button
-              onClick={() => handleTabClick("job-sub-1")}
-              className="px-6 py-3 font-medium text-gray-600 transition hover:text-blue-600"
-            >
-              전체공고
-            </button>
-            <button className="px-6 py-3 font-medium text-blue-600 border-b-2 border-blue-600 -mb-0.5">
-              AI 추천 공고
-            </button>
-            <button
-              onClick={() => handleTabClick("job-sub-3")}
-              className="px-6 py-3 font-medium text-gray-600 transition hover:text-blue-600"
-            >
-              직무별 공고
-            </button>
-            <button
-              onClick={() => handleTabClick("job-sub-4")}
-              className="px-6 py-3 font-medium text-gray-600 transition hover:text-blue-600"
-            >
-              지역별 공고
-            </button>
-          </div>
-        </div>
-
-        {/* ... 기존 UI (배너, 리스트 등) 유지 ... */}
-        <div className="space-y-4">
-          {combinedJobListings.map((job) => (
-            <div
-              key={job.id}
-              className="relative p-6 transition bg-white border-2 border-blue-500 rounded-lg shadow-md cursor-pointer hover:shadow-xl"
-            >
-              <div className="absolute top-4 right-4">
-                <div className="flex flex-col items-center">
-                  <div className="px-4 py-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600">
-                    <span className="text-xl font-bold text-white">
-                      {job.matchScore}%
-                    </span>
-                  </div>
-                  <span className="mt-1 text-xs font-medium text-gray-600">
-                    AI 매칭
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-start justify-between pr-24">
-                <div className="flex-1">
-                  <div className="flex items-center mb-2 space-x-2">
-                    <span className="text-sm font-medium text-gray-600">
-                      {job.company}
-                    </span>
-                  </div>
-                  <h3 className="mb-3 text-lg font-bold text-gray-900">
-                    {job.title}
-                  </h3>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {job.requirements.map((req, idx) => (
-                      <span
-                        key={idx}
-                        className="px-3 py-1 text-xs text-gray-700 bg-gray-100 rounded-full"
-                      >
-                        {req}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="flex items-center space-x-4 text-sm text-gray-600">
-                    <span>{job.location}</span>
-                    <span>{job.deadline}</span>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end space-y-2">
-                  <button
-                    onClick={() => handleApply(job.id)}
-                    className="px-6 py-2 text-sm font-medium text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
-                  >
-                    입사지원
-                  </button>
-                  <div className="text-sm text-gray-500">
-                    <span className="font-medium text-blue-600">
-                      D-{job.daysLeft}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </main>
-
+    <>
       {showResumeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
@@ -356,6 +255,89 @@ export default function AIRecommendedJobsPage() {
           </div>
         </div>
       )}
-    </div>
+
+      <div className="min-h-screen bg-gray-50">
+        <div className="px-4 py-8 mx-auto max-w-7xl">
+          <h1 className="mb-6 text-2xl font-bold">채용정보</h1>
+          <div className="flex gap-6">
+            {/* 왼쪽 사이드바 */}
+            <JobsSidebar
+              activeMenu={activeMenu}
+              onMenuClick={handleMenuClick}
+            />
+
+            {/* 메인 컨텐츠 */}
+            <div className="flex-1 space-y-8">
+              <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold">AI 추천 공고</h2>
+                </div>
+
+                <div className="space-y-4">
+                  {combinedJobListings.map((job) => (
+                    <div
+                      key={job.id}
+                      className="relative p-6 transition bg-white border-2 border-blue-500 rounded-lg shadow-md cursor-pointer hover:shadow-xl"
+                    >
+                      <div className="absolute top-4 right-4">
+                        <div className="flex flex-col items-center">
+                          <div className="px-4 py-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600">
+                            <span className="text-xl font-bold text-white">
+                              {job.matchScore}%
+                            </span>
+                          </div>
+                          <span className="mt-1 text-xs font-medium text-gray-600">
+                            AI 매칭
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-start justify-between pr-24">
+                        <div className="flex-1">
+                          <div className="flex items-center mb-2 space-x-2">
+                            <span className="text-sm font-medium text-gray-600">
+                              {job.company}
+                            </span>
+                          </div>
+                          <h3 className="mb-3 text-lg font-bold text-gray-900">
+                            {job.title}
+                          </h3>
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {job.requirements.map((req, idx) => (
+                              <span
+                                key={idx}
+                                className="px-3 py-1 text-xs text-gray-700 bg-gray-100 rounded-full"
+                              >
+                                {req}
+                              </span>
+                            ))}
+                          </div>
+                          <div className="flex items-center space-x-4 text-sm text-gray-600">
+                            <span>{job.location}</span>
+                            <span>{job.deadline}</span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end space-y-2">
+                          <button
+                            onClick={() => handleApply(job.id)}
+                            className="px-6 py-2 text-sm font-medium text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
+                          >
+                            입사지원
+                          </button>
+                          <div className="text-sm text-gray-500">
+                            <span className="font-medium text-blue-600">
+                              D-{job.daysLeft}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

@@ -38,6 +38,41 @@ export interface BusinessJob {
   created_at: string;
 }
 
+// 지원 내역 타입
+export interface JobApplication {
+  id: number;
+  jobId: number;
+  resumeId: number;
+  date: string;
+  company: string;
+  position: string;
+  jobType: string;
+  location: string;
+  deadline: string;
+  viewed: boolean;
+  status: "지원완료" | "열람" | "미열람" | "지원취소";
+  canCancel: boolean;
+}
+
+// ✅ 크레딧 충전 내역 타입
+export interface CreditTransaction {
+  id: number;
+  date: string;
+  amount: number;
+  type: "충전" | "사용";
+  description: string;
+  balance: number; // 충전 후 잔액
+}
+
+// ✅ 쿠폰 타입
+export interface Coupon {
+  id: number;
+  discount: string;
+  label: string;
+  expiryDate?: string;
+  isUsed: boolean;
+}
+
 // 매칭 히스토리 타입
 export interface MatchingHistory {
   id: number;
@@ -117,6 +152,10 @@ interface AppContextType {
   resumes: Resume[];
   jobListings: JobListing[];
   businessJobs: BusinessJob[];
+  jobApplications: JobApplication[];
+  creditBalance: number; // ✅ 추가
+  creditTransactions: CreditTransaction[]; // ✅ 추가
+  coupons: Coupon[]; // ✅ 추가
   matchingHistory: MatchingHistory[];
   interviewResults: InterviewResult[];
   interviewHistories: InterviewHistory[];
@@ -131,6 +170,10 @@ interface AppContextType {
   updateBusinessJob: (id: number, job: BusinessJob) => void;
   deleteBusinessJob: (id: number) => void;
   setBusinessJobs: (jobs: BusinessJob[]) => void;
+  addJobApplication: (application: JobApplication) => void;
+  cancelJobApplication: (id: number) => void;
+  addCreditTransaction: (transaction: Omit<CreditTransaction, 'id' | 'balance'>) => void; // ✅ 추가
+  useCoupon: (id: number) => void; // ✅ 추가
   addMatchingHistory: (history: MatchingHistory) => void;
   clearMatchingHistory: () => void;
   addInterviewResult: (result: InterviewResult) => void;
@@ -156,16 +199,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('이력서 데이터 로드 실패:', error);
     }
-    // 빈 배열로 시작 - 실제로 작성한 이력서만 저장됨
     return [];
   };
 
   const [resumes, setResumesState] = useState<Resume[]>(loadResumesFromStorage());
 
-  // 채용공고는 하드코딩 없이 빈 배열로 시작 (실제 API에서 가져오거나 사용자가 생성한 데이터만 표시)
   const [jobListings, setJobListingsState] = useState<JobListing[]>([]);
 
-  // 기업 공고 데이터 (기업 서비스용)
+  // 기업 공고 데이터
   const loadBusinessJobsFromStorage = () => {
     try {
       const savedJobs = localStorage.getItem('nextenter_business_jobs');
@@ -175,11 +216,70 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('기업 공고 로드 실패:', error);
     }
-    // 하드코딩 제거 - 빈 배열로 시작 (사용자가 직접 등록한 공고만 표시)
     return [];
   };
 
   const [businessJobs, setBusinessJobsState] = useState<BusinessJob[]>(loadBusinessJobsFromStorage());
+
+  // 지원 내역 데이터
+  const loadJobApplicationsFromStorage = () => {
+    try {
+      const savedApplications = localStorage.getItem('nextenter_job_applications');
+      if (savedApplications) {
+        return JSON.parse(savedApplications);
+      }
+    } catch (error) {
+      console.error('지원 내역 로드 실패:', error);
+    }
+    return [];
+  };
+
+  const [jobApplications, setJobApplicationsState] = useState<JobApplication[]>(loadJobApplicationsFromStorage());
+
+  // ✅ 크레딧 잔액
+  const loadCreditBalanceFromStorage = () => {
+    try {
+      const savedBalance = localStorage.getItem('nextenter_credit_balance');
+      if (savedBalance) {
+        return parseInt(savedBalance);
+      }
+    } catch (error) {
+      console.error('크레딧 잔액 로드 실패:', error);
+    }
+    return 0; // 초기 크레딧 0
+  };
+
+  const [creditBalance, setCreditBalanceState] = useState<number>(loadCreditBalanceFromStorage());
+
+  // ✅ 크레딧 거래 내역
+  const loadCreditTransactionsFromStorage = () => {
+    try {
+      const savedTransactions = localStorage.getItem('nextenter_credit_transactions');
+      if (savedTransactions) {
+        return JSON.parse(savedTransactions);
+      }
+    } catch (error) {
+      console.error('크레딧 거래 내역 로드 실패:', error);
+    }
+    return [];
+  };
+
+  const [creditTransactions, setCreditTransactionsState] = useState<CreditTransaction[]>(loadCreditTransactionsFromStorage());
+
+  // ✅ 쿠폰 목록
+  const loadCouponsFromStorage = () => {
+    try {
+      const savedCoupons = localStorage.getItem('nextenter_coupons');
+      if (savedCoupons) {
+        return JSON.parse(savedCoupons);
+      }
+    } catch (error) {
+      console.error('쿠폰 로드 실패:', error);
+    }
+    return [];
+  };
+
+  const [coupons, setCouponsState] = useState<Coupon[]>(loadCouponsFromStorage());
 
   // 매칭 히스토리 데이터
   const loadMatchingHistoryFromStorage = () => {
@@ -211,7 +311,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const [interviewResults, setInterviewResultsState] = useState<InterviewResult[]>(loadInterviewResultsFromStorage());
 
-  // 면접 히스토리 데이터 (질문-답변 포함)
+  // 면접 히스토리 데이터
   const loadInterviewHistoriesFromStorage = () => {
     try {
       const savedHistories = localStorage.getItem('nextenter_interview_histories');
@@ -259,7 +359,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addResume = (resume: Resume) => {
     setResumesState(prev => {
       const updated = [...prev, resume];
-      // localStorage에 저장
       try {
         localStorage.setItem('nextenter_resumes', JSON.stringify(updated));
       } catch (error) {
@@ -272,7 +371,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateResume = (id: number, resume: Resume) => {
     setResumesState(prev => {
       const updated = prev.map(r => r.id === id ? resume : r);
-      // localStorage에 저장
       try {
         localStorage.setItem('nextenter_resumes', JSON.stringify(updated));
       } catch (error) {
@@ -285,7 +383,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const deleteResume = (id: number) => {
     setResumesState(prev => {
       const updated = prev.filter(r => r.id !== id);
-      // localStorage에 저장
       try {
         localStorage.setItem('nextenter_resumes', JSON.stringify(updated));
       } catch (error) {
@@ -297,7 +394,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const setResumes = (resumes: Resume[]) => {
     setResumesState(resumes);
-    // localStorage에 저장
     try {
       localStorage.setItem('nextenter_resumes', JSON.stringify(resumes));
     } catch (error) {
@@ -312,7 +408,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addBusinessJob = (job: BusinessJob) => {
     setBusinessJobsState(prev => {
       const updated = [...prev, job];
-      // localStorage에 저장
       try {
         localStorage.setItem('nextenter_business_jobs', JSON.stringify(updated));
       } catch (error) {
@@ -325,7 +420,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateBusinessJob = (id: number, job: BusinessJob) => {
     setBusinessJobsState(prev => {
       const updated = prev.map(j => j.id === id ? job : j);
-      // localStorage에 저장
       try {
         localStorage.setItem('nextenter_business_jobs', JSON.stringify(updated));
       } catch (error) {
@@ -338,7 +432,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const deleteBusinessJob = (id: number) => {
     setBusinessJobsState(prev => {
       const updated = prev.filter(j => j.id !== id);
-      // localStorage에 저장
       try {
         localStorage.setItem('nextenter_business_jobs', JSON.stringify(updated));
       } catch (error) {
@@ -350,7 +443,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const setBusinessJobs = (jobs: BusinessJob[]) => {
     setBusinessJobsState(jobs);
-    // localStorage에 저장
     try {
       localStorage.setItem('nextenter_business_jobs', JSON.stringify(jobs));
     } catch (error) {
@@ -358,10 +450,79 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // 지원 내역 추가
+  const addJobApplication = (application: JobApplication) => {
+    setJobApplicationsState(prev => {
+      const updated = [application, ...prev];
+      try {
+        localStorage.setItem('nextenter_job_applications', JSON.stringify(updated));
+      } catch (error) {
+        console.error('지원 내역 저장 실패:', error);
+      }
+      return updated;
+    });
+  };
+
+  // 지원 취소
+  const cancelJobApplication = (id: number) => {
+    setJobApplicationsState(prev => {
+      const updated = prev.map(app => 
+        app.id === id 
+          ? { ...app, status: "지원취소" as const, canCancel: false }
+          : app
+      );
+      try {
+        localStorage.setItem('nextenter_job_applications', JSON.stringify(updated));
+      } catch (error) {
+        console.error('지원 취소 실패:', error);
+      }
+      return updated;
+    });
+  };
+
+  // ✅ 크레딧 거래 추가 (충전 또는 사용)
+  const addCreditTransaction = (transaction: Omit<CreditTransaction, 'id' | 'balance'>) => {
+    const newBalance = creditBalance + transaction.amount;
+    const newTransaction: CreditTransaction = {
+      ...transaction,
+      id: Date.now(),
+      balance: newBalance,
+    };
+
+    setCreditTransactionsState(prev => {
+      const updated = [newTransaction, ...prev];
+      try {
+        localStorage.setItem('nextenter_credit_transactions', JSON.stringify(updated));
+      } catch (error) {
+        console.error('크레딧 거래 저장 실패:', error);
+      }
+      return updated;
+    });
+
+    setCreditBalanceState(newBalance);
+    try {
+      localStorage.setItem('nextenter_credit_balance', newBalance.toString());
+    } catch (error) {
+      console.error('크레딧 잔액 저장 실패:', error);
+    }
+  };
+
+  // ✅ 쿠폰 사용
+  const useCoupon = (id: number) => {
+    setCouponsState(prev => {
+      const updated = prev.map(c => c.id === id ? { ...c, isUsed: true } : c);
+      try {
+        localStorage.setItem('nextenter_coupons', JSON.stringify(updated));
+      } catch (error) {
+        console.error('쿠폰 사용 저장 실패:', error);
+      }
+      return updated;
+    });
+  };
+
   const addMatchingHistory = (history: MatchingHistory) => {
     setMatchingHistoryState(prev => {
-      const updated = [history, ...prev]; // 최신 기록이 맨 위로
-      // localStorage에 저장
+      const updated = [history, ...prev];
       try {
         localStorage.setItem('nextenter_matching_history', JSON.stringify(updated));
       } catch (error) {
@@ -373,7 +534,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const clearMatchingHistory = () => {
     setMatchingHistoryState([]);
-    // localStorage에서도 삭제
     try {
       localStorage.removeItem('nextenter_matching_history');
     } catch (error) {
@@ -383,8 +543,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const addInterviewResult = (result: InterviewResult) => {
     setInterviewResultsState(prev => {
-      const updated = [result, ...prev]; // 최신 기록이 맨 위로
-      // localStorage에 저장
+      const updated = [result, ...prev];
       try {
         localStorage.setItem('nextenter_interview_results', JSON.stringify(updated));
       } catch (error) {
@@ -396,7 +555,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const clearInterviewResults = () => {
     setInterviewResultsState([]);
-    // localStorage에서도 삭제
     try {
       localStorage.removeItem('nextenter_interview_results');
     } catch (error) {
@@ -406,8 +564,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const addInterviewHistory = (history: InterviewHistory) => {
     setInterviewHistoriesState(prev => {
-      const updated = [history, ...prev]; // 최신 기록이 맨 위로
-      // localStorage에 저장
+      const updated = [history, ...prev];
       try {
         localStorage.setItem('nextenter_interview_histories', JSON.stringify(updated));
       } catch (error) {
@@ -419,7 +576,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const clearInterviewHistories = () => {
     setInterviewHistoriesState([]);
-    // localStorage에서도 삭제
     try {
       localStorage.removeItem('nextenter_interview_histories');
     } catch (error) {
@@ -481,6 +637,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         resumes, 
         jobListings,
         businessJobs,
+        jobApplications,
+        creditBalance, // ✅ 추가
+        creditTransactions, // ✅ 추가
+        coupons, // ✅ 추가
         matchingHistory,
         interviewResults,
         interviewHistories,
@@ -495,6 +655,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updateBusinessJob,
         deleteBusinessJob,
         setBusinessJobs,
+        addJobApplication,
+        cancelJobApplication,
+        addCreditTransaction, // ✅ 추가
+        useCoupon, // ✅ 추가
         addMatchingHistory,
         clearMatchingHistory,
         addInterviewResult,

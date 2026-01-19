@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 import { useApp } from "../../context/AppContext";
+import JobsSidebar from "./components/JobsSidebar";
 
 interface LocationJobsPageProps {
   onLogoClick?: () => void;
@@ -30,10 +31,6 @@ export default function LocationJobsPage() {
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
   const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
-
-  const handleTabClick = (menuId: string) => {
-    handleMenuClick(menuId);
-  };
 
   // AppContext에서 데이터 가져오기
   const { resumes, jobListings, businessJobs } = useApp();
@@ -127,132 +124,7 @@ export default function LocationJobsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="px-6 py-8 mx-auto max-w-[1400px]">
-        <div className="mb-6">
-          <div className="flex border-b-2 border-gray-200">
-            <button
-              onClick={() => handleTabClick("job-sub-1")}
-              className={`px-6 py-3 font-medium transition ${
-                activeMenu === "job-sub-1"
-                  ? "text-blue-600 border-b-2 border-blue-600 -mb-0.5"
-                  : "text-gray-600 hover:text-blue-600"
-              }`}
-            >
-              전체공고
-            </button>
-            <button
-              onClick={() => handleTabClick("job-sub-2")}
-              className={`px-6 py-3 font-medium transition ${
-                activeMenu === "job-sub-2"
-                  ? "text-blue-600 border-b-2 border-blue-600 -mb-0.5"
-                  : "text-gray-600 hover:text-blue-600"
-              }`}
-            >
-              AI 추천 공고
-            </button>
-            <button
-              onClick={() => handleTabClick("job-sub-3")}
-              className={`px-6 py-3 font-medium transition ${
-                activeMenu === "job-sub-3"
-                  ? "text-blue-600 border-b-2 border-blue-600 -mb-0.5"
-                  : "text-gray-600 hover:text-blue-600"
-              }`}
-            >
-              직무별 공고
-            </button>
-            <button
-              className={`px-6 py-3 font-medium transition ${
-                activeMenu === "job-sub-4"
-                  ? "text-blue-600 border-b-2 border-blue-600 -mb-0.5"
-                  : "text-gray-600 hover:text-blue-600"
-              }`}
-            >
-              지역별 공고
-            </button>
-          </div>
-        </div>
-
-        <div className="p-4 mb-6 bg-white border border-gray-200 rounded-lg">
-          <div className="flex flex-wrap gap-2">
-            {locations.map((loc) => (
-              <button
-                key={loc}
-                onClick={() => setSelectedLocation(loc)}
-                className={`px-4 py-2 text-sm font-medium rounded-full transition ${
-                  selectedLocation === loc
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
-              >
-                {loc}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-bold text-gray-800">
-            지역별 채용정보 <span className="text-blue-600">{totalJobs}</span>건
-          </h2>
-        </div>
-
-        <div className="space-y-4">
-          {currentJobs.map((job) => (
-            <div
-              key={job.id}
-              className="p-6 transition bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center mb-2 space-x-2">
-                    <span className="text-sm font-medium text-gray-600">
-                      {job.company}
-                    </span>
-                  </div>
-                  <h3 className="mb-3 text-lg font-bold text-gray-900 cursor-pointer hover:text-blue-600">
-                    {job.title}
-                  </h3>
-                  <div className="flex items-center space-x-4 text-sm text-gray-600">
-                    <span>{job.location}</span>
-                    <span>{job.deadline}</span>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end space-y-2">
-                  <button
-                    onClick={() => handleApply(job.id)}
-                    className="px-6 py-2 text-sm font-medium text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
-                  >
-                    입사지원
-                  </button>
-                  <div className="text-sm text-gray-500">
-                    <span className="font-medium text-blue-600">
-                      D-{job.daysLeft}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex items-center justify-center mt-8 space-x-2">
-          {getPageNumbers().map((pageNum) => (
-            <button
-              key={pageNum}
-              onClick={() => handlePageChange(pageNum)}
-              className={`px-4 py-2 rounded ${
-                currentPage === pageNum
-                  ? "bg-blue-600 text-white font-bold"
-                  : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
-              }`}
-            >
-              {pageNum}
-            </button>
-          ))}
-        </div>
-      </main>
-
+    <>
       {showResumeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
@@ -293,6 +165,107 @@ export default function LocationJobsPage() {
           </div>
         </div>
       )}
-    </div>
+
+      <div className="min-h-screen bg-gray-50">
+        <div className="px-4 py-8 mx-auto max-w-7xl">
+          <h1 className="mb-6 text-2xl font-bold">채용정보</h1>
+          <div className="flex gap-6">
+            {/* 왼쪽 사이드바 */}
+            <JobsSidebar
+              activeMenu={activeMenu}
+              onMenuClick={handleMenuClick}
+            />
+
+            {/* 메인 컨텐츠 */}
+            <div className="flex-1 space-y-8">
+              <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold">지역별 채용정보</h2>
+                </div>
+
+                <div className="p-4 mb-6 bg-white border border-gray-200 rounded-lg">
+                  <div className="flex flex-wrap gap-2">
+                    {locations.map((loc) => (
+                      <button
+                        key={loc}
+                        onClick={() => setSelectedLocation(loc)}
+                        className={`px-4 py-2 text-sm font-medium rounded-full transition ${
+                          selectedLocation === loc
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
+                      >
+                        {loc}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between mb-6">
+                  <p className="text-lg text-gray-600">
+                    총 <span className="font-bold text-blue-600">{totalJobs}</span>건
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  {currentJobs.map((job) => (
+                    <div
+                      key={job.id}
+                      className="p-6 transition bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center mb-2 space-x-2">
+                            <span className="text-sm font-medium text-gray-600">
+                              {job.company}
+                            </span>
+                          </div>
+                          <h3 className="mb-3 text-lg font-bold text-gray-900 cursor-pointer hover:text-blue-600">
+                            {job.title}
+                          </h3>
+                          <div className="flex items-center space-x-4 text-sm text-gray-600">
+                            <span>{job.location}</span>
+                            <span>{job.deadline}</span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end space-y-2">
+                          <button
+                            onClick={() => handleApply(job.id)}
+                            className="px-6 py-2 text-sm font-medium text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
+                          >
+                            입사지원
+                          </button>
+                          <div className="text-sm text-gray-500">
+                            <span className="font-medium text-blue-600">
+                              D-{job.daysLeft}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center justify-center mt-8 space-x-2">
+                  {getPageNumbers().map((pageNum) => (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`px-4 py-2 rounded ${
+                        currentPage === pageNum
+                          ? "bg-blue-600 text-white font-bold"
+                          : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

@@ -50,6 +50,7 @@ export const navigationMenuData = {
     items: [
       { id: "mypage-sub-1", label: "마이페이지" },
       { id: "mypage-sub-2", label: "내 정보" },
+      { id: "mypage-sub-3", label: "지원 현황" },
     ],
   },
   credit: {

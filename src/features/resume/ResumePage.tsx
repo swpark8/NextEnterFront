@@ -60,7 +60,7 @@ export default function ResumePage() {
       }
     } catch (err: any) {
       console.error("이력서 목록 로드 오류:", err);
-      setError("이력서 목록을 불러오는 중 오류가 발생했습니다.");
+      setError("이력서 목록 불러오기에 실패하였습니다.");
     } finally {
       setIsLoading(false);
     }
@@ -198,7 +198,15 @@ export default function ResumePage() {
 
                 {error && (
                   <div className="p-4 mb-6 border border-red-200 rounded-lg bg-red-50">
-                    <p className="text-sm text-red-600">{error}</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-red-600">{error}</p>
+                      <button
+                        onClick={loadResumes}
+                        className="px-4 py-2 text-sm font-medium text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
+                      >
+                        재시도
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -212,7 +220,7 @@ export default function ResumePage() {
                       <div className="mb-4 text-4xl">⏳</div>
                       <p>이력서 목록을 불러오는 중...</p>
                     </div>
-                  ) : resumes.length === 0 ? (
+                  ) : resumes.length === 0 && !error ? (
                     <div className="p-12 text-center text-gray-500">
                       <div className="mb-4 text-4xl">📄</div>
                       <p className="mb-4">등록된 이력서가 없습니다.</p>
@@ -223,7 +231,7 @@ export default function ResumePage() {
                         첫 이력서 작성하기
                       </button>
                     </div>
-                  ) : (
+                  ) : resumes.length > 0 ? (
                     <div className="p-2 space-y-3 overflow-y-auto max-h-96">
                       {resumes.map((resume) => (
                         <div
@@ -285,7 +293,7 @@ export default function ResumePage() {
                         </div>
                       ))}
                     </div>
-                  )}
+                  ) : null}
                 </div>
 
                 <div className="p-12 border-2 border-blue-300 border-dashed rounded-2xl bg-blue-50">

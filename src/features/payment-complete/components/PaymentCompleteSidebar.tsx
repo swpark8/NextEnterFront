@@ -1,14 +1,13 @@
 import LeftSidebar from "../../../components/LeftSidebar";
 
-interface ResumeSidebarProps {
+interface PaymentCompleteSidebarProps {
   activeMenu: string;
   onMenuClick: (menuId: string) => void;
 }
 
-export default function ResumeSidebar({
+export default function PaymentCompleteSidebar({
   activeMenu,
   onMenuClick,
-}: ResumeSidebarProps) {
-  // menuItems를 전달하지 않으면 LeftSidebar가 기본값으로 전체 메뉴를 사용합니다
+}: PaymentCompleteSidebarProps) {
   return <LeftSidebar activeMenu={activeMenu} onMenuClick={onMenuClick} />;
 }

@@ -1,50 +1,112 @@
-import { useState } from "react";
-
+import { useState, useMemo, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
+import { useApp } from "../../context/AppContext";
 import CreditSidebar from "./components/CreditSidebar";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
+import { getActiveAdvertisements, Advertisement } from "../../api/advertisement";
 
-// ✅ [수정 1] App.tsx와 연결하기 위한 인터페이스 추가
 interface CreditPageProps {
   onNavigate?: (page: string, subMenu?: string) => void;
   initialMenu?: string;
 }
 
-// ✅ [수정 2] props로 onNavigate를 받아옵니다.
 export default function CreditPage({
   onNavigate,
   initialMenu,
 }: CreditPageProps) {
-  // ✅ [수정 3] 받아온 onNavigate를 훅에 넣어줘서, 버튼 클릭 시 이동되게 만듭니다.
+  const { user } = useAuth();
   const { activeMenu, handleMenuClick } = usePageNavigation(
     "credit",
     initialMenu || "credit-sub-1",
     onNavigate
   );
 
-  const [currentCredit] = useState(505);
-  const [expiringMileage] = useState(0);
+  // ✅ AppContext에서 실제 데이터 가져오기
+  const { 
+    creditBalance, 
+    creditTransactions, 
+    coupons, 
+    useCoupon,
+    businessJobs 
+  } = useApp();
+
   const [activeTab, setActiveTab] = useState<"coupon" | "usage" | "mileage">(
     "coupon"
   );
 
-  const coupons = [
-    { id: 1, discount: "10%", label: "10% 할인 쿠폰" },
-    { id: 2, discount: "7%", label: "7% 할인 쿠폰" },
-    { id: 3, discount: "5%", label: "5% 할인 쿠폰" },
-  ];
+  // ✅ 광고 데이터 상태
+  const [advertisements, setAdvertisements] = useState<Advertisement[]>([]);
+  const [loadingAds, setLoadingAds] = useState(true);
+
+  // ✅ 광고 데이터 불러오기
+  useEffect(() => {
+    const fetchAdvertisements = async () => {
+      try {
+        setLoadingAds(true);
+        const ads = await getActiveAdvertisements();
+        setAdvertisements(ads);
+      } catch (error) {
+        console.error("Failed to fetch advertisements:", error);
+        // 에러 발생 시 기본 광고 표시
+        setAdvertisements([]);
+      } finally {
+        setLoadingAds(false);
+      }
+    };
+
+    fetchAdvertisements();
+  }, []);
+
+  // ✅ 사용 가능한 쿠폰만 필터링
+  const availableCoupons = useMemo(() => {
+    return coupons.filter(c => !c.isUsed);
+  }, [coupons]);
+
+  // ✅ 사용한 쿠폰만 필터링
+  const usedCoupons = useMemo(() => {
+    return coupons.filter(c => c.isUsed);
+  }, [coupons]);
+
+  // ✅ 충전 내역만 필터링
+  const chargeTransactions = useMemo(() => {
+    return creditTransactions.filter(t => t.type === "충전");
+  }, [creditTransactions]);
+
+  // ✅ 사용 내역만 필터링
+  const usageTransactions = useMemo(() => {
+    return creditTransactions.filter(t => t.type === "사용");
+  }, [creditTransactions]);
+
+  // ✅ 추천 공고 (businessJobs 중 하나를 랜덤 또는 최신 것 표시)
+  const featuredJob = useMemo(() => {
+    if (businessJobs.length === 0) return null;
+    return businessJobs[0];
+  }, [businessJobs]);
 
   const handleCouponClick = (id: number) => {
-    console.log(`쿠폰 ${id} 클릭됨`);
+    if (confirm("이 쿠폰을 사용하시겠습니까?")) {
+      useCoupon(id);
+      alert("쿠폰이 사용되었습니다!");
+    }
   };
 
   const handlePromote = () => {
-    console.log("충전하기 클릭됨");
-    // 이제 onNavigate가 연결되었으므로, 실제로 페이지가 이동합니다.
     handleMenuClick("credit-sub-2");
   };
 
   const handleJobClick = () => {
-    console.log("삼성전자 공고 클릭됨");
+    if (featuredJob) {
+      handleMenuClick("job-sub-1");
+    }
+  };
+
+  // ✅ 광고 클릭 핸들러
+  const handleAdvertisementClick = (ad: Advertisement) => {
+    if (ad.targetPage) {
+      handleMenuClick(ad.targetPage);
+    } else if (ad.targetUrl) {
+      window.open(ad.targetUrl, "_blank");
+    }
   };
 
   return (
@@ -76,17 +138,17 @@ export default function CreditPage({
               {/* 크레딧 카드 */}
               <div className="p-8 mb-6 text-white bg-gradient-to-r from-purple-500 via-purple-400 to-cyan-400 rounded-2xl">
                 <h2 className="mb-6 text-xl">
-                  김유연님의 현재 사용 가능 크레딧
+                  {user?.name || "admin"}님의 현재 사용 가능 크레딧
                 </h2>
                 <div className="flex items-center justify-end gap-3 mb-4">
-                  <span className="text-6xl font-bold">{currentCredit}</span>
+                  <span className="text-6xl font-bold">{creditBalance}</span>
                   <div className="flex items-center justify-center w-12 h-12 text-2xl bg-orange-400 rounded-full">
                     💳
                   </div>
                 </div>
                 <div className="flex justify-end">
                   <div className="px-4 py-2 text-sm text-gray-700 rounded-full bg-white/90">
-                    30일 이내 소멸 가능 마일리지 {expiringMileage}M
+                    30일 이내 소멸 가능 마일리지 0M
                   </div>
                 </div>
               </div>
@@ -114,35 +176,108 @@ export default function CreditPage({
                 </div>
 
                 <div className="p-6">
+                  {/* ✅ 광고 탭 (쿠폰 목록 대신) */}
                   {activeTab === "coupon" && (
-                    <div className="space-y-3">
-                      {coupons.map((coupon) => (
-                        <button
-                          key={coupon.id}
-                          onClick={() => handleCouponClick(coupon.id)}
-                          className="w-full px-6 py-4 font-semibold text-left text-blue-600 transition bg-blue-100 rounded-lg hover:bg-blue-200"
-                        >
-                          {coupon.label}
-                        </button>
-                      ))}
+                    <div className="space-y-4">
+                      {loadingAds ? (
+                        <div className="py-12 text-center text-gray-500">
+                          <div className="mb-4 text-4xl">⏳</div>
+                          <p>광고를 불러오는 중...</p>
+                        </div>
+                      ) : advertisements.length === 0 ? (
+                        <div className="py-12 text-center text-gray-500">
+                          <div className="mb-4 text-4xl">📢</div>
+                          <p>현재 등록된 광고가 없습니다</p>
+                        </div>
+                      ) : (
+                        advertisements.map((ad) => (
+                          <div
+                            key={ad.id}
+                            className={`${ad.backgroundColor} text-white rounded-xl p-6 shadow-lg cursor-pointer transition hover:shadow-xl hover:scale-[1.02]`}
+                          >
+                            <h3 className="mb-3 text-2xl font-bold">{ad.title}</h3>
+                            <p className="mb-4 text-lg opacity-90">
+                              {ad.description}
+                            </p>
+                            <button
+                              onClick={() => handleAdvertisementClick(ad)}
+                              className="px-6 py-3 font-semibold text-gray-900 transition bg-white rounded-lg hover:bg-gray-100"
+                            >
+                              {ad.buttonText}
+                            </button>
+                          </div>
+                        ))
+                      )}
                     </div>
                   )}
 
+                  {/* 쿠폰 이용 내역 탭 */}
                   {activeTab === "usage" && (
-                    <div className="py-12 text-center text-gray-500">
-                      최근 사용 목록이 없습니다
+                    <div>
+                      {usedCoupons.length === 0 ? (
+                        <div className="py-12 text-center text-gray-500">
+                          사용한 쿠폰이 없습니다
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {usedCoupons.map((coupon) => (
+                            <div
+                              key={coupon.id}
+                              className="p-4 bg-gray-100 border border-gray-200 rounded-lg"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium text-gray-700">
+                                  {coupon.label}
+                                </span>
+                                <span className="text-sm text-gray-500">
+                                  사용됨
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
 
+                  {/* 마일리지 내역 탭 */}
                   {activeTab === "mileage" && (
-                    <div className="py-6">
-                      <div className="p-4 text-center rounded-lg bg-gray-50">
-                        <span className="text-gray-600">총</span>
-                        <span className="mx-2 text-2xl font-bold text-blue-600">
-                          4.5
-                        </span>
-                        <span className="text-gray-600">적립</span>
-                      </div>
+                    <div>
+                      {chargeTransactions.length === 0 ? (
+                        <div className="py-12 text-center text-gray-500">
+                          충전 내역이 없습니다
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="p-4 mb-4 text-center rounded-lg bg-blue-50">
+                            <span className="text-gray-600">총 충전</span>
+                            <span className="mx-2 text-2xl font-bold text-blue-600">
+                              {chargeTransactions.reduce((sum, t) => sum + t.amount, 0)}
+                            </span>
+                            <span className="text-gray-600">크레딧</span>
+                          </div>
+
+                          {chargeTransactions.map((transaction) => (
+                            <div
+                              key={transaction.id}
+                              className="p-4 bg-white border border-gray-200 rounded-lg"
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="font-medium text-gray-900">
+                                  {transaction.description}
+                                </span>
+                                <span className="text-lg font-bold text-blue-600">
+                                  +{transaction.amount}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between text-sm text-gray-500">
+                                <span>{transaction.date}</span>
+                                <span>잔액: {transaction.balance}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -163,7 +298,7 @@ export default function CreditPage({
               </div>
             </div>
 
-            {/* 오른쪽 사이드 */}
+            {/* 오른쪽 사이드 - 추천 공고 */}
             <div className="w-80">
               <div className="sticky p-6 bg-white border-2 border-blue-400 rounded-2xl top-8">
                 <div className="flex items-center gap-2 mb-4">
@@ -173,27 +308,32 @@ export default function CreditPage({
                   </h3>
                 </div>
 
-                <button
-                  onClick={handleJobClick}
-                  className="w-full p-6 transition border-2 border-blue-300 rounded-xl hover:shadow-lg"
-                >
-                  <div className="flex items-center justify-center h-40 mb-4 border-2 border-blue-300 border-dashed rounded-lg">
-                    <span className="text-4xl">🏢</span>
-                  </div>
-                  <h4 className="mb-4 text-xl font-bold text-center">
-                    삼성전자
-                  </h4>
-                  <div className="space-y-1 text-sm text-gray-600">
-                    <div>
-                      어쩌고 저쩌고 구릅니다 사람 지원 명이 블라드크럽으
-                      하라라라랄
+                {featuredJob ? (
+                  <button
+                    onClick={handleJobClick}
+                    className="w-full p-6 transition border-2 border-blue-300 rounded-xl hover:shadow-lg"
+                  >
+                    <div className="flex items-center justify-center h-40 mb-4 border-2 border-blue-300 border-dashed rounded-lg">
+                      <span className="text-4xl">🏢</span>
                     </div>
-                    <div className="mt-3 space-y-1">
-                      <div>당담자 : 송진우</div>
-                      <div>연락처 : 010-1234-5678</div>
+                    <h4 className="mb-4 text-xl font-bold text-center">
+                      {featuredJob.title}
+                    </h4>
+                    <div className="space-y-1 text-sm text-gray-600">
+                      <div>직무: {featuredJob.job_category}</div>
+                      <div>위치: {featuredJob.location}</div>
+                      <div>마감: {featuredJob.deadline}</div>
+                      <div className="mt-3 text-blue-600">
+                        조회: {featuredJob.view_count} | 지원: {featuredJob.applicant_count}
+                      </div>
                     </div>
+                  </button>
+                ) : (
+                  <div className="p-8 text-center text-gray-500">
+                    <div className="mb-4 text-4xl">📋</div>
+                    <p>등록된 공고가 없습니다</p>
                   </div>
-                </button>
+                )}
               </div>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 import { useApp } from "../../context/AppContext";
+import JobsSidebar from "./components/JobsSidebar";
 
 interface AllJobsPageProps {
   onLogoClick?: () => void;
@@ -20,7 +21,6 @@ type JobListing = {
   daysLeft: number;
 };
 
-// ✅ [수정] 안 쓰는 props 제거
 export default function AllJobsPage() {
   const { activeMenu, handleMenuClick } = usePageNavigation("job", "job-sub-1");
 
@@ -33,16 +33,11 @@ export default function AllJobsPage() {
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
   const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
 
-  const handleTabClick = (menuId: string) => {
-    handleMenuClick(menuId);
-  };
-
-  // AppContext에서 데이터 가져오기
-  const { resumes, jobListings, businessJobs } = useApp();
+  // ✅ AppContext에서 데이터 가져오기 (addJobApplication 추가)
+  const { resumes, jobListings, businessJobs, addJobApplication } = useApp();
   
   // businessJobs를 JobListing 형식으로 변환
   const convertedBusinessJobs: JobListing[] = businessJobs.map(job => {
-    // 마감일까지 남은 일수 계산
     const deadline = new Date(job.deadline);
     const today = new Date();
     const diffTime = deadline.getTime() - today.getTime();
@@ -50,17 +45,16 @@ export default function AllJobsPage() {
     
     return {
       id: job.id,
-      company: "등록 기업", // 실제로는 기업명을 저장해야 함
+      company: "등록 기업",
       title: job.title,
-      requirements: [], // 필요시 추가
-      tags: [job.job_category], // 직무를 태그로
+      requirements: [],
+      tags: [job.job_category],
       location: job.location,
       deadline: job.deadline,
       daysLeft: daysLeft > 0 ? daysLeft : 0,
     };
   });
   
-  // 기업 공고와 일반 공고 통합
   const allJobListings = [...jobListings, ...convertedBusinessJobs];
 
   const totalJobs = allJobListings.length;
@@ -84,17 +78,42 @@ export default function AllJobsPage() {
   const handleResumeSelect = (resumeId: number) =>
     setSelectedResumeId(resumeId);
 
+  // ✅ 지원하기 함수 수정 - 지원 내역 저장
   const handleFinalSubmit = () => {
-    if (!selectedResumeId) {
+    if (!selectedResumeId || !selectedJobId) {
       alert("이력서를 선택해주세요.");
       return;
     }
+
     const selectedResume = resumes.find((r) => r.id === selectedResumeId);
+    const selectedJob = allJobListings.find((j) => j.id === selectedJobId);
+
+    if (!selectedJob) {
+      alert("공고 정보를 찾을 수 없습니다.");
+      return;
+    }
+
     if (confirm(`"${selectedResume?.title}"로 지원하시겠습니까?`)) {
-      console.log(
-        `공고 ${selectedJobId}에 이력서 ${selectedResumeId}로 지원하기`
-      );
-      alert("완료되었습니다");
+      // ✅ 지원 내역 생성 및 저장
+      const today = new Date();
+      const applicationId = Date.now(); // 임시 ID 생성
+
+      addJobApplication({
+        id: applicationId,
+        jobId: selectedJob.id,
+        resumeId: selectedResumeId,
+        date: today.toISOString().split('T')[0].replace(/-/g, '.'),
+        company: selectedJob.company,
+        position: selectedJob.title,
+        jobType: "정규직", // 실제로는 공고에서 가져와야 함
+        location: selectedJob.location,
+        deadline: selectedJob.deadline,
+        viewed: false,
+        status: "지원완료",
+        canCancel: true,
+      });
+
+      alert("지원이 완료되었습니다!");
       setShowResumeModal(false);
       setSelectedJobId(null);
       setSelectedResumeId(null);
@@ -122,155 +141,156 @@ export default function AllJobsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="px-6 py-8 mx-auto max-w-[1400px]">
-        <div className="mb-6">
-          <div className="flex border-b-2 border-gray-200">
-            <button
-              className={`px-6 py-3 font-medium transition ${
-                activeMenu === "job-sub-1"
-                  ? "text-blue-600 border-b-2 border-blue-600 -mb-0.5"
-                  : "text-gray-600 hover:text-blue-600"
-              }`}
-            >
-              전체공고
-            </button>
-            <button
-              onClick={() => handleTabClick("job-sub-2")}
-              className={`px-6 py-3 font-medium transition ${
-                activeMenu === "job-sub-2"
-                  ? "text-blue-600 border-b-2 border-blue-600 -mb-0.5"
-                  : "text-gray-600 hover:text-blue-600"
-              }`}
-            >
-              AI 추천 공고
-            </button>
-            <button
-              onClick={() => handleTabClick("job-sub-3")}
-              className={`px-6 py-3 font-medium transition ${
-                activeMenu === "job-sub-3"
-                  ? "text-blue-600 border-b-2 border-blue-600 -mb-0.5"
-                  : "text-gray-600 hover:text-blue-600"
-              }`}
-            >
-              직무별 공고
-            </button>
-            <button
-              onClick={() => handleTabClick("job-sub-4")}
-              className={`px-6 py-3 font-medium transition ${
-                activeMenu === "job-sub-4"
-                  ? "text-blue-600 border-b-2 border-blue-600 -mb-0.5"
-                  : "text-gray-600 hover:text-blue-600"
-              }`}
-            >
-              지역별 공고
-            </button>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-bold text-gray-800">
-            전체 채용정보 <span className="text-blue-600">{totalJobs}</span>건
-          </h2>
-          {/* ... 필터 UI ... */}
-        </div>
-
-        <div className="space-y-4">
-          {currentJobs.map((job) => (
-            <div
-              key={job.id}
-              className="p-6 transition bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center mb-2 space-x-2">
-                    <span className="text-sm font-medium text-gray-600">
-                      {job.company}
-                    </span>
-                  </div>
-                  <h3 className="mb-3 text-lg font-bold text-gray-900 cursor-pointer hover:text-blue-600">
-                    {job.title}
-                  </h3>
-                  <div className="flex items-center space-x-4 text-sm text-gray-600">
-                    <span>{job.location}</span>
-                    <span>{job.deadline}</span>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end space-y-2">
-                  <button
-                    onClick={() => handleApply(job.id)}
-                    className="px-6 py-2 text-sm font-medium text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
-                  >
-                    입사지원
-                  </button>
-                  <div className="text-sm text-gray-500">
-                    <span className="font-medium text-blue-600">
-                      D-{job.daysLeft}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex items-center justify-center mt-8 space-x-2">
-          {getPageNumbers().map((pageNum) => (
-            <button
-              key={pageNum}
-              onClick={() => handlePageChange(pageNum)}
-              className={`px-4 py-2 rounded ${
-                currentPage === pageNum
-                  ? "bg-blue-600 text-white font-bold"
-                  : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
-              }`}
-            >
-              {pageNum}
-            </button>
-          ))}
-        </div>
-      </main>
-
+    <>
+      {/* 이력서 선택 다이얼로그 */}
       {showResumeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
             <h3 className="mb-6 text-2xl font-bold text-gray-900">
               지원할 이력서를 선택해주세요
             </h3>
-            <div className="mb-6 space-y-4">
-              {resumes.map((resume) => (
-                <div
-                  key={resume.id}
-                  onClick={() => handleResumeSelect(resume.id)}
-                  className={`p-5 border-2 rounded-lg cursor-pointer transition ${
-                    selectedResumeId === resume.id
-                      ? "border-blue-600 bg-blue-50"
-                      : "border-gray-200 hover:border-blue-300 bg-white"
-                  }`}
+            {resumes.length === 0 ? (
+              <div className="p-8 text-center">
+                <p className="mb-4 text-gray-600">등록된 이력서가 없습니다.</p>
+                <button
+                  onClick={() => {
+                    setShowResumeModal(false);
+                    handleMenuClick("resume-sub-1");
+                  }}
+                  className="px-6 py-2 text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
                 >
-                  <h4 className="text-lg font-bold text-gray-900">
-                    {resume.title}
-                  </h4>
+                  이력서 작성하기
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="mb-6 space-y-4">
+                  {resumes.map((resume) => (
+                    <div
+                      key={resume.id}
+                      onClick={() => handleResumeSelect(resume.id)}
+                      className={`p-5 border-2 rounded-lg cursor-pointer transition ${
+                        selectedResumeId === resume.id
+                          ? "border-blue-600 bg-blue-50"
+                          : "border-gray-200 hover:border-blue-300 bg-white"
+                      }`}
+                    >
+                      <h4 className="text-lg font-bold text-gray-900">
+                        {resume.title}
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        산업: {resume.industry}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <div className="flex space-x-4">
-              <button
-                onClick={handleCancelResume}
-                className="flex-1 px-6 py-3 font-medium text-gray-700 transition bg-gray-100 rounded-lg hover:bg-gray-200"
-              >
-                취소
-              </button>
-              <button
-                onClick={handleFinalSubmit}
-                className="flex-1 px-6 py-3 font-medium text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
-              >
-                지원하기
-              </button>
-            </div>
+                <div className="flex space-x-4">
+                  <button
+                    onClick={handleCancelResume}
+                    className="flex-1 px-6 py-3 font-medium text-gray-700 transition bg-gray-100 rounded-lg hover:bg-gray-200"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={handleFinalSubmit}
+                    className="flex-1 px-6 py-3 font-medium text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
+                  >
+                    지원하기
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
-    </div>
+
+      <div className="min-h-screen bg-gray-50">
+        <div className="px-4 py-8 mx-auto max-w-7xl">
+          <h1 className="mb-6 text-2xl font-bold">채용정보</h1>
+          <div className="flex gap-6">
+            {/* 왼쪽 사이드바 */}
+            <JobsSidebar
+              activeMenu={activeMenu}
+              onMenuClick={handleMenuClick}
+            />
+
+            {/* 메인 컨텐츠 */}
+            <div className="flex-1 space-y-8">
+              <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold">
+                    전체 채용정보 <span className="text-blue-600">{totalJobs}</span>건
+                  </h2>
+                </div>
+
+                {allJobListings.length === 0 ? (
+                  <div className="p-12 text-center text-gray-500">
+                    <div className="mb-4 text-4xl">📋</div>
+                    <p>등록된 채용공고가 없습니다.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {currentJobs.map((job) => (
+                      <div
+                        key={job.id}
+                        className="p-6 transition bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center mb-2 space-x-2">
+                              <span className="text-sm font-medium text-gray-600">
+                                {job.company}
+                              </span>
+                            </div>
+                            <h3 className="mb-3 text-lg font-bold text-gray-900 cursor-pointer hover:text-blue-600">
+                              {job.title}
+                            </h3>
+                            <div className="flex items-center space-x-4 text-sm text-gray-600">
+                              <span>{job.location}</span>
+                              <span>{job.deadline}</span>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end space-y-2">
+                            <button
+                              onClick={() => handleApply(job.id)}
+                              className="px-6 py-2 text-sm font-medium text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
+                            >
+                              입사지원
+                            </button>
+                            <div className="text-sm text-gray-500">
+                              <span className="font-medium text-blue-600">
+                                D-{job.daysLeft}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center mt-8 space-x-2">
+                    {getPageNumbers().map((pageNum) => (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`px-4 py-2 rounded ${
+                          currentPage === pageNum
+                            ? "bg-blue-600 text-white font-bold"
+                            : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

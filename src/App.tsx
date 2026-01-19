@@ -13,6 +13,7 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import MyPage from "./features/mypage/MyPage";
 import CreditPage from "./features/credit/CreditPage";
 import CreditChargePage from "./features/credit-charge/CreditChargePage";
+import PaymentCompletePage from "./features/payment-complete/PaymentCompletePage"; // ✅ 추가
 import InterviewPage from "./features/interview/InterviewPage";
 import ResumePage from "./features/resume/ResumePage";
 import CoverLetterPage from "./features/coverletter/CoverLetterPage";
@@ -103,6 +104,15 @@ function App() {
               element={
                 <ProtectedRoute allowedUserType="personal">
                   <CreditChargePage />
+                </ProtectedRoute>
+              }
+            />
+            {/* ✅ 결제 완료 페이지 추가 */}
+            <Route
+              path="credit/complete"
+              element={
+                <ProtectedRoute allowedUserType="personal">
+                  <PaymentCompletePage />
                 </ProtectedRoute>
               }
             />
