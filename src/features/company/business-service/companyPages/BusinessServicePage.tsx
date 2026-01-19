@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../../../context/AuthContext";
 
 interface BusinessServicePageProps {
   onJobManagementClick?: () => void;
@@ -20,6 +21,7 @@ export default function BusinessServicePage({
 }: BusinessServicePageProps) {
   const [activeService, setActiveService] = useState<string>("");
   const navigate = useNavigate();
+  const { isAuthenticated, user, logout } = useAuth();
 
   const services = [
     {
@@ -110,8 +112,13 @@ export default function BusinessServicePage({
     if (onLogoClick) {
       onLogoClick();
     } else {
-      console.log("기업 메인 페이지");
+      navigate("/company");
     }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/company/login");
   };
 
   return (
@@ -142,20 +149,36 @@ export default function BusinessServicePage({
               </button>
             </nav>
 
-            {/* 오른쪽 로그인/회원가입 버튼 */}
+            {/* 오른쪽 로그인/회원가입 또는 사용자 정보 */}
             <div className="flex items-center space-x-4">
-              <button
-                onClick={() => navigate("/company/login")}
-                className="px-4 py-2 text-gray-700 transition hover:text-blue-600"
-              >
-                로그인
-              </button>
-              <button
-                onClick={() => navigate("/company/signup")}
-                className="px-4 py-2 text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
-              >
-                회원가입
-              </button>
+              {isAuthenticated && user?.userType === "company" ? (
+                <>
+                  <span className="text-gray-700 font-medium">
+                    {user.companyName || user.name}님
+                  </span>
+                  <button
+                    onClick={handleLogout}
+                    className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition"
+                  >
+                    로그아웃
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => navigate("/company/login")}
+                    className="px-4 py-2 text-gray-700 transition hover:text-blue-600"
+                  >
+                    로그인
+                  </button>
+                  <button
+                    onClick={() => navigate("/company/signup")}
+                    className="px-4 py-2 text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
+                  >
+                    회원가입
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

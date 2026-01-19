@@ -1,5 +1,6 @@
 import { useState } from "react";
-
+import { useNavigate } from "react-router-dom";
+import {useAuth} from "../../../context/AuthContext";
 interface BusinessServicePageProps {
   onLogoClick?: () => void;
   onLoginClick?: () => void;
@@ -11,6 +12,8 @@ export default function BusinessServicePage({
   onLoginClick,
   onSignupClick,
 }: BusinessServicePageProps) {
+  const navigate = useNavigate();
+  const { isAuthenticated, user, logout } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const categories = [
@@ -134,18 +137,37 @@ export default function BusinessServicePage({
 
             {/* 로그인/회원가입 버튼 */}
             <div className="flex items-center space-x-4">
-              <button
-                onClick={onLoginClick}
-                className="px-4 py-2 text-gray-700 hover:text-purple-600"
-              >
-                로그인
-              </button>
-              <button
-                onClick={onSignupClick}
-                className="px-4 py-2 text-gray-700 hover:text-purple-600"
-              >
-                회원가입
-              </button>
+              {isAuthenticated ? (
+                <>
+                  <span className="text-gray-700">
+                    {user?.companyName || user?.name}님
+                  </span>
+                  <button
+                    onClick={() => {
+                      logout();
+                      navigate("/company/login");
+                    }}
+                    className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700"
+                  >
+                    로그아웃
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => navigate("/company/login")}
+                    className="px-4 py-2 text-gray-700 hover:text-purple-600"
+                  >
+                    로그인
+                  </button>
+                  <button
+                    onClick={() => navigate("/company/signup")}
+                    className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                  >
+                    회원가입
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
