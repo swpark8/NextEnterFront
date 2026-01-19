@@ -1,8 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useApp } from "../../context/AppContext";
 import CreditSidebar from "./components/CreditSidebar";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
+import { getActiveAdvertisements, Advertisement } from "../../api/advertisement";
 
 interface CreditPageProps {
   onNavigate?: (page: string, subMenu?: string) => void;
@@ -32,6 +33,29 @@ export default function CreditPage({
   const [activeTab, setActiveTab] = useState<"coupon" | "usage" | "mileage">(
     "coupon"
   );
+
+  // ✅ 광고 데이터 상태
+  const [advertisements, setAdvertisements] = useState<Advertisement[]>([]);
+  const [loadingAds, setLoadingAds] = useState(true);
+
+  // ✅ 광고 데이터 불러오기
+  useEffect(() => {
+    const fetchAdvertisements = async () => {
+      try {
+        setLoadingAds(true);
+        const ads = await getActiveAdvertisements();
+        setAdvertisements(ads);
+      } catch (error) {
+        console.error("Failed to fetch advertisements:", error);
+        // 에러 발생 시 기본 광고 표시
+        setAdvertisements([]);
+      } finally {
+        setLoadingAds(false);
+      }
+    };
+
+    fetchAdvertisements();
+  }, []);
 
   // ✅ 사용 가능한 쿠폰만 필터링
   const availableCoupons = useMemo(() => {
@@ -76,25 +100,14 @@ export default function CreditPage({
     }
   };
 
-  // ✅ 광고 데이터
-  const advertisements = [
-    {
-      id: 1,
-      title: "🎯 AI 이력서 분석 20% 할인!",
-      description: "지금 이력서를 분석하고 전문가의 피드백을 받아보세요",
-      backgroundColor: "bg-gradient-to-r from-blue-500 to-purple-500",
-      buttonText: "분석 시작하기",
-      onClick: () => handleMenuClick("matching-sub-1"),
-    },
-    {
-      id: 2,
-      title: "💼 프리미엄 매칭 서비스",
-      description: "AI가 추천하는 맞춤 공고로 빠른 취업 성공!",
-      backgroundColor: "bg-gradient-to-r from-green-500 to-teal-500",
-      buttonText: "매칭 받기",
-      onClick: () => handleMenuClick("job-sub-2"),
-    },
-  ];
+  // ✅ 광고 클릭 핸들러
+  const handleAdvertisementClick = (ad: Advertisement) => {
+    if (ad.targetPage) {
+      handleMenuClick(ad.targetPage);
+    } else if (ad.targetUrl) {
+      window.open(ad.targetUrl, "_blank");
+    }
+  };
 
   return (
     <>
@@ -166,23 +179,35 @@ export default function CreditPage({
                   {/* ✅ 광고 탭 (쿠폰 목록 대신) */}
                   {activeTab === "coupon" && (
                     <div className="space-y-4">
-                      {advertisements.map((ad) => (
-                        <div
-                          key={ad.id}
-                          className={`${ad.backgroundColor} text-white rounded-xl p-6 shadow-lg`}
-                        >
-                          <h3 className="mb-3 text-2xl font-bold">{ad.title}</h3>
-                          <p className="mb-4 text-lg opacity-90">
-                            {ad.description}
-                          </p>
-                          <button
-                            onClick={ad.onClick}
-                            className="px-6 py-3 font-semibold text-gray-900 transition bg-white rounded-lg hover:bg-gray-100"
-                          >
-                            {ad.buttonText}
-                          </button>
+                      {loadingAds ? (
+                        <div className="py-12 text-center text-gray-500">
+                          <div className="mb-4 text-4xl">⏳</div>
+                          <p>광고를 불러오는 중...</p>
                         </div>
-                      ))}
+                      ) : advertisements.length === 0 ? (
+                        <div className="py-12 text-center text-gray-500">
+                          <div className="mb-4 text-4xl">📢</div>
+                          <p>현재 등록된 광고가 없습니다</p>
+                        </div>
+                      ) : (
+                        advertisements.map((ad) => (
+                          <div
+                            key={ad.id}
+                            className={`${ad.backgroundColor} text-white rounded-xl p-6 shadow-lg cursor-pointer transition hover:shadow-xl hover:scale-[1.02]`}
+                          >
+                            <h3 className="mb-3 text-2xl font-bold">{ad.title}</h3>
+                            <p className="mb-4 text-lg opacity-90">
+                              {ad.description}
+                            </p>
+                            <button
+                              onClick={() => handleAdvertisementClick(ad)}
+                              className="px-6 py-3 font-semibold text-gray-900 transition bg-white rounded-lg hover:bg-gray-100"
+                            >
+                              {ad.buttonText}
+                            </button>
+                          </div>
+                        ))
+                      )}
                     </div>
                   )}
 
