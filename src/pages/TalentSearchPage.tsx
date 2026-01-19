@@ -1,89 +1,91 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import Footer from "../components/Footer";
+import { searchTalents, type TalentSearchResponse } from "../api/talent";
 
-interface TalentSearchPageProps {
-  onLogoClick?: () => void;
-}
-
-interface Talent {
-  id: number;
-  name: string;
-  position: string;
-  experience: string;
-  skills: string[];
-  location: string;
-  salary: string;
-  matchScore: number;
-  available: boolean;
-}
-
-export default function TalentSearchPage({ onLogoClick }: TalentSearchPageProps) {
+export default function TalentSearchPage() {
+  const navigate = useNavigate();
+  const { isAuthenticated, user, logout } = useAuth();
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPosition, setSelectedPosition] = useState("전체");
   const [selectedExperience, setSelectedExperience] = useState("전체");
+  const [loading, setLoading] = useState(true);
+  const [talents, setTalents] = useState<TalentSearchResponse[]>([]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
-  const talents: Talent[] = [
-    {
-      id: 1,
-      name: "김**",
-      position: "프론트엔드 개발자",
-      experience: "5년",
-      skills: ["React", "TypeScript", "Next.js", "Tailwind CSS"],
-      location: "서울",
-      salary: "5,000~7,000만원",
-      matchScore: 92,
-      available: true
-    },
-    {
-      id: 2,
-      name: "이**",
-      position: "백엔드 개발자",
-      experience: "7년",
-      skills: ["Node.js", "Python", "PostgreSQL", "AWS"],
-      location: "경기",
-      salary: "6,000~8,000만원",
-      matchScore: 88,
-      available: true
-    },
-    {
-      id: 3,
-      name: "박**",
-      position: "풀스택 개발자",
-      experience: "4년",
-      skills: ["React", "Node.js", "MongoDB", "Docker"],
-      location: "서울",
-      salary: "4,500~6,500만원",
-      matchScore: 85,
-      available: false
-    },
-    {
-      id: 4,
-      name: "최**",
-      position: "DevOps 엔지니어",
-      experience: "6년",
-      skills: ["Kubernetes", "AWS", "Terraform", "Jenkins"],
-      location: "서울",
-      salary: "6,500~8,500만원",
-      matchScore: 90,
-      available: true
-    }
-  ];
+  // 인재 목록 로드
+  useEffect(() => {
+    const loadTalents = async () => {
+      try {
+        setLoading(true);
+        
+        // API 호출 파라미터 구성
+        const params: any = {
+          page: currentPage,
+          size: 20,
+        };
 
-  const handleContact = (talentId: number) => {
-    console.log(`인재 ${talentId} 연락하기`);
+        // 직무 카테고리 필터
+        if (selectedPosition !== "전체") {
+          params.jobCategory = selectedPosition + " 개발자";
+        }
+
+        // 검색 키워드
+        if (searchQuery) {
+          params.keyword = searchQuery;
+        }
+
+        const response = await searchTalents(params);
+        setTalents(response.content);
+        setTotalPages(response.totalPages);
+      } catch (error: any) {
+        console.error("인재 검색 실패:", error);
+        alert(error.response?.data?.message || "인재 검색에 실패했습니다.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTalents();
+  }, [currentPage, selectedPosition, searchQuery]);
+
+  const handleContact = (resumeId: number) => {
+    console.log(`인재 ${resumeId} 연락하기`);
+    alert("연락하기 기능은 준비 중입니다.");
   };
 
-  const handleSave = (talentId: number) => {
-    console.log(`인재 ${talentId} 저장하기`);
+  const handleSave = (resumeId: number) => {
+    console.log(`인재 ${resumeId} 저장하기`);
+    alert("저장하기 기능은 준비 중입니다.");
   };
 
   const handleLogoClick = () => {
-    if (onLogoClick) {
-      onLogoClick();
-    } else {
-      console.log("메인 페이지로 이동");
-    }
+    navigate("/company");
   };
+
+  // 클라이언트 측 경력 필터링
+  const filteredTalents = talents.filter((talent) => {
+    if (selectedExperience === "전체") return true;
+    
+    const exp = talent.experienceYears || 0;
+    if (selectedExperience === "신입") return exp === 0;
+    if (selectedExperience === "3년 이하") return exp > 0 && exp <= 3;
+    if (selectedExperience === "3-5년") return exp > 3 && exp <= 5;
+    if (selectedExperience === "5년 이상") return exp > 5;
+    
+    return true;
+  });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-xl font-semibold text-gray-600">로딩 중...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -102,17 +104,51 @@ export default function TalentSearchPage({ onLogoClick }: TalentSearchPageProps)
 
             {/* 네비게이션 */}
             <nav className="flex space-x-8">
-              <button className="px-4 py-2 text-gray-700 hover:text-blue-600">■ 채용공고</button>
+              <button 
+                onClick={() => navigate("/company/jobs")}
+                className="px-4 py-2 text-gray-700 hover:text-blue-600"
+              >
+                ■ 채용공고
+              </button>
               <button className="px-4 py-2 text-gray-700 hover:text-blue-600">자료</button>
               <button className="px-4 py-2 text-gray-700 hover:text-blue-600">홍보</button>
             </nav>
 
             {/* 오른쪽 버튼 */}
             <div className="flex items-center space-x-4">
-              <button className="px-4 py-2 text-gray-700 hover:text-blue-600">로그인</button>
-              <button className="px-4 py-2 text-gray-700 hover:text-blue-600">회원가입</button>
+              {isAuthenticated && user?.userType === "company" ? (
+                <>
+                  <span className="text-gray-700 font-medium">
+                    {user.companyName || user.name}님
+                  </span>
+                  <button
+                    onClick={() => {
+                      logout();
+                      navigate("/company/login");
+                    }}
+                    className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition"
+                  >
+                    로그아웃
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => navigate("/company/login")}
+                    className="px-4 py-2 text-gray-700 hover:text-blue-600"
+                  >
+                    로그인
+                  </button>
+                  <button
+                    onClick={() => navigate("/company/signup")}
+                    className="px-4 py-2 text-gray-700 hover:text-blue-600"
+                  >
+                    회원가입
+                  </button>
+                </>
+              )}
               <button
-                onClick={handleLogoClick}
+                onClick={() => navigate("/user")}
                 className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition"
               >
                 개인 회원
@@ -176,17 +212,17 @@ export default function TalentSearchPage({ onLogoClick }: TalentSearchPageProps)
 
         {/* 인재 목록 */}
         <div className="space-y-4">
-          {talents.map((talent) => (
-            <div key={talent.id} className="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition">
+          {filteredTalents.map((talent) => (
+            <div key={talent.resumeId} className="p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition">
               <div className="flex items-start justify-between">
                 {/* 왼쪽: 인재 정보 */}
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
                     <h3 className="text-xl font-bold">{talent.name}</h3>
                     <span className="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded">
-                      {talent.position}
+                      {talent.jobCategory}
                     </span>
-                    {talent.available && (
+                    {talent.isAvailable && (
                       <span className="px-3 py-1 text-sm font-medium text-green-600 bg-green-100 rounded">
                         연락 가능
                       </span>
@@ -197,7 +233,9 @@ export default function TalentSearchPage({ onLogoClick }: TalentSearchPageProps)
                   <div className="grid grid-cols-3 gap-4 mb-4 text-sm">
                     <div>
                       <span className="text-gray-500">경력:</span>
-                      <span className="ml-2 font-medium">{talent.experience}</span>
+                      <span className="ml-2 font-medium">
+                        {talent.experienceYears === 0 ? "신입" : `${talent.experienceYears}년`}
+                      </span>
                     </div>
                     <div>
                       <span className="text-gray-500">지역:</span>
@@ -205,20 +243,24 @@ export default function TalentSearchPage({ onLogoClick }: TalentSearchPageProps)
                     </div>
                     <div>
                       <span className="text-gray-500">희망연봉:</span>
-                      <span className="ml-2 font-medium">{talent.salary}</span>
+                      <span className="ml-2 font-medium">{talent.salaryRange}</span>
                     </div>
                   </div>
 
                   {/* 기술 스택 */}
                   <div className="flex flex-wrap gap-2">
-                    {talent.skills.map((skill, idx) => (
-                      <span
-                        key={idx}
-                        className="px-3 py-1 text-sm text-gray-700 bg-gray-100 rounded-full"
-                      >
-                        {skill}
-                      </span>
-                    ))}
+                    {talent.skills && talent.skills.length > 0 ? (
+                      talent.skills.map((skill, idx) => (
+                        <span
+                          key={idx}
+                          className="px-3 py-1 text-sm text-gray-700 bg-gray-100 rounded-full"
+                        >
+                          {skill}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-sm text-gray-400">등록된 기술 스택이 없습니다</span>
+                    )}
                   </div>
                 </div>
 
@@ -231,13 +273,13 @@ export default function TalentSearchPage({ onLogoClick }: TalentSearchPageProps)
 
                   <div className="flex flex-col gap-2 w-32">
                     <button
-                      onClick={() => handleContact(talent.id)}
+                      onClick={() => handleContact(talent.resumeId)}
                       className="px-4 py-2 text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
                     >
                       연락하기
                     </button>
                     <button
-                      onClick={() => handleSave(talent.id)}
+                      onClick={() => handleSave(talent.resumeId)}
                       className="px-4 py-2 text-gray-700 transition bg-gray-100 rounded-lg hover:bg-gray-200"
                     >
                       저장
@@ -248,6 +290,15 @@ export default function TalentSearchPage({ onLogoClick }: TalentSearchPageProps)
             </div>
           ))}
         </div>
+
+        {/* 검색 결과 없음 */}
+        {filteredTalents.length === 0 && (
+          <div className="py-20 text-center text-gray-500">
+            <div className="mb-4 text-4xl">🔍</div>
+            <div className="text-lg font-medium">검색 결과가 없습니다</div>
+            <div className="text-sm">다른 조건으로 검색해보세요</div>
+          </div>
+        )}
       </div>
 
       <Footer />
