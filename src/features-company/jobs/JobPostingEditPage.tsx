@@ -1,14 +1,18 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import Footer from "../components/Footer";
-import { getJobPosting, updateJobPosting, type JobPostingRequest } from "../api/job";
+import { useAuth } from "../../context/AuthContext";
+import Footer from "../../components/Footer";
+import {
+  getJobPosting,
+  updateJobPosting,
+  type JobPostingRequest,
+} from "../../api/job";
 
 export default function JobPostingEditPage() {
   const navigate = useNavigate();
   const { jobId } = useParams<{ jobId: string }>();
   const { isAuthenticated, user, logout } = useAuth();
-  
+
   const [loading, setLoading] = useState(true);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -37,7 +41,7 @@ export default function JobPostingEditPage() {
       try {
         setLoading(true);
         const job = await getJobPosting(parseInt(jobId));
-        
+
         setFormData({
           title: job.title,
           jobCategory: job.jobCategory,
@@ -53,7 +57,9 @@ export default function JobPostingEditPage() {
         });
       } catch (error: any) {
         console.error("공고 조회 실패:", error);
-        alert(error.response?.data?.message || "공고를 불러오는데 실패했습니다.");
+        alert(
+          error.response?.data?.message || "공고를 불러오는데 실패했습니다."
+        );
         navigate("/company/jobs");
       } finally {
         setLoading(false);
@@ -85,7 +91,7 @@ export default function JobPostingEditPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!jobId) return;
 
     // 필수 항목 검사
@@ -142,10 +148,18 @@ export default function JobPostingEditPage() {
         jobCategory: formData.jobCategory,
         requiredSkills: formData.requiredSkills || undefined,
         preferredSkills: formData.preferredSkills || undefined,
-        experienceMin: formData.experienceMin ? parseInt(formData.experienceMin) : undefined,
-        experienceMax: formData.experienceMax ? parseInt(formData.experienceMax) : undefined,
-        salaryMin: formData.salaryMin ? parseInt(formData.salaryMin) : undefined,
-        salaryMax: formData.salaryMax ? parseInt(formData.salaryMax) : undefined,
+        experienceMin: formData.experienceMin
+          ? parseInt(formData.experienceMin)
+          : undefined,
+        experienceMax: formData.experienceMax
+          ? parseInt(formData.experienceMax)
+          : undefined,
+        salaryMin: formData.salaryMin
+          ? parseInt(formData.salaryMin)
+          : undefined,
+        salaryMax: formData.salaryMax
+          ? parseInt(formData.salaryMax)
+          : undefined,
         location: formData.location,
         description: formData.description || undefined,
         deadline: formData.deadline,
@@ -153,9 +167,9 @@ export default function JobPostingEditPage() {
 
       // API 호출
       await updateJobPosting(parseInt(jobId), requestData, companyId);
-      
+
       alert("공고가 성공적으로 수정되었습니다! 🎉");
-      
+
       // 공고 관리 페이지로 리다이렉트
       navigate("/company/jobs");
     } catch (error: any) {
@@ -195,9 +209,9 @@ export default function JobPostingEditPage() {
 
             {/* 네비게이션 */}
             <nav className="flex space-x-8">
-              <button 
+              <button
                 onClick={() => navigate("/company/jobs")}
-                className="px-4 py-2 text-blue-600 font-medium hover:text-blue-700"
+                className="px-4 py-2 font-medium text-blue-600 hover:text-blue-700"
               >
                 ■ 채용공고
               </button>
@@ -213,7 +227,7 @@ export default function JobPostingEditPage() {
             <div className="flex items-center space-x-4">
               {isAuthenticated && user?.userType === "company" ? (
                 <>
-                  <span className="text-gray-700 font-medium">
+                  <span className="font-medium text-gray-700">
                     {user.companyName || user.name}님
                   </span>
                   <button
@@ -221,7 +235,7 @@ export default function JobPostingEditPage() {
                       logout();
                       navigate("/company/login");
                     }}
-                    className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition"
+                    className="px-4 py-2 text-white transition bg-red-600 rounded-lg hover:bg-red-700"
                   >
                     로그아웃
                   </button>
@@ -453,7 +467,7 @@ export default function JobPostingEditPage() {
                     name="deadline"
                     value={formData.deadline}
                     onChange={handleInputChange}
-                    min={new Date().toISOString().split('T')[0]}
+                    min={new Date().toISOString().split("T")[0]}
                     className="w-full px-4 py-3 transition-colors border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500"
                     required
                   />

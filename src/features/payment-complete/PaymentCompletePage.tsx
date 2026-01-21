@@ -16,7 +16,10 @@ export default function PaymentCompletePage() {
   const location = useLocation();
   const { user } = useAuth();
   const { creditBalance } = useApp();
-  const { activeMenu, handleMenuClick } = usePageNavigation("credit", "credit-sub-1");
+  const { activeMenu, handleMenuClick } = usePageNavigation(
+    "credit",
+    "credit-sub-1"
+  );
 
   // ✅ location.state에서 결제 정보 가져오기
   const paymentInfo = location.state as LocationState | null;
@@ -73,7 +76,9 @@ export default function PaymentCompletePage() {
                 <div className="p-8">
                   <div className="p-6 mb-6 border-2 border-blue-100 rounded-xl bg-blue-50">
                     <div className="mb-4 text-center">
-                      <div className="mb-2 text-sm text-gray-600">충전된 크레딧</div>
+                      <div className="mb-2 text-sm text-gray-600">
+                        충전된 크레딧
+                      </div>
                       <div className="flex items-center justify-center gap-2">
                         <span className="text-5xl font-bold text-blue-600">
                           {totalCredits}

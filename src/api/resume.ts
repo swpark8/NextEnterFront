@@ -96,6 +96,24 @@ export interface ResumeListItem {
   createdAt: string;
 }
 
+// AI 추천 요청
+export interface AIRecommendRequest {
+  id: string;
+  target_role: string;
+  resume_content: any;
+}
+
+// AI 추천 응답
+export interface AIRecommendResponse {
+  companies: Array<{
+    name: string;
+    score: number;
+    position: string;
+    match_reasons: string[];
+  }>;
+  ai_report: string;
+}
+
 // ✅ 이력서 목록 조회 (배열을 직접 받음)
 export const getResumeList = async (
   userId: number
@@ -203,6 +221,17 @@ export const uploadResumeFile = async (
         userId: userId.toString(),
       },
     }
+  );
+  return response.data;
+};
+
+// ✅ AI 추천 기능
+export const getAIRecommendation = async (
+  request: AIRecommendRequest
+): Promise<AIRecommendResponse> => {
+  const response = await api.post<AIRecommendResponse>(
+    "/api/ai/recommend",
+    request
   );
   return response.data;
 };

@@ -65,6 +65,7 @@ export const useCompanyPageNavigation = (
         jobs: "/company/jobs",
         applicants: "/company/applicants",
         talent: "/company/talent-search",
+        companyMy: "/company/mypage",
         credit: "/company/credit",
       };
 
@@ -86,6 +87,7 @@ export const useCompanyPageNavigation = (
           jobs: "/company/jobs",
           applicants: "/company/applicants",
           talent: "/company/talent-search",
+          companyMy: "/company/mypage",
           credit: "/company/credit",
         };
         const route = routes[targetTab];

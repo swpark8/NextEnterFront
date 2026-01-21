@@ -119,6 +119,7 @@ export default function CompanyHeader() {
     { id: "jobs", label: "채용공고 관리" },
     { id: "applicants", label: "지원자 관리" },
     { id: "talent", label: "인재 검색" },
+    { id: "companyMy", label: "마이페이지" },
     { id: "credit", label: "크레딧" },
   ];
 
@@ -274,12 +275,12 @@ export default function CompanyHeader() {
       </header>
 
       {/* Navigation Bar (Category) */}
-      <nav className="relative z-50 bg-white border-b-2 border-purple-600">
+      <nav className="relative z-50 bg-white border-b border-purple-600">
         <div className="px-4 mx-auto max-w-7xl">
           <div className="flex items-center space-x-8">
             <button
               onClick={toggleDropdown}
-              className="p-4 transition border-t-2 border-b-2 border-transparent hover:bg-gray-50"
+              className="p-4 transition hover:bg-gray-50"
             >
               <svg
                 className="w-6 h-6"
@@ -314,14 +315,16 @@ export default function CompanyHeader() {
               >
                 <button
                   onClick={() => handleMenuClick(item.id)}
-                  // ✅ User Header와 완전히 동일한 클래스 적용 (py-4 px-2 font-medium)
-                  className={`py-4 px-2 font-medium transition whitespace-nowrap ${
+                  className={`relative py-4 px-2 font-medium transition whitespace-nowrap ${
                     activeTab === item.id
-                      ? "text-purple-600 border-b-2 border-purple-600"
-                      : "text-gray-700 hover:text-purple-600 border-b-2 border-transparent"
+                      ? "text-purple-600"
+                      : "text-gray-700 hover:text-purple-600"
                   }`}
                 >
                   {item.label}
+                  {activeTab === item.id && (
+                    <span className="absolute -bottom-[1px] left-0 w-full h-0.5 bg-purple-600" />
+                  )}
                 </button>
                 {hoveredTab === item.id && (
                   <CompanyHoverMenu

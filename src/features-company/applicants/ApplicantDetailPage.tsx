@@ -130,6 +130,7 @@ export default function ApplicantDetailPage() {
         jobId: applicant.jobId,
       };
 
+      // AppContext에 면접 제안 추가
       addInterviewOffer(newInterviewOffer);
 
       alert(

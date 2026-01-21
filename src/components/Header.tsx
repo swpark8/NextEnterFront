@@ -31,6 +31,8 @@ export default function Header() {
 
   const getActiveTab = () => {
     const path = location.pathname;
+    // 홈페이지일 때는 아무것도 선택되지 않음
+    if (path === "/user" || path === "/user/") return "";
     if (path.startsWith("/user/jobs")) return "job";
     if (path.startsWith("/user/mypage") || path.startsWith("/user/profile"))
       return "mypage";
@@ -40,7 +42,7 @@ export default function Header() {
       return "resume";
     if (path.startsWith("/user/matching")) return "matching";
     if (path.startsWith("/user/offers")) return "offer";
-    return "job";
+    return "";
   };
 
   const activeTab = getActiveTab();
@@ -300,12 +302,12 @@ export default function Header() {
         </div>
       </header>
 
-      <nav className="relative z-50 bg-white border-b-2 border-blue-600">
+      <nav className="relative z-50 bg-white border-b border-blue-600">
         <div className="px-4 mx-auto max-w-7xl">
           <div className="flex items-center space-x-8">
             <button
               onClick={toggleDropdown}
-              className="p-4 transition border-t-2 border-b-2 border-transparent hover:bg-gray-50"
+              className="p-4 transition hover:bg-gray-50"
             >
               <svg
                 className="w-6 h-6"
@@ -340,13 +342,16 @@ export default function Header() {
               >
                 <button
                   onClick={() => handleMenuClick(item.id)}
-                  className={`py-4 px-2 font-medium transition whitespace-nowrap ${
+                  className={`relative py-4 px-2 font-medium transition whitespace-nowrap ${
                     activeTab === item.id
-                      ? "text-blue-600 border-b-2 border-blue-600"
-                      : "text-gray-700 hover:text-blue-600 border-b-2 border-transparent"
+                      ? "text-blue-600"
+                      : "text-gray-700 hover:text-blue-600"
                   }`}
                 >
                   {item.label}
+                  {activeTab === item.id && (
+                    <span className="absolute -bottom-[1px] left-0 w-full h-0.5 bg-blue-600" />
+                  )}
                 </button>
                 {hoveredTab === item.id && (
                   <HoverMenu

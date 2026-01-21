@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
@@ -7,11 +6,6 @@ export default function ApplicantCompatibilityPage() {
   const navigate = useNavigate();
   const { applicantId } = useParams();
   const id = Number(applicantId) || 1;
-
-  // 화면 맨 위로 올림
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
 
   const { activeMenu, handleMenuClick } = useCompanyPageNavigation(
     "applicants",

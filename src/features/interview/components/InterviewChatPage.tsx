@@ -36,6 +36,8 @@ export default function InterviewChatPage({
   const [startTime] = useState(Date.now());
   const [userAnswerCount, setUserAnswerCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
   
   // 질문-답변 쌍 저장용 (히스토리에 저장할 데이터)
   const [qaList, setQaList] = useState<Array<{question: string, answer: string, score: number}>>([]);
@@ -44,13 +46,31 @@ export default function InterviewChatPage({
   // 난이도에 따른 질문 수
   const totalQuestions = level === 'junior' ? 5 : 7;
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // 사용자가 스크롤을 위로 올렸는지 확인
+  const handleScroll = () => {
+    if (!chatContainerRef.current) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 50; // 50px 여유
+    
+    setIsUserScrolling(!isAtBottom);
   };
 
+  const scrollToBottom = () => {
+    // 사용자가 스크롤을 위로 올린 상태면 자동 스크롤 하지 않음
+    if (!isUserScrolling) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  // 메시지가 추가될 때 조건부 스크롤 (AI 응답일 때만)
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    // 마지막 메시지가 AI 메시지이고, 사용자가 하단에 있을 때만 스크롤
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage && lastMessage.sender === 'ai' && !isUserScrolling) {
+      scrollToBottom();
+    }
+  }, [messages, isUserScrolling]);
 
   // 면접 완료 처리
   const handleCompleteInterview = () => {
@@ -128,7 +148,19 @@ export default function InterviewChatPage({
       timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
     };
 
+    // ✅ 사용자 메시지 추가 시 스크롤 방지
+    const prevScrollPos = chatContainerRef.current?.scrollTop || 0;
     setMessages([...messages, userMessage]);
+    
+    // 입력창 초기화
+    setInputText('');
+    
+    // ✅ 이전 스크롤 위치 유지
+    setTimeout(() => {
+      if (chatContainerRef.current) {
+        chatContainerRef.current.scrollTop = prevScrollPos;
+      }
+    }, 0);
     
     // ✅ 현재 질문에 대한 답변 저장
     if (currentQA && currentQA.question) {
@@ -141,8 +173,6 @@ export default function InterviewChatPage({
       setQaList(prev => [...prev, completedQA]);
       setCurrentQA(null); // 현재 QA 초기화
     }
-    
-    setInputText('');
     
     // 사용자 답변 카운트 증가
     const newUserAnswerCount = userAnswerCount + 1;
@@ -264,7 +294,12 @@ export default function InterviewChatPage({
             </div>
 
             {/* 메시지 영역 */}
-            <div className="bg-white border-2 border-blue-400 rounded-2xl p-6" style={{ minHeight: '500px', maxHeight: '500px', overflowY: 'auto' }}>
+            <div 
+              ref={chatContainerRef}
+              onScroll={handleScroll}
+              className="bg-white border-2 border-blue-400 rounded-2xl p-6" 
+              style={{ minHeight: '500px', maxHeight: '500px', overflowY: 'auto' }}
+            >
               <div className="space-y-6">
               {messages.map((message) => (
                 <div
