@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getJobPosting, type JobPostingResponse } from "../api/job";
-import { createApply, type ApplyCreateRequest } from "../api/apply";
+import { createApply, getMyApplies, type ApplyCreateRequest } from "../api/apply";
+import { toggleBookmark, checkBookmark } from "../api/bookmark";
 import { useApp } from "../context/AppContext";
 import { useAuth } from "../context/AuthContext";
 
@@ -16,6 +17,7 @@ export default function UserJobDetailPage() {
   const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [isApplied, setIsApplied] = useState(false);
 
   const { resumes, addJobApplication } = useApp();
 
@@ -32,6 +34,17 @@ export default function UserJobDetailPage() {
         setLoading(true);
         const jobData = await getJobPosting(parseInt(jobId));
         setJob(jobData);
+        
+        // 지원 여부 확인
+        if (user?.userId) {
+          const applies = await getMyApplies(user.userId);
+          const appliedJobIds = new Set(applies.map((apply) => apply.jobId));
+          setIsApplied(appliedJobIds.has(jobData.jobId));
+          
+          // 북마크 여부 확인
+          const bookmarkStatus = await checkBookmark(user.userId, jobData.jobId);
+          setIsBookmarked(bookmarkStatus.isBookmarked);
+        }
       } catch (error: any) {
         console.error("공고 조회 실패:", error);
         alert(error.response?.data?.message || "공고를 불러오는데 실패했습니다.");
@@ -42,7 +55,7 @@ export default function UserJobDetailPage() {
     };
 
     loadJobPosting();
-  }, [jobId, navigate]);
+  }, [jobId, navigate, user?.userId]);
 
   const handleBackClick = () => {
     navigate("/user/jobs/all");
@@ -107,6 +120,7 @@ export default function UserJobDetailPage() {
       alert("지원이 완료되었습니다!");
       setShowResumeModal(false);
       setSelectedResumeId(null);
+      setIsApplied(true); // 지원 완료 상태로 변경
     } catch (error: any) {
       console.error("지원 실패:", error);
       if (error.response?.status === 409 || error.response?.data?.message?.includes("이미 지원")) {
@@ -124,12 +138,33 @@ export default function UserJobDetailPage() {
     setSelectedResumeId(null);
   };
 
-  const handleBookmarkToggle = () => {
-    setIsBookmarked(!isBookmarked);
-    if (!isBookmarked) {
-      alert("북마크에 추가되었습니다.");
-    } else {
-      alert("북마크에서 제거되었습니다.");
+  const handleBookmarkToggle = async () => {
+    if (!user?.userId || !job) {
+      alert("로그인이 필요합니다.");
+      navigate("/user/login");
+      return;
+    }
+
+    try {
+      const result = await toggleBookmark(user.userId, job.jobId);
+      setIsBookmarked(result.isBookmarked);
+      
+      // 공고 데이터 새로고침하여 북마크 수 업데이트
+      const updatedJob = await getJobPosting(job.jobId);
+      setJob(updatedJob);
+      
+      if (result.isBookmarked) {
+        alert("북마크에 추가되었습니다.");
+      } else {
+        alert("북마크에서 제거되었습니다.");
+      }
+    } catch (error: any) {
+      console.error("북마크 토글 실패:", error);
+      if (error.response?.status === 409 || error.response?.data?.message?.includes("이미")) {
+        alert("이미 북마크한 공고입니다.");
+      } else {
+        alert(error.response?.data?.message || "북마크 처리에 실패했습니다.");
+      }
     }
   };
 
@@ -287,14 +322,14 @@ export default function UserJobDetailPage() {
               </button>
               <button
                 onClick={handleApplyClick}
-                disabled={job.status !== "ACTIVE"}
-                className={`px-6 py-2 font-semibold text-white transition rounded-lg ${
-                  job.status !== "ACTIVE"
-                    ? "bg-gray-300 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700"
+                disabled={job.status !== "ACTIVE" || isApplied}
+                className={`px-6 py-2 font-semibold transition rounded-lg ${
+                  job.status !== "ACTIVE" || isApplied
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-blue-600 text-white hover:bg-blue-700"
                 }`}
               >
-                입사지원
+                {isApplied ? "지원완료" : "입사지원"}
               </button>
             </div>
           </div>

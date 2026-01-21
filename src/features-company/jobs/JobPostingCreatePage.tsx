@@ -7,11 +7,14 @@ export default function JobPostingCreatePage() {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  
+  // 스킬 상태를 배열로 관리
+  const [selectedRequiredSkills, setSelectedRequiredSkills] = useState<string[]>([]);
+  const [selectedPreferredSkills, setSelectedPreferredSkills] = useState<string[]>([]);
+  
   const [formData, setFormData] = useState({
     title: "",
     jobCategory: "",
-    requiredSkills: "",
-    preferredSkills: "",
     experienceMin: "",
     experienceMax: "",
     salaryMin: "",
@@ -20,6 +23,74 @@ export default function JobPostingCreatePage() {
     description: "",
     deadline: "",
   });
+
+  // 사용 가능한 스킬 목록 (이력서 작성과 동일)
+  const availableSkills = [
+    "JAVA",
+    "Python",
+    "JavaScript",
+    "TypeScript",
+    "C++",
+    "C#",
+    "AWS",
+    "Azure",
+    "GCP",
+    "React",
+    "Vue",
+    "Angular",
+    "Next.js",
+    "Svelte",
+    "Node.js",
+    "Spring",
+    "Django",
+    "Flask",
+    "Express",
+    "MySQL",
+    "PostgreSQL",
+    "MongoDB",
+    "Redis",
+    "Docker",
+    "Kubernetes",
+    "Jenkins",
+    "GitHub Actions",
+    "HTML",
+    "CSS",
+    "SASS",
+    "Tailwind",
+    "Git",
+    "SVN",
+    "Figma",
+    "Sketch",
+    "Adobe XD",
+  ];
+
+  // 필수 스킬 선택/해제
+  const toggleRequiredSkill = (skill: string) => {
+    if (selectedRequiredSkills.includes(skill)) {
+      setSelectedRequiredSkills(selectedRequiredSkills.filter((s) => s !== skill));
+    } else {
+      setSelectedRequiredSkills([...selectedRequiredSkills, skill]);
+    }
+  };
+
+  // 우대 스킬 선택/해제
+  const togglePreferredSkill = (skill: string) => {
+    if (selectedPreferredSkills.includes(skill)) {
+      setSelectedPreferredSkills(selectedPreferredSkills.filter((s) => s !== skill));
+    } else {
+      setSelectedPreferredSkills([...selectedPreferredSkills, skill]);
+    }
+  };
+
+  // 필수 스킬 제거
+  const removeRequiredSkill = (skill: string) => {
+    setSelectedRequiredSkills(selectedRequiredSkills.filter((s) => s !== skill));
+  };
+
+  // 우대 스킬 제거
+  const removePreferredSkill = (skill: string) => {
+    setSelectedPreferredSkills(selectedPreferredSkills.filter((s) => s !== skill));
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -32,11 +103,7 @@ export default function JobPostingCreatePage() {
     }
   };
 
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -92,12 +159,20 @@ export default function JobPostingCreatePage() {
     }
 
     try {
+      // 스킬 배열을 문자열로 변환 (백엔드가 LONGTEXT로 저장)
+      const requiredSkillsStr = selectedRequiredSkills.length > 0 
+        ? selectedRequiredSkills.join(", ") 
+        : undefined;
+      const preferredSkillsStr = selectedPreferredSkills.length > 0 
+        ? selectedPreferredSkills.join(", ") 
+        : undefined;
+
       // API 요청 데이터 구성
       const requestData: JobPostingRequest = {
         title: formData.title,
         jobCategory: formData.jobCategory,
-        requiredSkills: formData.requiredSkills || undefined,
-        preferredSkills: formData.preferredSkills || undefined,
+        requiredSkills: requiredSkillsStr,
+        preferredSkills: preferredSkillsStr,
         experienceMin: formData.experienceMin ? parseInt(formData.experienceMin) : undefined,
         experienceMax: formData.experienceMax ? parseInt(formData.experienceMax) : undefined,
         salaryMin: formData.salaryMin ? parseInt(formData.salaryMin) : undefined,
@@ -273,34 +348,104 @@ export default function JobPostingCreatePage() {
                   </p>
                 </div>
 
-                {/* 필수 스킬 */}
+                {/* 필수 스킬 - 태그 선택 방식 */}
                 <div>
                   <label className="block mb-2 text-sm font-semibold text-gray-700">
                     필수 스킬
                   </label>
-                  <textarea
-                    name="requiredSkills"
-                    value={formData.requiredSkills}
-                    onChange={handleInputChange}
-                    placeholder="예:&#10;- React, TypeScript 실무 경험&#10;- RESTful API 설계 및 구현 경험&#10;- Git을 활용한 협업 경험"
-                    rows={4}
-                    className="w-full px-4 py-3 transition-colors border-2 border-gray-200 resize-none rounded-xl focus:outline-none focus:border-blue-500"
-                  />
+                  
+                  {/* 스킬 선택 버튼 */}
+                  <div className="mb-4">
+                    <h4 className="mb-3 text-sm font-medium text-gray-600">스킬 선택</h4>
+                    <div className="p-4 overflow-y-auto border-2 border-gray-200 rounded-lg max-h-60">
+                      <div className="flex flex-wrap gap-2">
+                        {availableSkills.map((skill) => (
+                          <button
+                            key={skill}
+                            type="button"
+                            onClick={() => toggleRequiredSkill(skill)}
+                            className={`px-4 py-2 rounded-full text-sm transition ${
+                              selectedRequiredSkills.includes(skill)
+                                ? "bg-blue-600 text-white font-semibold"
+                                : "bg-gray-200 hover:bg-gray-300"
+                            }`}
+                          >
+                            {skill}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 선택된 스킬 */}
+                  {selectedRequiredSkills.length > 0 && (
+                    <div>
+                      <h4 className="mb-3 text-sm font-medium text-gray-600">선택된 스킬</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedRequiredSkills.map((skill) => (
+                          <button
+                            key={skill}
+                            type="button"
+                            onClick={() => removeRequiredSkill(skill)}
+                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 transition bg-blue-100 rounded-full hover:bg-blue-200"
+                          >
+                            <span>✕</span>
+                            <span>{skill}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* 우대 스킬 */}
+                {/* 우대 스킬 - 태그 선택 방식 */}
                 <div>
                   <label className="block mb-2 text-sm font-semibold text-gray-700">
                     우대 스킬
                   </label>
-                  <textarea
-                    name="preferredSkills"
-                    value={formData.preferredSkills}
-                    onChange={handleInputChange}
-                    placeholder="예:&#10;- Next.js 프레임워크 사용 경험&#10;- AWS 등 클라우드 서비스 경험&#10;- 오픈소스 프로젝트 기여 경험"
-                    rows={4}
-                    className="w-full px-4 py-3 transition-colors border-2 border-gray-200 resize-none rounded-xl focus:outline-none focus:border-blue-500"
-                  />
+                  
+                  {/* 스킬 선택 버튼 */}
+                  <div className="mb-4">
+                    <h4 className="mb-3 text-sm font-medium text-gray-600">스킬 선택</h4>
+                    <div className="p-4 overflow-y-auto border-2 border-gray-200 rounded-lg max-h-60">
+                      <div className="flex flex-wrap gap-2">
+                        {availableSkills.map((skill) => (
+                          <button
+                            key={skill}
+                            type="button"
+                            onClick={() => togglePreferredSkill(skill)}
+                            className={`px-4 py-2 rounded-full text-sm transition ${
+                              selectedPreferredSkills.includes(skill)
+                                ? "bg-blue-600 text-white font-semibold"
+                                : "bg-gray-200 hover:bg-gray-300"
+                            }`}
+                          >
+                            {skill}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 선택된 스킬 */}
+                  {selectedPreferredSkills.length > 0 && (
+                    <div>
+                      <h4 className="mb-3 text-sm font-medium text-gray-600">선택된 스킬</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedPreferredSkills.map((skill) => (
+                          <button
+                            key={skill}
+                            type="button"
+                            onClick={() => removePreferredSkill(skill)}
+                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 transition bg-blue-100 rounded-full hover:bg-blue-200"
+                          >
+                            <span>✕</span>
+                            <span>{skill}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* 상세 설명 */}

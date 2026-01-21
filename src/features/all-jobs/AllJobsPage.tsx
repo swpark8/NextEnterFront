@@ -5,7 +5,7 @@ import { useApp } from "../../context/AppContext";
 import { useAuth } from "../../context/AuthContext";
 import JobsSidebar from "./components/JobsSidebar";
 import { getJobPostings, JobPostingListResponse } from "../../api/job";
-import { createApply, type ApplyCreateRequest } from "../../api/apply";
+import { createApply, getMyApplies, type ApplyCreateRequest } from "../../api/apply";
 
 interface AllJobsPageProps {
   onLogoClick?: () => void;
@@ -44,9 +44,29 @@ export default function AllJobsPage() {
   const [apiJobListings, setApiJobListings] = useState<JobListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [appliedJobIds, setAppliedJobIds] = useState<Set<number>>(new Set());
 
   // ✅ AppContext에서 데이터 가져오기
   const { resumes, addJobApplication } = useApp();
+  
+  // ✅ 사용자의 지원 내역 조회
+  useEffect(() => {
+    const fetchMyApplications = async () => {
+      if (!user?.userId) return;
+
+      try {
+        const applies = await getMyApplies(user.userId);
+        
+        // 지원한 공고 ID 목록을 Set으로 저장
+        const jobIds = new Set(applies.map((apply) => apply.jobId));
+        setAppliedJobIds(jobIds);
+      } catch (error) {
+        console.error("지원 내역 조회 실패:", error);
+      }
+    };
+
+    fetchMyApplications();
+  }, [user?.userId]);
   
   // ✅ 백엔드 API 호출하여 채용공고 데이터 가져오기
   useEffect(() => {
@@ -174,6 +194,13 @@ export default function AllJobsPage() {
       setShowResumeModal(false);
       setSelectedJobId(null);
       setSelectedResumeId(null);
+      
+      // 지원 완료 후 지원 내역 새로고침
+      if (user?.userId) {
+        const applies = await getMyApplies(user.userId);
+        const jobIds = new Set(applies.map((apply) => apply.jobId));
+        setAppliedJobIds(jobIds);
+      }
     } catch (error: any) {
       console.error("지원 실패:", error);
       if (error.response?.status === 409 || error.response?.data?.message?.includes("이미 지원")) {
@@ -331,12 +358,21 @@ export default function AllJobsPage() {
                             </div>
                           </div>
                           <div className="flex flex-col items-end space-y-2">
-                            <button
-                              onClick={() => handleApply(job.id)}
-                              className="px-6 py-2 text-sm font-medium text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
-                            >
-                              입사지원
-                            </button>
+                            {appliedJobIds.has(job.id) ? (
+                              <button
+                                disabled
+                                className="px-6 py-2 text-sm font-medium text-gray-500 transition bg-gray-200 rounded-lg cursor-not-allowed"
+                              >
+                                지원완료
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleApply(job.id)}
+                                className="px-6 py-2 text-sm font-medium text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
+                              >
+                                입사지원
+                              </button>
+                            )}
                             <div className="text-sm text-gray-500">
                               <span className="font-medium text-blue-600">
                                 D-{job.daysLeft}

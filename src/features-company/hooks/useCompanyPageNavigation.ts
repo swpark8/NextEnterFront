@@ -34,9 +34,8 @@ export const useCompanyPageNavigation = (
     menuId: string,
     navigateCallback?: (page: string, subMenu: string) => void
   ) => {
-    // 1️⃣ 별도 페이지로 이동해야 하는 메뉴들 (광고 제거됨)
+    // 1️⃣ 별도 페이지로 이동해야 하는 메뉴들 (공고 등록 제거됨)
     const separateRoutes: { [key: string]: string } = {
-      "jobs-sub-2": "/company/jobs/create",
       "credit-sub-2": "/company/credit/charge",
       "applicants-sub-2": "/company/applicants/1/compatibility", // ✅ 적합도 분석 유지
     };

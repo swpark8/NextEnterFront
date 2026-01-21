@@ -1,109 +1,153 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
-
-interface Applicant {
-  id: number;
-  name: string;
-  age: number;
-  jobPosting: string;
-  jobCategory: string;
-  skills: string[];
-  experience: string;
-  score: number;
-  appliedDate: string;
-}
+import {
+  getApplies,
+  updateApplyStatus,
+  type ApplyListResponse,
+} from "../../api/apply";
+import { getJobPostings, type JobPostingListResponse } from "../../api/job";
 
 export default function ApplicantManagementPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { activeMenu, handleMenuClick } = useCompanyPageNavigation(
     "applicants",
     "applicants-sub-1"
   );
 
-  const [selectedJobPosting, setSelectedJobPosting] = useState("전체");
+  const [selectedJobPosting, setSelectedJobPosting] = useState<string>("전체");
   const [selectedJobCategory, setSelectedJobCategory] = useState("전체");
   const [experienceRange, setExperienceRange] = useState("전체");
+
+  const [loading, setLoading] = useState(true);
+  const [applicants, setApplicants] = useState<ApplyListResponse[]>([]);
+  const [jobPostings, setJobPostings] = useState<JobPostingListResponse[]>([]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   // 화면 맨 위로 올림
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  const applicants: Applicant[] = [
-    {
-      id: 1,
-      name: "김민준",
-      age: 28,
-      jobPosting: "시니어 프론트엔드 개발자 채용",
-      jobCategory: "프론트엔드 개발자",
-      skills: ["React", "TypeScript", "Node.js"],
-      experience: "5년",
-      score: 92,
-      appliedDate: "2024.12.19",
-    },
-    {
-      id: 2,
-      name: "이서윤",
-      age: 26,
-      jobPosting: "주니어 프론트엔드 개발자",
-      jobCategory: "프론트엔드 개발자",
-      skills: ["Vue.js", "JavaScript", "CSS"],
-      experience: "3년",
-      score: 88,
-      appliedDate: "2024.12.14",
-    },
-    {
-      id: 3,
-      name: "박지후",
-      age: 32,
-      jobPosting: "백엔드 개발자 (Node.js)",
-      jobCategory: "백엔드 개발자",
-      skills: ["React", "Next.js", "GraphQL"],
-      experience: "7년",
-      score: 95,
-      appliedDate: "2024.12.13",
-    },
-    {
-      id: 4,
-      name: "최수아",
-      age: 24,
-      jobPosting: "주니어 프론트엔드 개발자",
-      jobCategory: "프론트엔드 개발자",
-      skills: ["React", "TypeScript", "Tailwind"],
-      experience: "2년",
-      score: 85,
-      appliedDate: "2024.12.12",
-    },
-    {
-      id: 5,
-      name: "정현우",
-      age: 29,
-      jobPosting: "풀스택 개발자 (React + Spring)",
-      jobCategory: "풀스택 개발자",
-      skills: ["Angular", "TypeScript", "RxJS"],
-      experience: "4년",
-      score: 90,
-      appliedDate: "2024.12.11",
-    },
-    {
-      id: 6,
-      name: "김예은",
-      age: 27,
-      jobPosting: "시니어 프론트엔드 개발자 채용",
-      jobCategory: "프론트엔드 개발자",
-      skills: ["React", "Redux", "Jest"],
-      experience: "4년",
-      score: 87,
-      appliedDate: "2024.12.10",
-    },
-  ];
+  // 공고 목록 로드
+  useEffect(() => {
+    const loadJobPostings = async () => {
+      if (!user?.companyId) return;
 
-  const uniqueJobPostings = [
-    "전체",
-    ...Array.from(new Set(applicants.map((a) => a.jobPosting))),
-  ];
+      try {
+        const response = await getJobPostings({
+          page: 0,
+          size: 100,
+        });
+
+        // 해당 기업의 공고만 필터링
+        const myJobs = response.content.filter(
+          (job) => job.companyId === user.companyId
+        );
+        setJobPostings(myJobs);
+      } catch (error: any) {
+        console.error("공고 목록 조회 실패:", error);
+      }
+    };
+
+    loadJobPostings();
+  }, [user?.companyId]);
+
+  // 지원자 목록 로드
+  useEffect(() => {
+    const loadApplicants = async () => {
+      if (!user?.companyId) {
+        alert("기업 정보를 찾을 수 없습니다.");
+        navigate("/company/login");
+        return;
+      }
+
+      try {
+        setLoading(true);
+
+        const params: any = {
+          page: currentPage,
+          size: 100,
+        };
+
+        // 특정 공고가 선택된 경우
+        if (selectedJobPosting !== "전체") {
+          const selectedJob = jobPostings.find(
+            (job) => job.title === selectedJobPosting
+          );
+          if (selectedJob) {
+            params.jobId = selectedJob.jobId;
+          }
+        }
+
+        const response = await getApplies(user.companyId, params);
+        setApplicants(response.content);
+        setTotalPages(response.totalPages);
+      } catch (error: any) {
+        console.error("지원자 목록 조회 실패:", error);
+        alert(
+          error.response?.data?.message ||
+            "지원자 목록을 불러오는데 실패했습니다."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user?.companyId) {
+      loadApplicants();
+    }
+  }, [currentPage, user, navigate, selectedJobPosting, jobPostings]);
+
+  const handleAccept = async (applyId: number) => {
+    if (!user?.companyId) return;
+
+    if (window.confirm("이 지원자를 합격 처리하시겠습니까?")) {
+      try {
+        await updateApplyStatus(applyId, user.companyId, {
+          status: "ACCEPTED",
+        });
+        alert("합격 처리되었습니다.");
+
+        // 목록 새로고침
+        const response = await getApplies(user.companyId, {
+          page: currentPage,
+          size: 100,
+        });
+        setApplicants(response.content);
+      } catch (error: any) {
+        console.error("상태 변경 실패:", error);
+        alert(error.response?.data?.message || "상태 변경에 실패했습니다.");
+      }
+    }
+  };
+
+  const handleReject = async (applyId: number) => {
+    if (!user?.companyId) return;
+
+    if (window.confirm("이 지원자를 불합격 처리하시겠습니까?")) {
+      try {
+        await updateApplyStatus(applyId, user.companyId, {
+          status: "REJECTED",
+        });
+        alert("불합격 처리되었습니다.");
+
+        // 목록 새로고침
+        const response = await getApplies(user.companyId, {
+          page: currentPage,
+          size: 100,
+        });
+        setApplicants(response.content);
+      } catch (error: any) {
+        console.error("상태 변경 실패:", error);
+        alert(error.response?.data?.message || "상태 변경에 실패했습니다.");
+      }
+    }
+  };
 
   const getInitials = (name: string) => {
     return name.charAt(0);
@@ -121,43 +165,78 @@ export default function ApplicantManagementPage() {
     return colors[id % colors.length];
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return "bg-yellow-100 text-yellow-700";
+      case "REVIEWING":
+        return "bg-blue-100 text-blue-700";
+      case "ACCEPTED":
+        return "bg-green-100 text-green-700";
+      case "REJECTED":
+        return "bg-red-100 text-red-700";
+      default:
+        return "bg-gray-100 text-gray-700";
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return "대기중";
+      case "REVIEWING":
+        return "검토중";
+      case "ACCEPTED":
+        return "합격";
+      case "REJECTED":
+        return "불합격";
+      default:
+        return status;
+    }
+  };
+
   const handleApplicantClick = (applicantId: number) => {
     navigate(`/company/applicants/${applicantId}`);
   };
 
-  const handleJobPostingClick = (jobPosting: string, e: React.MouseEvent) => {
+  const handleJobPostingClick = (jobTitle: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setSelectedJobPosting(jobPosting);
+    setSelectedJobPosting(jobTitle);
   };
 
+  // 클라이언트 측 필터링
   const filteredApplicants = applicants.filter((applicant) => {
-    const jobPostingMatch =
-      selectedJobPosting === "전체" ||
-      applicant.jobPosting === selectedJobPosting;
-
     const jobCategoryMatch =
       selectedJobCategory === "전체" ||
       applicant.jobCategory === selectedJobCategory;
 
+    const expYears = parseInt(applicant.experience) || 0;
     const experienceMatch =
       experienceRange === "전체" ||
+      (experienceRange === "신입" && expYears === 0) ||
       (experienceRange === "1-3년" &&
-        parseInt(applicant.experience) >= 1 &&
-        parseInt(applicant.experience) <= 3) ||
+        expYears >= 1 &&
+        expYears <= 3) ||
       (experienceRange === "3-5년" &&
-        parseInt(applicant.experience) >= 3 &&
-        parseInt(applicant.experience) <= 5) ||
-      (experienceRange === "5년+" && parseInt(applicant.experience) >= 5);
+        expYears >= 3 &&
+        expYears <= 5) ||
+      (experienceRange === "5년+" && expYears >= 5);
 
-    return jobPostingMatch && jobCategoryMatch && experienceMatch;
+    return jobCategoryMatch && experienceMatch;
   });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-xl font-semibold text-gray-600">로딩 중...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* ✅ [수정 1] 화면 폭 확장: max-w-screen-2xl */}
       <div className="flex gap-10 px-6 py-8 mx-auto max-w-screen-2xl">
         {/* 왼쪽 사이드바 */}
-        {/* ✅ flex-shrink-0: 사이드바 크기 절대 고정 */}
         <aside className="flex-shrink-0 hidden w-64 lg:block">
           <CompanyLeftSidebar
             activeMenu={activeMenu}
@@ -166,7 +245,6 @@ export default function ApplicantManagementPage() {
         </aside>
 
         {/* 메인 컨텐츠 */}
-        {/* ✅ min-w-0: 내용물이 넘쳐도 레이아웃 깨짐 방지 */}
         <main className="flex-1 min-w-0">
           <div className="p-8 bg-white shadow-lg rounded-2xl">
             <h1 className="mb-8 text-2xl font-bold">지원자 관리</h1>
@@ -182,9 +260,10 @@ export default function ApplicantManagementPage() {
                   onChange={(e) => setSelectedJobPosting(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
                 >
-                  {uniqueJobPostings.map((posting, idx) => (
-                    <option key={idx} value={posting}>
-                      {posting}
+                  <option value="전체">전체</option>
+                  {jobPostings.map((job) => (
+                    <option key={job.jobId} value={job.title}>
+                      {job.title}
                     </option>
                   ))}
                 </select>
@@ -219,6 +298,7 @@ export default function ApplicantManagementPage() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
                 >
                   <option value="전체">전체</option>
+                  <option value="신입">신입</option>
                   <option value="1-3년">1-3년</option>
                   <option value="3-5년">3-5년</option>
                   <option value="5년+">5년 이상</option>
@@ -231,7 +311,6 @@ export default function ApplicantManagementPage() {
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    {/* ✅ [수정 2] whitespace-nowrap 추가: 제목 줄바꿈 방지 */}
                     <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700 whitespace-nowrap">
                       지원 공고
                     </th>
@@ -255,19 +334,18 @@ export default function ApplicantManagementPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredApplicants.map((applicant) => (
                     <tr
-                      key={applicant.id}
-                      onClick={() => handleApplicantClick(applicant.id)}
+                      key={applicant.applyId}
+                      onClick={() => handleApplicantClick(applicant.applyId)}
                       className="transition cursor-pointer hover:bg-purple-50"
                     >
-                      {/* ✅ [수정 3] 내용 줄바꿈 방지 */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
                           onClick={(e) =>
-                            handleJobPostingClick(applicant.jobPosting, e)
+                            handleJobPostingClick(applicant.jobTitle, e)
                           }
                           className="px-3 py-1.5 text-sm font-medium text-purple-700 bg-purple-50 rounded-lg hover:bg-purple-100 transition"
                         >
-                          {applicant.jobPosting}
+                          {applicant.jobTitle}
                         </button>
                       </td>
 
@@ -275,34 +353,46 @@ export default function ApplicantManagementPage() {
                         <div className="flex items-center space-x-3">
                           <div
                             className={`w-10 h-10 rounded-full ${getAvatarColor(
-                              applicant.id
+                              applicant.applyId
                             )} flex items-center justify-center text-white font-bold shrink-0`}
                           >
-                            {getInitials(applicant.name)}
+                            {getInitials(applicant.userName)}
                           </div>
-                          <span className="font-medium text-gray-900">
-                            {applicant.name}
-                          </span>
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {applicant.userName}
+                            </div>
+                            <span
+                              className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${getStatusColor(
+                                applicant.status
+                              )}`}
+                            >
+                              {getStatusText(applicant.status)}
+                            </span>
+                          </div>
                         </div>
                       </td>
 
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="font-semibold text-purple-600">
-                          {applicant.age}세
+                          {applicant.userAge}세
                         </span>
                       </td>
 
                       <td className="px-6 py-4">
-                        {/* 스킬 태그는 칸이 모자르면 줄바꿈 되는게 자연스러워서 여기만 wrap 허용 */}
                         <div className="flex flex-wrap gap-2 min-w-[200px]">
-                          {applicant.skills.map((skill, idx) => (
-                            <span
-                              key={idx}
-                              className="px-3 py-1 text-xs font-medium text-purple-700 bg-purple-100 rounded-full whitespace-nowrap"
-                            >
-                              {skill}
-                            </span>
-                          ))}
+                          {applicant.skills && applicant.skills.length > 0 ? (
+                            applicant.skills.map((skill, idx) => (
+                              <span
+                                key={idx}
+                                className="px-3 py-1 text-xs font-medium text-purple-700 bg-purple-100 rounded-full whitespace-nowrap"
+                              >
+                                {skill}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-sm text-gray-400">-</span>
+                          )}
                         </div>
                       </td>
 
@@ -314,7 +404,9 @@ export default function ApplicantManagementPage() {
 
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm text-gray-500">
-                          {applicant.appliedDate}
+                          {new Date(applicant.appliedAt).toLocaleDateString(
+                            "ko-KR"
+                          )}
                         </span>
                       </td>
                     </tr>
@@ -327,9 +419,15 @@ export default function ApplicantManagementPage() {
               <div className="py-20 text-center text-gray-500">
                 <div className="mb-4 text-4xl">📭</div>
                 <div className="text-lg font-medium">
-                  해당 조건의 지원자가 없습니다
+                  {applicants.length === 0
+                    ? "아직 지원자가 없습니다"
+                    : "해당 조건의 지원자가 없습니다"}
                 </div>
-                <div className="text-sm">다른 조건으로 검색해보세요</div>
+                <div className="text-sm">
+                  {applicants.length === 0
+                    ? "지원자를 기다려주세요"
+                    : "다른 조건으로 검색해보세요"}
+                </div>
               </div>
             )}
           </div>

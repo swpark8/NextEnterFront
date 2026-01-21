@@ -127,3 +127,21 @@ export const deleteJobPosting = async (
   });
   return response.data;
 };
+
+// 공고 상태 변경
+export const updateJobPostingStatus = async (
+  jobId: number,
+  companyId: number,
+  status: string
+): Promise<{ message: string }> => {
+  const response = await api.patch(
+    `${API_BASE_URL}/${jobId}/status`,
+    { status },
+    {
+      headers: {
+        companyId: companyId.toString(),
+      },
+    }
+  );
+  return response.data;
+};
