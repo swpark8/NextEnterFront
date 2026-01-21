@@ -12,8 +12,20 @@ export default function ProtectedRoute({
   requireAuth = true,
   allowedUserType,
 }: ProtectedRouteProps) {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuth();
   const location = useLocation();
+
+  // ✅ 로딩 중일 때는 아무것도 렌더링하지 않음
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">로딩 중...</p>
+        </div>
+      </div>
+    );
+  }
 
   // 인증이 필요한데 로그인하지 않은 경우
   if (requireAuth && !isAuthenticated) {

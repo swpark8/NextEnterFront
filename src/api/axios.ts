@@ -13,6 +13,7 @@ api.interceptors.request.use(
     const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log("🔑 토큰 포함하여 요청:", config.url);
     }
     return config;
   },
@@ -26,9 +27,17 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      console.error("❌ 401 에러 - 토큰 만료 또는 유효하지 않음");
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      window.location.href = "/";
+      
+      // 현재 페이지가 /company로 시작하면 기업 로그인으로
+      const currentPath = window.location.pathname;
+      if (currentPath.startsWith("/company")) {
+        window.location.href = "/company/login";
+      } else {
+        window.location.href = "/user/login";
+      }
     }
     return Promise.reject(error);
   }

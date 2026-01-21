@@ -4,18 +4,20 @@ import { useAuth } from "../../context/AuthContext";
 import { useApp } from "../../context/AppContext";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 import PaymentCompleteSidebar from "./components/PaymentCompleteSidebar";
+import { getCreditBalance } from "../../api/credit";
 
 interface LocationState {
   amount: number;
   credits: number;
   bonus: number;
+  newBalance?: number;
 }
 
 export default function PaymentCompletePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { creditBalance } = useApp();
+  const { creditBalance, setCreditBalance } = useApp();
   const { activeMenu, handleMenuClick } = usePageNavigation(
     "credit",
     "credit-sub-1"
@@ -30,6 +32,24 @@ export default function PaymentCompletePage() {
       navigate("/user/credit");
     }
   }, [paymentInfo, navigate]);
+
+  // ✅ 결제 완료 후 최신 크레딧 잔액 조회
+  useEffect(() => {
+    const refreshCreditBalance = async () => {
+      if (user?.userId && paymentInfo) {
+        try {
+          const balance = await getCreditBalance(user.userId);
+          setCreditBalance(balance.balance);
+          localStorage.setItem('nextenter_credit_balance', balance.balance.toString());
+          console.log("최신 크레딧 잔액:", balance.balance);
+        } catch (error) {
+          console.error("크레딧 잔액 조회 실패:", error);
+        }
+      }
+    };
+
+    refreshCreditBalance();
+  }, [user?.userId, paymentInfo, setCreditBalance]);
 
   const handleGoToCredit = () => {
     navigate("/user/credit");
