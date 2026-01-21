@@ -3,7 +3,7 @@ import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import UserLayout from "./layouts/UserLayout";
 import CompanyLayout from "./layouts/CompanyLayout";
-import JobPostingEditPage from "./pages/JobPostingEditPage";
+import JobPostingEditPage from "./features-company/jobs/JobPostingEditPage";
 
 // 공통 페이지
 import LoginPage from "./pages/LoginPage";
@@ -31,7 +31,7 @@ import AllJobsPage from "./features/all-jobs/AllJobsPage";
 import AIRecommendedJobsPage from "./features/all-jobs/AIRecommendedJobsPage";
 import PositionJobsPage from "./features/all-jobs/PositionJobsPage";
 import LocationJobsPage from "./features/all-jobs/LocationJobsPage";
-import UserJobDetailPage from "./pages/UserJobDetailPage";
+import UserJobDetailPage from "./features/all-jobs/UserJobDetailPage";
 
 // 기업회원 페이지들
 import CompanyHomePage from "./features-company/home/CompanyHomePage";
@@ -43,10 +43,15 @@ import ApplicantDetailPage from "./features-company/applicants/ApplicantDetailPa
 import ApplicantCompatibilityPage from "./features-company/applicants/ApplicantCompatibilityPage";
 import TalentSearchPage from "./features-company/talent-search/TalentSearchPage";
 import BusinessCreditPage from "./features-company/credit/BusinessCreditPage";
+
+// 화면 전환시 상단으로 끌어 올림
+import ScrollToTop from "./components/ScrollToTop";
+
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <ScrollToTop />
         <Routes>
           {/* 루트 경로 - /user로 리다이렉트 */}
           <Route path="/" element={<Navigate to="/user" replace />} />

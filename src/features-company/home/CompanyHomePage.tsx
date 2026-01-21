@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import CompanyJobPostingCard, {
+  JobPostingData,
+} from "../components/CompanyJobPostingCard";
 
 export default function CompanyHomePage() {
   const navigate = useNavigate();
@@ -44,6 +47,14 @@ export default function CompanyHomePage() {
     },
     {
       id: "credit",
+      icon: "🏢",
+      title: "마이페이지",
+      description: "회사 정보 수정 및 관리",
+      features: ["크레딧 충전", "사용 내역", "충전 혜택"],
+      path: "/company/credit",
+    },
+    {
+      id: "credit",
       icon: "💳",
       title: "크레딧",
       description: "크레딧 충전 및 관리",
@@ -52,10 +63,12 @@ export default function CompanyHomePage() {
     },
   ];
 
-  const products = [
+  // TODO: 나중에 API로 데이터 받아오기
+  const jobPostings: JobPostingData[] = [
     {
       id: 1,
       badge: "프리미엄 급구 추천",
+      badgeColor: "orange",
       title: "시니어 프론트엔드 개발자",
       description: "React, TypeScript 경험 5년 이상 | 월급 500만원 이상",
       tags: [
@@ -65,13 +78,14 @@ export default function CompanyHomePage() {
         "팀 리딩 경험 우대",
         "혁신적인 UI/UX 구현 능력",
       ],
-      seller: "테크 스타트업 A사",
+      company: "테크 스타트업 A사",
       period: "급구 + 상시채용",
-      price: "연봉 6,000만원",
+      salary: "연봉 6,000만원",
     },
     {
       id: 2,
       badge: "인기 급상승",
+      badgeColor: "orange",
       title: "백엔드 개발자 (Node.js)",
       description: "Node.js, Express 기반 API 개발 | 3년 이상 경력",
       tags: [
@@ -80,13 +94,14 @@ export default function CompanyHomePage() {
         "데이터베이스 최적화 경험",
         "MSA 아키텍처 이해",
       ],
-      seller: "핀테크 기업 B사",
+      company: "핀테크 기업 B사",
       period: "상시채용",
-      price: "연봉 5,000만원",
+      salary: "연봉 5,000만원",
     },
     {
       id: 3,
       badge: "원격근무 가능",
+      badgeColor: "purple",
       title: "풀스택 개발자",
       description: "React + Spring Boot 풀스택 | 경력 무관",
       tags: [
@@ -96,9 +111,9 @@ export default function CompanyHomePage() {
         "유연한 근무 환경",
         "성장 지향적인 팀 문화",
       ],
-      seller: "이커머스 C사",
+      company: "이커머스 C사",
       period: "상시채용",
-      price: "연봉 4,500만원",
+      salary: "연봉 4,500만원",
     },
   ];
 
@@ -123,7 +138,7 @@ export default function CompanyHomePage() {
       {/* 서비스 카드 섹션 */}
       <div className="px-4 py-8 mx-auto max-w-7xl">
         <h2 className="mb-6 text-xl font-bold">서비스 바로가기</h2>
-        <div className="grid grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-5 gap-4 mb-8">
           {services.map((service) => (
             <button
               key={service.id}
@@ -151,65 +166,16 @@ export default function CompanyHomePage() {
           ))}
         </div>
 
-        {/* 기재 공고 섹션 */}
+        {/* 등록된 공고 섹션 */}
         <div>
           <h2 className="mb-6 text-xl font-bold">등록된 공고</h2>
           <div className="grid grid-cols-3 gap-6">
-            {products.map((product) => (
-              <div
-                key={product.id}
-                className="overflow-hidden transition bg-white border-2 border-gray-200 rounded-xl hover:shadow-lg"
-              >
-                {/* 상품 배지 */}
-                {product.badge && (
-                  <div className="px-3 py-2 text-sm font-bold text-white bg-orange-500">
-                    ⚡ {product.badge}
-                  </div>
-                )}
-
-                {/* 상품 내용 */}
-                <div className="p-4">
-                  <h3 className="mb-2 text-lg font-bold">{product.title}</h3>
-
-                  <div className="mb-3">
-                    <p className="text-sm text-gray-700">
-                      {product.description}
-                    </p>
-                  </div>
-
-                  <div className="mb-4 space-y-1">
-                    {product.tags.map((tag, idx) => (
-                      <div key={idx} className="flex items-start space-x-2">
-                        <span className="flex-shrink-0 mt-1 text-purple-600">
-                          •
-                        </span>
-                        <span className="text-xs text-gray-600">{tag}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="pt-3 mb-3 text-sm border-t border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">{product.seller}</span>
-                      <span className="px-2 py-1 text-xs text-purple-600 rounded bg-purple-50">
-                        {product.period}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-xl font-bold text-purple-600">
-                      {product.price}
-                    </span>
-                    <button
-                      onClick={() => handleJobDetailClick(product.id)}
-                      className="px-6 py-2 text-white transition bg-purple-600 rounded-lg hover:bg-purple-700"
-                    >
-                      확인하기
-                    </button>
-                  </div>
-                </div>
-              </div>
+            {jobPostings.map((job) => (
+              <CompanyJobPostingCard
+                key={job.id}
+                job={job}
+                onDetailClick={handleJobDetailClick}
+              />
             ))}
           </div>
         </div>

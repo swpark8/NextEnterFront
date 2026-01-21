@@ -9,21 +9,23 @@ import {
 } from "../../api/user";
 import LeftSidebar from "../../components/LeftSidebar";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
-import ChangePasswordModal from "../../components/ChangePasswordModal";
+import ChangePasswordModal from "../../components/ChangePasswordModal"; // ✅ 추가
 
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  
-  // 쿼리 파라미터에서 메뉴 상태 읽기 (기본값: mypage-sub-2)
-  const { activeMenu, handleMenuClick } = usePageNavigation("mypage", "mypage-sub-2");
-  
+
+  const { activeMenu, handleMenuClick } = usePageNavigation(
+    "mypage",
+    "mypage-sub-2"
+  );
+
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false); // ✅ 추가
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 수정 가능한 필드
@@ -66,7 +68,7 @@ export default function ProfilePage() {
     }
   };
 
-  // 프로필 이미지 업로드 (수정 모드에서만 가능)
+  // 프로필 이미지 업로드
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!isEditing) return;
 
@@ -151,20 +153,17 @@ export default function ProfilePage() {
     );
   }
 
-  // 소셜 로그인 사용자 여부 확인
+  // ✅ 소셜 로그인 사용자 여부 확인
   const isSocialLogin = profile?.provider && profile.provider !== "LOCAL";
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="px-4 py-8 mx-auto max-w-7xl">
         <h1 className="mb-6 text-2xl font-bold">내 정보</h1>
-        
+
         <div className="flex gap-6">
           {/* 왼쪽 사이드바 */}
-          <LeftSidebar
-            activeMenu={activeMenu}
-            onMenuClick={handleMenuClick}
-          />
+          <LeftSidebar activeMenu={activeMenu} onMenuClick={handleMenuClick} />
 
           {/* 메인 컨텐츠 */}
           <div className="flex-1">
@@ -410,12 +409,14 @@ export default function ProfilePage() {
                     {profile?.createdAt && (
                       <p>
                         <span className="font-medium">가입일:</span>{" "}
-                        {new Date(profile.createdAt).toLocaleDateString("ko-KR")}
+                        {new Date(profile.createdAt).toLocaleDateString(
+                          "ko-KR"
+                        )}
                       </p>
                     )}
                   </div>
 
-                  {/* 비밀번호 변경 버튼 - 일반 가입 사용자만 */}
+                  {/* ✅ 비밀번호 변경 버튼 - 일반 가입 사용자만 */}
                   {!isSocialLogin && (
                     <div className="mt-4">
                       <button
@@ -433,7 +434,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* 비밀번호 변경 모달 */}
+      {/* ✅ 비밀번호 변경 모달 */}
       <ChangePasswordModal
         isOpen={isPasswordModalOpen}
         onClose={() => setIsPasswordModalOpen(false)}

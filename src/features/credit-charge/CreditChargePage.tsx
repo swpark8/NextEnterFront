@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useApp } from "../../context/AppContext";
@@ -75,7 +75,9 @@ export default function CreditChargePage({
     // ✅ 크레딧 충전 내역 저장
     const totalCredits = pkg.credits + pkg.bonus;
     const today = new Date();
-    const dateString = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}`;
+    const dateString = `${today.getFullYear()}.${String(
+      today.getMonth() + 1
+    ).padStart(2, "0")}.${String(today.getDate()).padStart(2, "0")}`;
 
     addCreditTransaction({
       date: dateString,
@@ -142,7 +144,9 @@ export default function CreditChargePage({
 
         {/* 충전 금액 선택 */}
         <div className="p-8 mb-6 bg-white shadow-sm rounded-2xl">
-          <h3 className="mb-6 text-xl font-bold text-gray-900">충전 금액 선택</h3>
+          <h3 className="mb-6 text-xl font-bold text-gray-900">
+            충전 금액 선택
+          </h3>
           <div className="grid grid-cols-5 gap-4">
             {packages.map((pkg) => (
               <button
@@ -183,7 +187,9 @@ export default function CreditChargePage({
                 <span className="text-xl font-bold text-blue-600">
                   {getSelectedPackage()?.credits}크레딧 (
                   {getSelectedPackage()?.price.toLocaleString()}원)
-                  {getSelectedPackage()?.bonus ? ` + 보너스 ${getSelectedPackage()?.bonus}` : ""}
+                  {getSelectedPackage()?.bonus
+                    ? ` + 보너스 ${getSelectedPackage()?.bonus}`
+                    : ""}
                 </span>
               </div>
             </div>
@@ -230,14 +236,15 @@ export default function CreditChargePage({
                   {getSelectedPackage()?.credits}크레딧
                 </span>
               </div>
-              {getSelectedPackage()?.bonus && getSelectedPackage()!.bonus > 0 && (
-                <div className="flex items-center justify-between py-3 border-b border-gray-200">
-                  <span className="text-gray-600">보너스 크레딧</span>
-                  <span className="text-lg font-bold text-orange-600">
-                    +{getSelectedPackage()?.bonus}크레딧
-                  </span>
-                </div>
-              )}
+              {getSelectedPackage()?.bonus &&
+                getSelectedPackage()!.bonus > 0 && (
+                  <div className="flex items-center justify-between py-3 border-b border-gray-200">
+                    <span className="text-gray-600">보너스 크레딧</span>
+                    <span className="text-lg font-bold text-orange-600">
+                      +{getSelectedPackage()?.bonus}크레딧
+                    </span>
+                  </div>
+                )}
               <div className="flex items-center justify-between py-3 border-b border-gray-200">
                 <span className="text-gray-600">결제 수단</span>
                 <span className="text-lg font-medium text-gray-900">
@@ -305,11 +312,12 @@ export default function CreditChargePage({
               • 크레딧은 AI 이력서 분석, 매칭 분석, 모의 면접 등에 사용됩니다
             </li>
             <li>
-              • 충전된 크레딧은 환불되지 않으며, 유효기간은 충전일로부터 1년입니다
+              • 충전된 크레딧은 환불되지 않으며, 유효기간은 충전일로부터
+              1년입니다
             </li>
             <li>
-              • 보너스 크레딧은 프로모션 기간에만 제공되며, 별도 유효기간이 적용될
-              수 있습니다
+              • 보너스 크레딧은 프로모션 기간에만 제공되며, 별도 유효기간이
+              적용될 수 있습니다
             </li>
             <li>• 크레딧 사용 내역은 크레딧 페이지에서 확인하실 수 있습니다</li>
           </ul>

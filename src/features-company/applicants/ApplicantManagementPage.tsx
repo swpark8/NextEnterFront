@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
@@ -25,11 +25,6 @@ export default function ApplicantManagementPage() {
   const [selectedJobPosting, setSelectedJobPosting] = useState("전체");
   const [selectedJobCategory, setSelectedJobCategory] = useState("전체");
   const [experienceRange, setExperienceRange] = useState("전체");
-
-  // 화면 맨 위로 올림
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
 
   const applicants: Applicant[] = [
     {

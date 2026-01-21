@@ -3,11 +3,11 @@ import { useNavigate } from "react-router-dom";
 import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
 
-export default function BusinessCreditPage() {
+export default function CompanyMyPage() {
   const navigate = useNavigate();
   const { activeMenu, handleMenuClick } = useCompanyPageNavigation(
-    "credit",
-    "credit-sub-1"
+    "companyMy",
+    "companyMyPage-sub-1"
   );
 
   const [currentCredit] = useState(4200);

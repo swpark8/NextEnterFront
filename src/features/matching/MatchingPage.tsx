@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { getResumeList, getResumeDetail } from "../../api/resume";
+import { getResumeList, getResumeDetail, ResumeSections } from "../../api/resume";
 import { getJobPostings } from "../../api/job";
-import { getAiRecommendation, CompanyInfo } from "../../api/ai";
-import { mapResumeToAiFormat } from "../../utils/resumeMapper";
+import { getAiRecommendation, CompanyInfo, AiRecommendRequest } from "../../api/ai";
+import { generateResumeText } from "../../utils/resumeMapper";
+
 import MatchingSidebar from "./components/MatchingSidebar";
 import MatchingHistoryPage from "./components/MatchingHistoryPage";
 import ConfirmDialog from "./components/ConfirmDialog";
@@ -14,13 +15,11 @@ import EmptyAnalysis from "./components/EmptyAnalysis";
 import AnalysisResult from "./components/AnalysisResult";
 import { useApp } from "../../context/AppContext";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
-import {
-  SAMPLE_STRENGTHS,
-  SAMPLE_WEAKNESSES,
-  SAMPLE_TECH_SKILLS,
-  SAMPLE_RECOMMENDATIONS,
-  CREDIT_COST,
-} from "./data/sampleData";
+import { CREDIT_COST } from "./data/sampleData";
+
+// ✅ [설정] 히스토리 자동 삭제 시간 (현재: 3분)
+// 테스트 성공 후 나중에 이 값을 늘리시면 됩니다. (예: 30일 = 30 * 24 * 60 * 60 * 1000)
+const HISTORY_EXPIRATION_MS = 3 * 60 * 1000; 
 
 interface MatchingPageProps {
   onEditResume?: () => void;
@@ -36,7 +35,6 @@ export default function MatchingPage({
   const navigate = useNavigate();
   const { user } = useAuth();
   
-  // [Auto-Merge] Incoming 브랜치의 usePageNavigation 훅 사용 (사이드바 연동)
   const { activeMenu, handleMenuClick, setActiveMenu } = usePageNavigation(
     "matching",
     initialMenu || "matching-sub-1",
@@ -51,10 +49,60 @@ export default function MatchingPage({
   const [aiReport, setAiReport] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Context에서 실제 데이터 가져오기 - 기업 공고 사용!
-  const { resumes, businessJobs, addMatchingHistory, setResumes, setBusinessJobs } = useApp();
+  // AppContext에서 히스토리 상태와 setter 가져오기
+  const { 
+    resumes, 
+    businessJobs, 
+    addMatchingHistory, 
+    // @ts-ignore
+    matchingHistory, 
+    // @ts-ignore
+    setMatchingHistory,
+    setResumes, 
+    setBusinessJobs 
+  } = useApp();
 
-  // ✅ 이력서가 비어있으면 API에서 불러오기
+  // ========================================================================
+  // 🕒 [기능 1] 히스토리 자동 삭제 로직 (Auto Delete)
+  // ========================================================================
+  useEffect(() => {
+    // 10초마다 검사 실행
+    const interval = setInterval(() => {
+      if (!matchingHistory || matchingHistory.length === 0) return;
+
+      const now = Date.now();
+      // 유효기간(3분)이 지나지 않은 '신선한' 기록만 남김
+      const freshHistory = matchingHistory.filter((item: any) => {
+        // item.id는 생성 시점의 timestamp(Date.now())입니다.
+        return (now - item.id) < HISTORY_EXPIRATION_MS;
+      });
+
+      // 만약 지워야 할 오래된 기록이 있다면 상태 업데이트
+      if (freshHistory.length < matchingHistory.length) {
+        if (setMatchingHistory) {
+          setMatchingHistory(freshHistory);
+          console.log(`🧹 [Auto Clean] ${matchingHistory.length - freshHistory.length}개의 오래된 히스토리가 자동 삭제되었습니다.`);
+        }
+      }
+    }, 10000); // 10초 주기
+
+    return () => clearInterval(interval);
+  }, [matchingHistory, setMatchingHistory]);
+
+  // ========================================================================
+  // 🗑️ [기능 2] 히스토리 수동 삭제 함수 (Manual Delete)
+  // MatchingHistoryPage 컴포넌트에 prop으로 전달해서 버튼 클릭 시 실행
+  // ========================================================================
+  const handleDeleteHistory = (historyId: number) => {
+    if (!matchingHistory || !setMatchingHistory) return;
+    
+    if (window.confirm("정말 이 히스토리를 삭제하시겠습니까?")) {
+      const updatedHistory = matchingHistory.filter((h: any) => h.id !== historyId);
+      setMatchingHistory(updatedHistory);
+    }
+  };
+
+  // 1. 이력서 목록 로드
   useEffect(() => {
     const loadResumesIfEmpty = async () => {
       if (resumes.length === 0 && user?.userId) {
@@ -74,18 +122,17 @@ export default function MatchingPage({
         }
       }
     };
-
     loadResumesIfEmpty();
   }, [user?.userId, resumes.length, setResumes]);
 
-  // ✅ 공고 목록 로딩 (백엔드 API에서 가져오기)
+  // 2. 공고 목록 로드
   useEffect(() => {
     const loadJobsIfEmpty = async () => {
       if (businessJobs.length === 0) {
         try {
           const response = await getJobPostings({ size: 100 });
           if (response.content && response.content.length > 0) {
-            const jobs = response.content.map(job => ({
+            const jobs = response.content.map((job: any) => ({
               id: job.jobId,
               title: job.title,
               status: job.status as "ACTIVE" | "CLOSED" | "EXPIRED",
@@ -108,187 +155,205 @@ export default function MatchingPage({
         }
       }
     };
-
     loadJobsIfEmpty();
   }, [businessJobs.length, setBusinessJobs]);
 
-  // 이력서를 TargetSelection에서 사용할 수 있는 형식으로 변환
   const resumeOptions = resumes.map((resume) => ({
     id: resume.id.toString(),
     name: resume.title,
   }));
 
-  // 기업 공고를 TargetSelection에서 사용할 수 있는 형식으로 변환
-  // ACTIVE 상태인 공고만 선택 가능하도록 필터링
-  const jobOptions = businessJobs
-    .filter((job) => job.status === "ACTIVE")
-    .map((job) => ({
-      id: job.id.toString(),
-      name: job.title,
-      company: job.job_category, // 직무 카테고리를 회사명처럼 표시
-    }));
-
-  const handleCreditClick = () => {
-    // 크레딧 충전 페이지로 이동
-    navigate('/user/credit/charge?menu=credit-sub-2');
-  };
-
   const handleAnalyze = () => {
-    try {
-      if (!selectedResume) {
-        alert("이력서를 먼저 선택해주세요!");
-        return;
-      }
-      if (currentCredit < CREDIT_COST) {
-        alert("크레딧이 부족합니다!");
-        return;
-      }
-      // 확인 다이얼로그 표시
-      setShowConfirmDialog(true);
-    } catch (error) {
-      console.error("분석 실행 중 오류:", error);
-      alert("분석 중 오류가 발생했습니다. 다시 시도해주세요.");
+    if (!selectedResume) {
+      alert("이력서를 먼저 선택해주세요!");
+      return;
     }
+    setShowConfirmDialog(true);
   };
 
+  // 3. 실제 AI 분석 실행 함수
   const handleConfirmAnalysis = async () => {
     setShowConfirmDialog(false);
     setIsLoading(true);
 
     try {
-      // 1. 선택된 이력서 정보 가져오기
-      const selectedResumeInfo = resumes.find(
-        (r) => r.id.toString() === selectedResume
-      );
+      const resumeIdNum = parseInt(selectedResume);
+      const userIdNum = typeof user?.userId === 'string' ? parseInt(user.userId) : user?.userId || 1;
+      const resumeDetail = await getResumeDetail(resumeIdNum, userIdNum);
+      
+      console.log("🔍 [DEBUG] 백엔드 이력서 원본:", resumeDetail);
 
-      if (!selectedResumeInfo || !user?.userId) {
-        alert("이력서 정보를 찾을 수 없습니다.");
-        setIsLoading(false);
-        return;
+      // structuredData 파싱하여 필요한 정보 추출
+      let skillsList: string[] = [];
+      let experienceYears = 0;
+      let education = "University";
+      let preferredLocation = "Seoul";
+
+      // skills 파싱 (String이면 JSON 배열로 파싱 시도)
+      if (resumeDetail.skills) {
+        try {
+          skillsList = JSON.parse(resumeDetail.skills);
+          if (!Array.isArray(skillsList)) {
+            skillsList = [resumeDetail.skills];
+          }
+        } catch {
+          // JSON이 아니면 쉼표로 분리하거나 단일 문자열로 처리
+          skillsList = resumeDetail.skills.includes(',') 
+            ? resumeDetail.skills.split(',').map(s => s.trim())
+            : [resumeDetail.skills];
+        }
       }
 
-      // 2. 백엔드 API로 이력서 상세 조회
-      const resumeData = await getResumeDetail(selectedResumeInfo.id, user.userId);
-      
-      console.log("🔍 [DEBUG] Resume Data from Backend:", resumeData);
+      // structuredData에서 경력, 학력, 선호 지역 추출
+      if (resumeDetail.structuredData) {
+        try {
+          const sections: ResumeSections = JSON.parse(resumeDetail.structuredData);
+          
+          // 경력 계산 (careers에서 기간 합산)
+          if (sections.careers && sections.careers.length > 0) {
+            let totalMonths = 0;
+            sections.careers.forEach(career => {
+              const period = career.period || "";
+              // "2020.01 - 2023.12" 형식에서 개월 수 계산
+              try {
+                const parts = period.split(' - ');
+                if (parts.length === 2) {
+                  const start = parts[0].trim();
+                  const end = parts[1].trim();
+                  const startParts = start.split('.');
+                  const endParts = end.split('.');
+                  
+                  if (startParts.length === 2 && endParts.length === 2) {
+                    const startYear = parseInt(startParts[0]);
+                    const startMonth = parseInt(startParts[1]);
+                    const endYear = parseInt(endParts[0]);
+                    const endMonth = parseInt(endParts[1]);
+                    totalMonths += (endYear - startYear) * 12 + (endMonth - startMonth) + 1;
+                  }
+                } else {
+                  // "3년" 또는 "36개월" 형식 파싱
+                  const yearMatch = period.match(/(\d+)년/);
+                  if (yearMatch) {
+                    totalMonths += parseInt(yearMatch[1]) * 12;
+                  } else {
+                    const monthMatch = period.match(/(\d+)개월/);
+                    if (monthMatch) {
+                      totalMonths += parseInt(monthMatch[1]);
+                    }
+                  }
+                }
+              } catch (e) {
+                console.warn("경력 기간 파싱 실패:", period, e);
+              }
+            });
+            experienceYears = Math.floor(totalMonths / 12);
+          }
+          
+          // 학력 추출 (educations에서 최고 학력)
+          if (sections.educations && sections.educations.length > 0) {
+            const highestEdu = sections.educations[0];
+            education = highestEdu.school || "University";
+          }
+          
+          // 선호 지역 (personalInfo에서 추출)
+          if (sections.personalInfo && sections.personalInfo.address) {
+            preferredLocation = sections.personalInfo.address;
+          }
+        } catch (e) {
+          console.warn("structuredData 파싱 실패:", e);
+        }
+      }
 
-      // 3. NextEnterAI 형식으로 변환
-      const aiRequest = mapResumeToAiFormat(resumeData, user.userId);
-      
-      console.log("🔍 [DEBUG] AI Request (before sending):", aiRequest);
-      
-      // 한글 직무명을 영어로 변환 (AI 서버는 영어를 기대함)
-      const convertKoreanRole = (role: string): string => {
-        const lowerRole = role.toLowerCase();
-        if (lowerRole.includes("백엔드") || lowerRole === "backend") return "Backend Developer";
-        if (lowerRole.includes("프론트엔드") || lowerRole === "frontend") return "Frontend Developer";
-        if (lowerRole.includes("풀스택") || lowerRole === "fullstack") return "Fullstack Developer";
-        if (lowerRole.includes("pm") || lowerRole.includes("프로젝트매니저")) return "Project Manager";
-        if (lowerRole.includes("ui") || lowerRole.includes("ux") || lowerRole.includes("디자인")) return "UI/UX Designer";
-        if (lowerRole.includes("ai") || lowerRole.includes("llm") || lowerRole.includes("ml")) return "AI/LLM Engineer";
-        return role.includes("Developer") ? role : `${role} Developer`;
+      const aiRequest: AiRecommendRequest = {
+        resumeId: resumeIdNum,
+        userId: userIdNum,
+        resumeText: generateResumeText(resumeDetail),  // ⭐ 추가: 이력서 텍스트 생성
+        jobCategory: resumeDetail.jobCategory || "Backend Developer",
+        skills: skillsList,
+        experience: experienceYears, 
+        education: education,
+        preferredLocation: preferredLocation
       };
-      
-      // target_role 영어로 변환 (한글이면 변환)
-      if (aiRequest.target_role && /[가-힣]/.test(aiRequest.target_role)) {
-        aiRequest.target_role = convertKoreanRole(aiRequest.target_role);
-        console.log("🔄 [DEBUG] Converted target_role to English:", aiRequest.target_role);
-      }
-      
-      // resumeMapper에서 이미 기본값 처리를 했으므로, 더미 데이터 로직 제거
-      // AI 서버가 빈 데이터를 허용하는지 확인 후, 필요시에만 추가 검증
-      console.log("🚀 [DEBUG] Final AI Request (sending to backend):", aiRequest);
 
-      // 4. AI 추천 API 호출
+
+      console.log("🚀 [DEBUG] AI 서버로 보낼 요청:", aiRequest);
+
       const aiResult = await getAiRecommendation(aiRequest);
 
-      // 5. 결과 저장 및 UI 표시
       setRecommendedCompanies(aiResult.companies);
       setAiReport(aiResult.ai_report);
       setHasAnalysis(true);
-      setCurrentCredit(currentCredit - CREDIT_COST);
+      
+      if (currentCredit >= CREDIT_COST) {
+        setCurrentCredit(currentCredit - CREDIT_COST);
+      }
 
-      // 6. 히스토리에 추가 (첫 번째 추천 기업 기준)
+      // 히스토리 추가 (이전 동일 이력서 기록 덮어쓰기 로직 포함)
       if (aiResult.companies.length > 0) {
-        const now = new Date();
-        const date = now
-          .toLocaleDateString("ko-KR")
-          .replace(/\. /g, ".")
-          .replace(".", "");
-        const time = now.toTimeString().slice(0, 5);
-
         const topCompany = aiResult.companies[0];
-        const historyId = Date.now();
         const newHistory = {
-          id: historyId,
-          date: date,
-          time: time,
-          resume: selectedResumeInfo.title,
-          resumeId: selectedResumeInfo.id,
+          id: Date.now(), // 이 값이 timestamp로 사용됩니다.
+          date: new Date().toLocaleDateString(),
+          time: new Date().toTimeString().slice(0, 5),
+          resume: resumes.find(r => r.id.toString() === selectedResume)?.title || "이력서",
+          resumeId: resumeIdNum,
           company: topCompany.company_name,
           position: topCompany.role,
-          jobId: 0, // AI 추천은 실제 jobId가 없음
+          jobId: 0,
           score: topCompany.score,
           suitable: topCompany.match_level === "BEST" || topCompany.match_level === "HIGH",
           techMatch: {},
-          strengths: ["AI 기반 매칭"],
-          improvements: ["상세 분석은 AI 리포트 참조"],
+          strengths: ["AI 분석 완료"],
+          improvements: []
         };
 
-        addMatchingHistory(newHistory);
+        if (matchingHistory && setMatchingHistory) {
+          const filteredHistory = matchingHistory.filter((h: any) => h.resumeId !== resumeIdNum);
+          setMatchingHistory([...filteredHistory, newHistory]);
+          console.log("🔄 이전 히스토리 삭제 후 최신 기록으로 덮어썼습니다.");
+        } else {
+          addMatchingHistory(newHistory);
+        }
       }
+
     } catch (error) {
-      console.error("AI 매칭 오류:", error);
-      alert("AI 분석 중 오류가 발생했습니다. NextEnterAI 서버가 실행 중인지 확인해주세요.");
+      console.error("❌ AI 매칭 치명적 오류:", error);
+      alert("AI 서버 연결에 실패했습니다. 백엔드(8080)와 파이썬 엔진(8000)이 켜져 있는지 확인해주세요.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleCancelAnalysis = () => {
-    setShowConfirmDialog(false);
-  };
-
-  const handleAddResume = () => {
-    // 이력서 작성 페이지로 이동
-    navigate('/user/resume?menu=resume-sub-1');
-  };
-
-
-  const handleBackToMatching = () => {
-    setActiveMenu("matching");
-  };
-
+  const handleCancelAnalysis = () => setShowConfirmDialog(false);
+  const handleBackToMatching = () => setActiveMenu("matching");
   const handleReanalyze = () => {
     setHasAnalysis(false);
     setRecommendedCompanies([]);
     setAiReport("");
   };
 
-  const handleEditResume = () => {
-    // 이력서 수정 페이지로 이동
-    navigate('/user/resume?menu=resume-sub-1');
-  };
+  const handleCreditClick = () => navigate('/user/credit/charge');
+  const handleAddResume = () => navigate('/user/resume');
+  const handleEditResume = () => navigate('/user/resume');
+  const handleApply = () => navigate('/user/jobs/all');
 
-  const handleApply = () => {
-    // 채용공고 목록 페이지로 이동
-    navigate('/user/jobs/all?menu=job-sub-1');
-  };
-
-  // 히스토리 페이지 표시
   if (activeMenu === "history" || activeMenu === "matching-sub-2") {
     return (
       <MatchingHistoryPage
         onBackToMatching={handleBackToMatching}
         activeMenu={activeMenu}
         onMenuClick={handleMenuClick}
+        // [중요] 수동 삭제 함수를 자식 컴포넌트로 전달합니다.
+        // MatchingHistoryPage 내부에서 이 props를 받아서 버튼에 연결해야 합니다.
+        // 예: <button onClick={() => onDelete(history.id)}>삭제</button>
+        // @ts-ignore
+        onDelete={handleDeleteHistory}
       />
     );
   }
 
   return (
     <>
-      {/* 확인 다이얼로그 */}
       {showConfirmDialog && (
         <ConfirmDialog
           onConfirm={handleConfirmAnalysis}
@@ -300,21 +365,17 @@ export default function MatchingPage({
         <div className="px-4 py-8 mx-auto max-w-7xl">
           <h2 className="inline-block mb-6 text-2xl font-bold">매칭현황</h2>
           <div className="flex gap-6">
-            {/* 왼쪽 사이드바 */}
             <MatchingSidebar
               activeMenu={activeMenu}
               onMenuClick={handleMenuClick}
             />
 
-            {/* 메인 컨텐츠 */}
             <div className="flex-1">
-              {/* 상단 헤더 */}
               <MatchingHeader
                 currentCredit={currentCredit}
                 onCreditClick={handleCreditClick}
               />
 
-              {/* 선택 카드 */}
               <TargetSelection
                 resumes={resumeOptions}
                 selectedResume={selectedResume}
@@ -323,7 +384,6 @@ export default function MatchingPage({
                 onAnalyze={handleAnalyze}
               />
 
-              {/* 분석 결과 영역 */}
               {!hasAnalysis ? (
                 <EmptyAnalysis />
               ) : isLoading ? (
