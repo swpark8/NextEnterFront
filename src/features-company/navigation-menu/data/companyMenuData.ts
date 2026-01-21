@@ -25,6 +25,11 @@ export const companyNavigationMenuData = {
       { id: "talent-sub-2", label: "스크랩 인재" },
     ],
   },
+  companyMy: {
+    id: "companyMy",
+    title: "마이페이지",
+    items: [{ id: "companyMy-sub-1", label: "나의 회사 정보" }],
+  },
   credit: {
     id: "credit",
     title: "크레딧",

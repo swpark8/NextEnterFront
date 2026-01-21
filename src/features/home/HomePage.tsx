@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 type JobCategory = {
   id: number;
@@ -13,6 +14,7 @@ interface HomePageProps {
 }
 
 export default function HomePage({ onLoginClick }: HomePageProps) {
+  const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState("서울 전체");
@@ -296,7 +298,7 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
                     회원님께 딱 맞는 일자리를 추천해드립니다
                   </p>
                   <button
-                    onClick={onLoginClick}
+                    onClick={() => navigate("/user/login")}
                     className="px-8 py-4 text-lg font-bold text-blue-600 transition bg-white rounded-lg hover:bg-gray-100"
                   >
                     로그인하기
@@ -312,10 +314,16 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
             {!isAuthenticated && (
               <div className="p-6 text-center bg-white border-2 border-gray-200 shadow-lg rounded-2xl">
                 <p className="mb-4 text-gray-600">
-                  아이디 · 비밀번호 찾기 | 회원가입
+                  아이디 · 비밀번호 찾기 |{" "}
+                  <span
+                    onClick={() => navigate("/user/signup")}
+                    className="text-gray-600 cursor-pointer hover:text-blue-600 hover:underline"
+                  >
+                    회원가입
+                  </span>
                 </p>
                 <button
-                  onClick={onLoginClick}
+                  onClick={() => navigate("/user/login")}
                   className="w-full px-6 py-3 font-bold text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
                 >
                   로그인

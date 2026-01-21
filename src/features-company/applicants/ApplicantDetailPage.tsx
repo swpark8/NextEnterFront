@@ -1,7 +1,6 @@
 import { useNavigate, useParams } from "react-router-dom";
 import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
-import { useEffect } from "react";
 import { useApp } from "../../context/AppContext";
 import type { InterviewOffer } from "../../context/AppContext";
 
@@ -10,14 +9,9 @@ export default function ApplicantDetailPage() {
   // URL에서 지원자 ID 가져오기 (없으면 기본값 1)
   const { applicantId } = useParams();
   const id = Number(applicantId) || 1;
-  
+
   // AppContext에서 면접 제안 추가 함수 가져오기
   const { addInterviewOffer } = useApp();
-
-  // 화면 맨 위로 올림
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
 
   // ✅ 사이드바 훅 사용 (기본 메뉴: 지원자 목록 'applicants-sub-1')
   // 상세 페이지는 목록의 연장선이므로 'applicants-sub-1'을 활성화 상태로 둠
@@ -110,17 +104,19 @@ export default function ApplicantDetailPage() {
         id: Date.now(),
         company: "(주)등록기업",
         position: "프론트엔드 개발자",
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toISOString().split("T")[0],
         status: "면접 대기",
         content: `안녕하세요 ${data.name}님, (주)등록기업 채용 담당자입니다.\n\n귀하의 이력서를 보고 큰 인상을 받아 면접 제안을 드립니다. 저희와 잘 맞을 분이라고 판단되며, 자세한 내용은 면접에서 말씀드리겠습니다.`,
         location: "서울특별시 강남구 테헤란로 123",
         jobId: undefined,
       };
-      
+
       // AppContext에 면접 제안 추가
       addInterviewOffer(newInterviewOffer);
-      
-      alert("면접 요청이 성공적으로 전송되었습니다.\n개인 회원은 '받은 제안' 페이지에서 확인할 수 있습니다.");
+
+      alert(
+        "면접 요청이 성공적으로 전송되었습니다.\n개인 회원은 '받은 제안' 페이지에서 확인할 수 있습니다."
+      );
     }
   };
 

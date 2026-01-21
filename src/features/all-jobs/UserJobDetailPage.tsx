@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getJobPosting, type JobPostingResponse } from "../api/job";
-import { createApply, type ApplyCreateRequest } from "../api/apply";
-import { useApp } from "../context/AppContext";
-import { useAuth } from "../context/AuthContext";
+import { getJobPosting, type JobPostingResponse } from "../../api/job";
+import { createApply, type ApplyCreateRequest } from "../../api/apply";
+import { useApp } from "../../context/AppContext";
+import { useAuth } from "../../context/AuthContext";
 
 export default function UserJobDetailPage() {
   const navigate = useNavigate();
   const { jobId } = useParams<{ jobId: string }>();
   const { user } = useAuth();
-  
+
   const [loading, setLoading] = useState(true);
   const [job, setJob] = useState<JobPostingResponse | null>(null);
   const [showResumeModal, setShowResumeModal] = useState(false);
@@ -34,7 +34,9 @@ export default function UserJobDetailPage() {
         setJob(jobData);
       } catch (error: any) {
         console.error("공고 조회 실패:", error);
-        alert(error.response?.data?.message || "공고를 불러오는데 실패했습니다.");
+        alert(
+          error.response?.data?.message || "공고를 불러오는데 실패했습니다.",
+        );
         navigate("/user/jobs/all");
       } finally {
         setLoading(false);
@@ -93,7 +95,7 @@ export default function UserJobDetailPage() {
         id: applicationId,
         jobId: job.jobId,
         resumeId: selectedResumeId,
-        date: today.toISOString().split('T')[0].replace(/-/g, '.'),
+        date: today.toISOString().split("T")[0].replace(/-/g, "."),
         company: job.companyName,
         position: job.title,
         jobType: "정규직",
@@ -109,7 +111,10 @@ export default function UserJobDetailPage() {
       setSelectedResumeId(null);
     } catch (error: any) {
       console.error("지원 실패:", error);
-      if (error.response?.status === 409 || error.response?.data?.message?.includes("이미 지원")) {
+      if (
+        error.response?.status === 409 ||
+        error.response?.data?.message?.includes("이미 지원")
+      ) {
         alert("이미 지원한 공고입니다.");
       } else {
         alert(error.response?.data?.message || "지원에 실패했습니다.");
@@ -183,7 +188,9 @@ export default function UserJobDetailPage() {
   if (!job) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-xl font-semibold text-gray-600">공고를 찾을 수 없습니다.</div>
+        <div className="text-xl font-semibold text-gray-600">
+          공고를 찾을 수 없습니다.
+        </div>
       </div>
     );
   }
@@ -268,7 +275,7 @@ export default function UserJobDetailPage() {
               <h1 className="text-3xl font-bold text-gray-900">{job.title}</h1>
               <span
                 className={`px-4 py-1 text-sm font-semibold rounded-full ${getStatusColor(
-                  job.status
+                  job.status,
                 )}`}
               >
                 {getStatusText(job.status)}
@@ -373,7 +380,9 @@ export default function UserJobDetailPage() {
           {/* 공고 설명 */}
           {job.description && (
             <div className="p-8 mb-6 bg-white rounded-lg shadow">
-              <h2 className="mb-4 text-2xl font-bold text-gray-900">공고 설명</h2>
+              <h2 className="mb-4 text-2xl font-bold text-gray-900">
+                공고 설명
+              </h2>
               <p className="leading-relaxed text-gray-700 whitespace-pre-wrap">
                 {job.description}
               </p>
@@ -383,7 +392,9 @@ export default function UserJobDetailPage() {
           {/* 필수 스킬 */}
           {job.requiredSkills && (
             <div className="p-8 mb-6 bg-white rounded-lg shadow">
-              <h2 className="mb-4 text-2xl font-bold text-gray-900">필수 스킬</h2>
+              <h2 className="mb-4 text-2xl font-bold text-gray-900">
+                필수 스킬
+              </h2>
               <div className="leading-relaxed text-gray-700 whitespace-pre-wrap">
                 {job.requiredSkills}
               </div>
@@ -393,7 +404,9 @@ export default function UserJobDetailPage() {
           {/* 우대 스킬 */}
           {job.preferredSkills && (
             <div className="p-8 bg-white rounded-lg shadow">
-              <h2 className="mb-4 text-2xl font-bold text-gray-900">우대 스킬</h2>
+              <h2 className="mb-4 text-2xl font-bold text-gray-900">
+                우대 스킬
+              </h2>
               <div className="leading-relaxed text-gray-700 whitespace-pre-wrap">
                 {job.preferredSkills}
               </div>
