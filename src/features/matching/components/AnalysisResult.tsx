@@ -10,8 +10,8 @@ interface AnalysisResultProps {
 }
 
 export default function AnalysisResult({
-  recommendedCompanies,
-  aiReport,
+  recommendedCompanies = [],  // 기본값 추가
+  aiReport = "",              // 기본값 추가
   onReanalyze,
   onEditResume,
   onApply
@@ -46,7 +46,7 @@ export default function AnalysisResult({
           🤖 AI 기업 추천 결과
         </h3>
         <p className="text-blue-100">
-          이력서를 분석하여 가장 적합한 기업 {recommendedCompanies.length}곳을 추천합니다
+          이력서를 분석하여 가장 적합한 기업 {recommendedCompanies?.length || 0}곳을 추천합니다
         </p>
       </div>
 

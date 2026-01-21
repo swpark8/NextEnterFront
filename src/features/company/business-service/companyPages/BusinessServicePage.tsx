@@ -152,7 +152,7 @@ export default function BusinessServicePage() {
             <div className="flex items-center space-x-4">
               {isAuthenticated && user?.userType === "company" ? (
                 <>
-                  <span className="text-gray-700 font-medium">
+                  <span className="font-medium text-gray-700">
                     {user.companyName || user.name}님
                   </span>
                   <button
@@ -163,7 +163,7 @@ export default function BusinessServicePage() {
                   </button>
                   <button
                     onClick={handleLogout}
-                    className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition"
+                    className="px-4 py-2 text-white transition bg-red-600 rounded-lg hover:bg-red-700"
                   >
                     로그아웃
                   </button>
@@ -184,12 +184,6 @@ export default function BusinessServicePage() {
                   </button>
                 </>
               )}
-              <button
-                onClick={() => navigate("/user")}
-                className="px-4 py-2 transition bg-white border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50"
-              >
-                개인 서비스
-              </button>
             </div>
           </div>
         </div>

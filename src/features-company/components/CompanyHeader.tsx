@@ -27,7 +27,7 @@ export default function CompanyHeader() {
     if (path.startsWith("/company/jobs")) return "jobs";
     if (path.startsWith("/company/applicants")) return "applicants";
     if (path.startsWith("/company/talent-search")) return "talent";
-    if (path.startsWith("/company/ads")) return "ads";
+    if (path.startsWith("/company/mypage")) return "companyMy";
     if (path.startsWith("/company/credit")) return "credit";
     return "";
   };
@@ -84,7 +84,7 @@ export default function CompanyHeader() {
       jobs: "jobs-sub-1",
       applicants: "applicants-sub-1",
       talent: "talent-sub-1",
-      ads: "ads-sub-1",
+      companyMy: "companyMy-sub-1",
       credit: "credit-sub-1",
     };
 
@@ -92,7 +92,7 @@ export default function CompanyHeader() {
       jobs: "/company/jobs",
       applicants: "/company/applicants",
       talent: "/company/talent-search",
-      ads: "/company/ads",
+      companyMy: "/company/mypage",
       credit: "/company/credit",
     };
 
@@ -263,12 +263,6 @@ export default function CompanyHeader() {
                   </button>
                 </>
               )}
-              <button
-                onClick={() => navigate("/user")}
-                className="px-4 py-2 transition bg-white border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50"
-              >
-                개인 서비스
-              </button>
             </div>
           </div>
         </div>

@@ -274,6 +274,16 @@ export default function MatchingPage({
         education: education,
         preferredLocation: preferredLocation
       };
+      
+      // target_role 영어로 변환 (한글이면 변환)
+      if (aiRequest.target_role && /[가-힣]/.test(aiRequest.target_role)) {
+        aiRequest.target_role = convertKoreanRole(aiRequest.target_role);
+        console.log("🔄 [DEBUG] Converted target_role to English:", aiRequest.target_role);
+      }
+      
+      // resumeMapper에서 이미 기본값 처리를 했으므로, 더미 데이터 로직 제거
+      // AI 서버가 빈 데이터를 허용하는지 확인 후, 필요시에만 추가 검증
+      console.log("🚀 [DEBUG] Final AI Request (sending to backend):", aiRequest);
 
 
       console.log("🚀 [DEBUG] AI 서버로 보낼 요청:", aiRequest);

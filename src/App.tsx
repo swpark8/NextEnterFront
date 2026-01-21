@@ -43,6 +43,7 @@ import ApplicantDetailPage from "./features-company/applicants/ApplicantDetailPa
 import ApplicantCompatibilityPage from "./features-company/applicants/ApplicantCompatibilityPage";
 import TalentSearchPage from "./features-company/talent-search/TalentSearchPage";
 import BusinessCreditPage from "./features-company/credit/BusinessCreditPage";
+import CompanyMyPage from "./features-company/company-mypage/CompanyMyPage";
 
 // 화면 전환시 상단으로 끌어 올림
 import ScrollToTop from "./components/ScrollToTop";
@@ -271,6 +272,14 @@ function App() {
               element={
                 <ProtectedRoute allowedUserType="company">
                   <TalentSearchPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="mypage"
+              element={
+                <ProtectedRoute allowedUserType="company">
+                  <CompanyMyPage />
                 </ProtectedRoute>
               }
             />

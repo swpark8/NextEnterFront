@@ -1,193 +1,305 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
+import { useAuth } from "../../context/AuthContext";
+import {
+  getCompanyProfile,
+  updateCompanyProfile,
+  changeCompanyPassword,
+} from "../../api/company";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
+import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
+import CompanyProfile from "./components/CompanyProfile";
+import AccountSecurity from "./components/AccountSecurity";
+import PaymentCredits from "./components/PaymentCredits";
+import NotificationSettings from "./components/NotificationSettings";
 
-export default function CompanyMyPage() {
+interface CompanyMyPageProps {
+  initialMenu?: string;
+}
+
+export default function CompanyMyPage({
+  initialMenu = "companyMy-sub-1",
+}: CompanyMyPageProps) {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  // 1. 네비게이션 훅 사용
   const { activeMenu, handleMenuClick } = useCompanyPageNavigation(
     "companyMy",
-    "companyMyPage-sub-1"
+    initialMenu,
   );
 
-  const [currentCredit] = useState(4200);
+  // 2. [수정완료] 크레딧 및 히스토리 정보 (setCurrentCredit 경고 해결을 위해 사용하지 않는 변수 제거)
+  const [currentCredit] = useState<number>(0);
+  const [creditHistory] = useState([
+    {
+      id: 1,
+      date: "2025.01.20 14:30",
+      type: "충전",
+      content: "크레딧 충전",
+      amount: "+1000",
+    },
+    {
+      id: 2,
+      date: "2025.01.19 10:15",
+      type: "사용",
+      content: "공고 등록 차감",
+      amount: "-100",
+    },
+    {
+      id: 3,
+      date: "2025.01.18 16:45",
+      type: "사용",
+      content: "인재 검색 차감",
+      amount: "-50",
+    },
+    {
+      id: 4,
+      date: "2025.01.17 09:20",
+      type: "충전",
+      content: "크레딧 충전",
+      amount: "+500",
+    },
+    {
+      id: 5,
+      date: "2025.01.16 11:30",
+      type: "사용",
+      content: "공고 등록 차감",
+      amount: "-100",
+    },
+  ]);
 
-  const recommendedApplicants = [
-    { name: "김0연", age: "23세", field: "무경력", cost: 50 },
-    { name: "송0서", age: "30세", field: "2년", cost: 110 },
-    { name: "유0현", age: "28세", field: "1년", cost: 80 },
-    { name: "서0민", age: "36세", field: "7년", cost: 400 },
-  ];
+  // 3. 로딩/에러 상태
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const appliedCandidates = [
-    { name: "이0영", age: "32세", status: "신입의 마음가짐으로..." },
-    { name: "고0영", age: "41세", status: "15년 이상의 경력..." },
-  ];
+  // 4. 기업 정보 상태
+  const [companyLogo, setCompanyLogo] = useState<string>("");
+  const [companyName, setCompanyName] = useState<string>("");
+  const [businessNumber, setBusinessNumber] = useState<string>("");
+  const [description, setDescription] = useState<string>("");
+  const [website, setWebsite] = useState<string>("");
+  const [industry, setIndustry] = useState<string>("");
+  const [companySize, setCompanySize] = useState<string>("");
+  const [address, setAddress] = useState<string>("");
+  const [employeeCount, setEmployeeCount] = useState<number>(0);
+  const [ceoName, setCeoName] = useState<string>("");
+  const [shortIntro, setShortIntro] = useState<string>("");
+  const [snsUrl, setSnsUrl] = useState<string>("");
+  const [detailAddress, setDetailAddress] = useState<string>("");
+  const [managerDepartment, setManagerDepartment] = useState<string>("");
 
-  const handleChargeClick = () => {
-    navigate("/company/credit/charge");
+  // 5. 계정 및 보안 상태
+  const [managerName, setManagerName] = useState<string>("");
+  const [managerPhone, setManagerPhone] = useState<string>("");
+  const [currentPassword, setCurrentPassword] = useState<string>("");
+  const [newPassword, setNewPassword] = useState<string>("");
+  const [confirmPassword, setConfirmPassword] = useState<string>("");
+
+  // 6. 알림 설정 상태
+  const [emailNewApplicant, setEmailNewApplicant] = useState<boolean>(true);
+  const [emailDeadlineAlert, setEmailDeadlineAlert] = useState<boolean>(true);
+  const [emailMarketing, setEmailMarketing] = useState<boolean>(false);
+
+  // 초기 데이터 로드
+  useEffect(() => {
+    const loadCompanyProfile = async () => {
+      if (!user?.companyId) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const profile = await getCompanyProfile(user.companyId);
+        setCompanyLogo(profile.logoUrl || "");
+        setCompanyName(profile.companyName || "");
+        setBusinessNumber(profile.businessNumber || "");
+        setDescription(profile.description || "");
+        setWebsite(profile.website || "");
+        setIndustry(profile.industry || "");
+        setCompanySize(profile.companySize || "");
+        setAddress(profile.address || "");
+        setEmployeeCount(profile.employeeCount || 0);
+        setManagerName(profile.managerName || "");
+        setManagerPhone(profile.managerPhone || "");
+        setCeoName(profile.ceoName || "");
+        setShortIntro(profile.shortIntro || "");
+        setSnsUrl(profile.snsUrl || "");
+        setDetailAddress(profile.detailAddress || "");
+        setManagerDepartment(profile.managerDepartment || "");
+      } catch (err: any) {
+        console.error("기업 프로필 로드 오류:", err);
+        setError("기업 정보를 불러오는데 실패했습니다.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadCompanyProfile();
+  }, [user?.companyId]);
+
+  // 기업 정보 저장
+  const handleSaveCompanyProfile = async () => {
+    if (!user?.companyId) return;
+    setLoading(true);
+    try {
+      let calculatedEmployeeCount = employeeCount;
+      if (companySize) {
+        if (companySize === "1-10명") calculatedEmployeeCount = 10;
+        else if (companySize === "11-50명") calculatedEmployeeCount = 50;
+        else if (companySize === "51-200명") calculatedEmployeeCount = 200;
+        else if (companySize === "201-500명") calculatedEmployeeCount = 500;
+        else if (companySize === "501-1000명") calculatedEmployeeCount = 1000;
+        else if (companySize === "1000명 이상") calculatedEmployeeCount = 1001;
+      }
+      await updateCompanyProfile(user.companyId, {
+        logoUrl: companyLogo,
+        description,
+        website,
+        industry,
+        employeeCount: calculatedEmployeeCount,
+        address,
+        managerName,
+        managerPhone,
+        ceoName,
+        shortIntro,
+        snsUrl,
+        detailAddress,
+        managerDepartment,
+      });
+      alert("기업 정보가 저장되었습니다.");
+    } catch (err: any) {
+      alert("기업 정보 저장에 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // 비밀번호 변경
+  const onChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      alert("비밀번호 변경의 모든 칸을 입력해주세요.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      alert("새 비밀번호가 일치하지 않습니다.");
+      return;
+    }
+    if (!user?.companyId) return;
+    setLoading(true);
+    try {
+      await changeCompanyPassword(user.companyId, currentPassword, newPassword);
+      alert("비밀번호가 변경되었습니다.\n보안을 위해 다시 로그인 해주세요.");
+      logout();
+      navigate("/company/login");
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message || "비밀번호 변경에 실패했습니다.";
+      alert(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading && !companyName) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-16 h-16 mx-auto mb-4 border-4 border-purple-600 rounded-full border-t-transparent animate-spin"></div>
+          <p className="text-gray-600">로딩 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="mb-4 text-4xl">⚠️</div>
+          <p className="text-red-600">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 mt-4 text-white bg-purple-600 rounded-lg hover:bg-purple-700"
+          >
+            새로고침
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="flex px-4 py-8 mx-auto max-w-7xl">
-        {/* 왼쪽 사이드바 */}
-        <CompanyLeftSidebar
-          activeMenu={activeMenu}
-          onMenuClick={handleMenuClick}
-        />
-
-        {/* 메인 컨텐츠 */}
-        <div className="flex-1 pl-6">
-          {/* 타이틀 & 충전 버튼 */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center justify-center w-12 h-12 text-xl text-white rounded-full bg-gradient-to-br from-yellow-400 to-orange-400">
-                🪙
-              </div>
-              <h1 className="text-2xl font-bold text-purple-600">
-                보유 크레딧
-              </h1>
+      <div className="px-4 py-8 mx-auto max-w-7xl">
+        <h1 className="mb-6 text-2xl font-bold">기업 마이페이지</h1>
+        <div className="flex gap-6">
+          <CompanyLeftSidebar
+            activeMenu={activeMenu}
+            onMenuClick={handleMenuClick}
+          />
+          <main className="flex-1">
+            <div className="p-8 bg-white border-2 border-purple-500 rounded-lg">
+              {activeMenu === "companyMy-sub-1" && (
+                <CompanyProfile
+                  loading={loading}
+                  companyLogo={companyLogo}
+                  setCompanyLogo={setCompanyLogo}
+                  companyName={companyName}
+                  ceoName={ceoName}
+                  setCeoName={setCeoName}
+                  businessNumber={businessNumber}
+                  description={description}
+                  setDescription={setDescription}
+                  shortIntro={shortIntro}
+                  setShortIntro={setShortIntro}
+                  website={website}
+                  setWebsite={setWebsite}
+                  snsUrl={snsUrl}
+                  setSnsUrl={setSnsUrl}
+                  industry={industry}
+                  setIndustry={setIndustry}
+                  companySize={companySize}
+                  setCompanySize={setCompanySize}
+                  address={address}
+                  detailAddress={detailAddress}
+                  setDetailAddress={setDetailAddress}
+                  onSave={handleSaveCompanyProfile}
+                />
+              )}
+              {activeMenu === "companyMy-sub-2" && (
+                <AccountSecurity
+                  email={user?.email || ""}
+                  managerName={managerName}
+                  setManagerName={setManagerName}
+                  managerPhone={managerPhone}
+                  setManagerPhone={setManagerPhone}
+                  managerDepartment={managerDepartment}
+                  setManagerDepartment={setManagerDepartment}
+                  currentPassword={currentPassword}
+                  setCurrentPassword={setCurrentPassword}
+                  newPassword={newPassword}
+                  setNewPassword={setNewPassword}
+                  confirmPassword={confirmPassword}
+                  setConfirmPassword={setConfirmPassword}
+                  onChangePassword={onChangePassword}
+                />
+              )}
+              {activeMenu === "companyMy-sub-3" && (
+                <PaymentCredits
+                  currentCredit={currentCredit}
+                  creditHistory={creditHistory}
+                />
+              )}
+              {activeMenu === "companyMy-sub-4" && (
+                <NotificationSettings
+                  emailNewApplicant={emailNewApplicant}
+                  setEmailNewApplicant={setEmailNewApplicant}
+                  emailDeadlineAlert={emailDeadlineAlert}
+                  setEmailDeadlineAlert={setEmailDeadlineAlert}
+                  emailMarketing={emailMarketing}
+                  setEmailMarketing={setEmailMarketing}
+                />
+              )}
             </div>
-            <button
-              onClick={handleChargeClick}
-              className="flex items-center px-6 py-2 space-x-2 font-semibold text-purple-600 transition bg-white border-2 border-purple-600 rounded-lg hover:bg-purple-50"
-            >
-              <span>+</span>
-              <span>충전하기</span>
-            </button>
-          </div>
-
-          {/* 크레딧 카드 */}
-          <div className="p-8 mb-8 shadow-lg bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-400 rounded-2xl">
-            <div className="flex items-center justify-between">
-              <div className="text-white">
-                <div className="mb-2 text-xl font-semibold">
-                  기업회원님의 현재 사용 가능 크레딧
-                </div>
-              </div>
-              <div className="flex items-center px-10 py-5 space-x-3 bg-white rounded-full shadow-lg">
-                <span className="text-5xl font-bold text-gray-900">
-                  {currentCredit.toLocaleString()}
-                </span>
-                <div className="flex items-center justify-center w-12 h-12 text-2xl rounded-full bg-gradient-to-br from-yellow-400 to-orange-400">
-                  🪙
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 그리드 레이아웃 */}
-          <div className="grid grid-cols-2 gap-6">
-            {/* 왼쪽 상단: 추천 지원자에게 연락 보내기 */}
-            <div className="p-6 bg-white border-2 border-purple-500 shadow-lg rounded-2xl">
-              <div className="flex items-center mb-6 space-x-2">
-                <span className="text-2xl">⭐</span>
-                <h2 className="text-xl font-bold text-gray-900">
-                  추천 지원자에게 연락 보내기
-                </h2>
-              </div>
-              <div className="overflow-hidden border-2 border-purple-300 rounded-xl">
-                <table className="w-full">
-                  <tbody className="divide-y divide-purple-200">
-                    {recommendedApplicants.map((candidate, idx) => (
-                      <tr key={idx} className="transition hover:bg-purple-50">
-                        <td className="px-6 py-4 font-bold text-gray-900">
-                          {candidate.name}
-                        </td>
-                        <td className="px-6 py-4 font-semibold text-gray-700">
-                          {candidate.age}
-                        </td>
-                        <td className="px-6 py-4 font-semibold text-gray-700">
-                          {candidate.field}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center justify-center space-x-2">
-                            <span className="text-xl">🪙</span>
-                            <span className="text-lg font-bold text-gray-900">
-                              {candidate.cost}
-                            </span>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* 오른쪽 상단: 내가 올린 공고 보기 */}
-            <div className="p-6 bg-white border-2 border-purple-500 shadow-lg rounded-2xl">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-2">
-                  <span className="text-2xl">📋</span>
-                  <h2 className="text-xl font-bold text-gray-900">
-                    내가 올린 공고 보기
-                  </h2>
-                </div>
-                <button
-                  onClick={() => navigate("/company/jobs/create")}
-                  className="text-3xl font-bold text-purple-600 hover:text-purple-700"
-                >
-                  +
-                </button>
-              </div>
-              <div className="p-12 text-center border-2 border-gray-300 border-dashed bg-gray-50 rounded-xl">
-                <div className="mb-4">
-                  <h3 className="mb-4 text-xl font-bold text-gray-900">
-                    등록된 공고가 없습니다
-                  </h3>
-                </div>
-                <button
-                  onClick={() => navigate("/company/jobs")}
-                  className="px-6 py-2 text-purple-600 transition border-2 border-purple-600 rounded-lg hover:bg-purple-50"
-                >
-                  공고 관리 바로가기
-                </button>
-              </div>
-            </div>
-
-            {/* 왼쪽 하단: 크레딧은 어디에 쓸 수 있나요? */}
-            <div className="p-6 bg-white border-2 border-gray-200 shadow-lg rounded-2xl">
-              <div className="pl-4 mb-6 border-l-4 border-red-500">
-                <h3 className="text-xl font-bold text-gray-900">
-                  크레딧은 어디에 쓸 수 있나요?
-                </h3>
-              </div>
-              <ol className="space-y-3 text-base text-gray-700 list-decimal list-inside">
-                <li>인재 검색 및 이력서 열람</li>
-                <li>채용 공고 프리미엄 노출</li>
-                <li>지원자에게 면접 제안 발송</li>
-              </ol>
-            </div>
-
-            {/* 오른쪽 하단: 지원한 인재 */}
-            <div className="p-6 bg-white border-2 border-purple-500 shadow-lg rounded-2xl">
-              <div className="flex items-center mb-6 space-x-2">
-                <span className="text-2xl">👤</span>
-                <h2 className="text-xl font-bold text-gray-900">지원한 인재</h2>
-              </div>
-              <div className="overflow-hidden border-2 border-purple-300 rounded-xl">
-                <table className="w-full">
-                  <tbody className="divide-y divide-purple-200">
-                    {appliedCandidates.map((candidate, idx) => (
-                      <tr key={idx} className="transition hover:bg-purple-50">
-                        <td className="px-6 py-4 font-bold text-gray-900">
-                          {candidate.name}
-                        </td>
-                        <td className="px-6 py-4 font-semibold text-gray-700">
-                          {candidate.age}
-                        </td>
-                        <td className="max-w-xs px-6 py-4 text-gray-700 truncate">
-                          {candidate.status}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+          </main>
         </div>
       </div>
     </div>

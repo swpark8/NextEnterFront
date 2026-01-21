@@ -11,7 +11,7 @@
    - 검색 기능 (Enter로 검색)
    - 로그인 버튼
    - 회원가입 버튼
-   - 기업 서비스 버튼
+   - 기업 서비스 버튼 // 1.21 삭제했음.
 
 2. **네비게이션 메뉴**
    - 채용정보, 이력서, 매칭분석, 면접준비, 마이페이지
@@ -33,11 +33,13 @@
 ## 🚀 설치 및 실행
 
 ### 1. 의존성 설치
+
 ```bash
 npm install
 ```
 
 ### 2. 개발 서버 실행
+
 ```bash
 npm run dev
 ```
@@ -45,6 +47,7 @@ npm run dev
 브라우저에서 `http://localhost:5173`으로 접속
 
 ### 3. 프로덕션 빌드
+
 ```bash
 npm run build
 npm run preview
@@ -77,6 +80,7 @@ NextEnterFront/
 1. **이미지를 `public/images/` 폴더에 추가**
 
 2. **`App.tsx`에서 데이터 수정**
+
 ```typescript
 const recommendedJobs = [
   {
@@ -91,6 +95,7 @@ const recommendedJobs = [
 ```
 
 3. **JobCard 컴포넌트에 전달**
+
 ```typescript
 <JobCard
   {...job}
@@ -129,9 +134,10 @@ const mustSeeJobs = [
 ## 💡 개발 팁
 
 ### 버튼에 기능 추가
+
 ```typescript
 // Header.tsx
-<button 
+<button
   onClick={() => {
     // 로그인 페이지로 이동
     window.location.href = '/login';
@@ -142,6 +148,7 @@ const mustSeeJobs = [
 ```
 
 ### 공고 클릭 시 상세 페이지로 이동
+
 ```typescript
 const handleJobClick = (id: number) => {
   window.location.href = `/jobs/${id}`;

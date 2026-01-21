@@ -28,7 +28,12 @@ export const companyNavigationMenuData = {
   companyMy: {
     id: "companyMy",
     title: "마이페이지",
-    items: [{ id: "companyMy-sub-1", label: "나의 회사 정보" }],
+    items: [
+      { id: "companyMy-sub-1", label: "나의 회사 정보" },
+      { id: "companyMy-sub-2", label: "계정 및 보안" },
+      { id: "companyMy-sub-3", label: "결제 및 크레딧" },
+      { id: "companyMy-sub-4", label: "알림 설정" },
+    ],
   },
   credit: {
     id: "credit",
