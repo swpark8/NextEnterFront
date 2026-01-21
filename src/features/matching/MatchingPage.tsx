@@ -1,14 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-<<<<<<< Updated upstream
 import { getResumeList, getResumeDetail } from "../../api/resume";
 import { getJobPostings } from "../../api/job";
 import { getAiRecommendation, CompanyInfo } from "../../api/ai";
 import { mapResumeToAiFormat } from "../../utils/resumeMapper";
-=======
-import { getResumeList, getResumeDetail, getAIRecommendation, AIRecommendRequest } from "../../api/resume";
->>>>>>> Stashed changes
 import MatchingSidebar from "./components/MatchingSidebar";
 import MatchingHistoryPage from "./components/MatchingHistoryPage";
 import ConfirmDialog from "./components/ConfirmDialog";
@@ -40,7 +36,6 @@ export default function MatchingPage({
   const navigate = useNavigate();
   const { user } = useAuth();
   
-  // [Auto-Merge] Incoming 브랜치의 usePageNavigation 훅 사용 (사이드바 연동)
   const { activeMenu, handleMenuClick, setActiveMenu } = usePageNavigation(
     "matching",
     initialMenu || "matching-sub-1",
@@ -51,15 +46,9 @@ export default function MatchingPage({
   const [currentCredit, setCurrentCredit] = useState(200);
   const [hasAnalysis, setHasAnalysis] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-<<<<<<< Updated upstream
   const [recommendedCompanies, setRecommendedCompanies] = useState<CompanyInfo[]>([]);
   const [aiReport, setAiReport] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-=======
-  const [aiCompanies, setAICompanies] = useState<any>([]);
-  const [aiReport, setAIReport] = useState<any>("");
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
->>>>>>> Stashed changes
 
   // Context에서 실제 데이터 가져오기 - 기업 공고 사용!
   const { resumes, businessJobs, addMatchingHistory, setResumes, setBusinessJobs } = useApp();
@@ -162,7 +151,6 @@ export default function MatchingPage({
   };
 
   const handleConfirmAnalysis = async () => {
-<<<<<<< Updated upstream
     setShowConfirmDialog(false);
     setIsLoading(true);
 
@@ -206,8 +194,6 @@ export default function MatchingPage({
         console.log("🔄 [DEBUG] Converted target_role to English:", aiRequest.target_role);
       }
       
-      // resumeMapper에서 이미 기본값 처리를 했으므로, 더미 데이터 로직 제거
-      // AI 서버가 빈 데이터를 허용하는지 확인 후, 필요시에만 추가 검증
       console.log("🚀 [DEBUG] Final AI Request (sending to backend):", aiRequest);
 
       // 4. AI 추천 API 호출
@@ -253,44 +239,6 @@ export default function MatchingPage({
       alert("AI 분석 중 오류가 발생했습니다. NextEnterAI 서버가 실행 중인지 확인해주세요.");
     } finally {
       setIsLoading(false);
-=======
-    setIsAnalyzing(true);
-    setShowConfirmDialog(false);
-
-    try {
-      // 1. 선택된 이력서 상세 정보 가져오기
-      const resumeDetail = await getResumeDetail(
-        Number(selectedResume),
-        user!.userId
-      );
-
-      // 2. AI 요청 데이터 구성
-      const aiRequest: AIRecommendRequest = {
-        id: selectedResume,
-        target_role: resumeDetail.jobCategory || "Backend Developer",
-        resume_content: JSON.parse(resumeDetail.structuredData || "{}"),
-      };
-
-      // 3. AI API 호출
-      const result = await getAIRecommendation(aiRequest);
-
-      // 4. 결과 저장
-      setAICompanies(result.companies);
-      setAIReport(result.ai_report);
-
-      // 5. 최고 점수 매칭 점수 사용
-      const topScore = result.companies[0]?.score || 0;
-      setMatchingScore(Math.round(topScore));
-
-      // 6. 크레딧 차감 및 완료
-      setCurrentCredit(currentCredit - CREDIT_COST);
-      setHasAnalysis(true);
-    } catch (error) {
-      console.error("AI 분석 오류:", error);
-      alert("AI 분석 중 오류가 발생했습니다.");
-    } finally {
-      setIsAnalyzing(false);
->>>>>>> Stashed changes
     }
   };
 
