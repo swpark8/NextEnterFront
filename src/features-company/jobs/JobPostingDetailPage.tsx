@@ -37,6 +37,13 @@ export default function JobPostingDetailPage() {
     loadJobPosting();
   }, [jobId, navigate]);
 
+  const handleApplicantsClick = () => {
+    if (job?.jobId) {
+      // 해당 공고의 지원자 목록으로 이동
+      navigate(`/company/applicants?jobId=${job.jobId}&jobTitle=${encodeURIComponent(job.title)}`);
+    }
+  };
+
   const handleBackClick = () => {
     navigate("/company/jobs");
   };
@@ -184,12 +191,15 @@ export default function JobPostingDetailPage() {
               {job.viewCount}
             </div>
           </div>
-          <div className="p-6 bg-white rounded-lg shadow">
-            <div className="mb-1 text-sm text-gray-500">지원자</div>
+          <button
+            onClick={handleApplicantsClick}
+            className="p-6 bg-white rounded-lg shadow transition hover:shadow-lg hover:border-blue-300 border-2 border-transparent cursor-pointer text-left"
+          >
+            <div className="mb-1 text-sm text-gray-500">지원자 클릭 시 목록보기</div>
             <div className="text-3xl font-bold text-blue-600">
               {job.applicantCount}
             </div>
-          </div>
+          </button>
           <div className="p-6 bg-white rounded-lg shadow">
             <div className="mb-1 text-sm text-gray-500">북마크</div>
             <div className="text-3xl font-bold text-orange-600">

@@ -35,6 +35,7 @@ import UserJobDetailPage from "./features/all-jobs/UserJobDetailPage";
 
 // 기업회원 페이지들
 import CompanyHomePage from "./features-company/home/CompanyHomePage";
+import AllJobPostingsPage from "./features-company/jobs/AllJobPostingsPage";
 import JobManagementPage from "./features-company/jobs/JobManagementPage";
 import JobPostingCreatePage from "./features-company/jobs/JobPostingCreatePage";
 import JobPostingDetailPage from "./features-company/jobs/JobPostingDetailPage";
@@ -210,6 +211,14 @@ function App() {
             />
 
             {/* 보호된 페이지 (로그인 필요 + 기업회원만) */}
+            <Route
+              path="jobs/all"
+              element={
+                <ProtectedRoute allowedUserType="company">
+                  <AllJobPostingsPage />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="jobs"
               element={

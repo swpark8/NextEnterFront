@@ -60,16 +60,17 @@ export const useCompanyPageNavigation = (
     }
 
     if (targetTab === currentPageId) {
-      // 현재 페이지 내에서 탭만 변경 (광고 제거됨)
+      // 현재 페이지 내에서 탭만 변경
       const baseRoutes: { [key: string]: string } = {
-        jobs: "/company/jobs",
+        "jobs-sub-1": "/company/jobs/all",
+        "jobs-sub-2": "/company/jobs",
         applicants: "/company/applicants",
         talent: "/company/talent-search",
         companyMy: "/company/mypage",
         credit: "/company/credit",
       };
 
-      const targetBaseRoute = baseRoutes[targetTab];
+      const targetBaseRoute = baseRoutes[menuId] || baseRoutes[targetTab];
 
       if (targetBaseRoute && location.pathname !== targetBaseRoute) {
         navigate(`${targetBaseRoute}?menu=${menuId}`);
@@ -82,15 +83,17 @@ export const useCompanyPageNavigation = (
       if (callback) {
         callback(targetTab, menuId);
       } else {
-        // 다른 대분류 페이지로 이동 (광고 제거됨)
+        // 다른 대분류 페이지로 이동
         const routes: { [key: string]: string } = {
+          "jobs-sub-1": "/company/jobs/all",
+          "jobs-sub-2": "/company/jobs",
           jobs: "/company/jobs",
           applicants: "/company/applicants",
           talent: "/company/talent-search",
           companyMy: "/company/mypage",
           credit: "/company/credit",
         };
-        const route = routes[targetTab];
+        const route = routes[menuId] || routes[targetTab];
         if (route) {
           navigate(`${route}?menu=${menuId}`);
         }

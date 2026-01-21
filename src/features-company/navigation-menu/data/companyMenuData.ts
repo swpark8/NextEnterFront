@@ -3,9 +3,10 @@
 export const companyNavigationMenuData = {
   jobs: {
     id: "jobs",
-    title: "채용공고 관리",
+    title: "채용 관리",
     items: [
-      { id: "jobs-sub-1", label: "공고 목록" },
+      { id: "jobs-sub-1", label: "전체 공고 목록" },
+      { id: "jobs-sub-2", label: "내 공고 관리" },
     ],
   },
   applicants: {

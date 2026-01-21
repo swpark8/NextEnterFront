@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
@@ -13,12 +13,20 @@ import { getJobPostings, type JobPostingListResponse } from "../../api/job";
 export default function ApplicantManagementPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  
+  // URL에서 jobId와 jobTitle 가져오기
+  const urlJobId = searchParams.get("jobId");
+  const urlJobTitle = searchParams.get("jobTitle");
+  
   const { activeMenu, handleMenuClick } = useCompanyPageNavigation(
     "applicants",
     "applicants-sub-1"
   );
 
-  const [selectedJobPosting, setSelectedJobPosting] = useState<string>("전체");
+  const [selectedJobPosting, setSelectedJobPosting] = useState<string>(
+    urlJobTitle ? decodeURIComponent(urlJobTitle) : "전체"
+  );
   const [selectedJobCategory, setSelectedJobCategory] = useState("전체");
   const [experienceRange, setExperienceRange] = useState("전체");
 
@@ -247,7 +255,14 @@ export default function ApplicantManagementPage() {
         {/* 메인 컨텐츠 */}
         <main className="flex-1 min-w-0">
           <div className="p-8 bg-white shadow-lg rounded-2xl">
-            <h1 className="mb-8 text-2xl font-bold">지원자 관리</h1>
+            <div className="flex items-center justify-between mb-8">
+              <h1 className="text-2xl font-bold">지원자 관리</h1>
+              {urlJobTitle && (
+                <div className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 rounded-lg">
+                  필터: {decodeURIComponent(urlJobTitle)} 공고의 지원자
+                </div>
+              )}
+            </div>
 
             {/* 필터 섹션 */}
             <div className="grid grid-cols-3 gap-4 mb-8">

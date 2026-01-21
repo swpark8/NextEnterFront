@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getJobPosting, type JobPostingResponse } from "../../api/job";
 import { createApply, type ApplyCreateRequest } from "../../api/apply";
-import { toggleBookmark, checkBookmark } from "../api/bookmark";
-import { useApp } from "../context/AppContext";
-import { useAuth } from "../context/AuthContext";
+import { toggleBookmark, checkBookmark } from "../../api/bookmark";
+import { useApp } from "../../context/AppContext";
+import { useAuth } from "../../context/AuthContext";
 
 export default function UserJobDetailPage() {
   const navigate = useNavigate();

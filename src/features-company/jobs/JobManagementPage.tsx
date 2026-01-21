@@ -14,7 +14,7 @@ export default function JobManagementPage() {
   const { user } = useAuth();
   const { activeMenu, handleMenuClick } = useCompanyPageNavigation(
     "jobs",
-    "jobs-sub-1"
+    "jobs-sub-2"
   );
 
   const [selectedStatus, setSelectedStatus] = useState("전체");
@@ -66,6 +66,11 @@ export default function JobManagementPage() {
 
   const handleJobClick = (jobId: number) => {
     navigate(`/company/jobs/${jobId}`);
+  };
+
+  const handleApplicantsClick = (e: React.MouseEvent, job: JobPostingListResponse) => {
+    e.stopPropagation(); // 카드 클릭 이벤트 방지
+    navigate(`/company/applicants?jobId=${job.jobId}&jobTitle=${encodeURIComponent(job.title)}`);
   };
 
   const handleEdit = (jobId: number) => {
@@ -194,7 +199,7 @@ export default function JobManagementPage() {
         {/* 메인 컨텐츠 */}
         <div className="flex-1 pl-6">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold">공고 관리</h1>
+            <h1 className="text-2xl font-bold">내 공고 관리</h1>
             <button
               onClick={handleNewJob}
               className="px-6 py-2 text-white transition bg-purple-600 rounded-lg hover:bg-purple-700"
@@ -325,13 +330,18 @@ export default function JobManagementPage() {
 
                 <div className="pt-4 mb-4 border-t border-gray-200">
                   <div className="grid grid-cols-2 gap-4 text-center">
-                    <div>
-                      <div className="text-2xl font-bold text-purple-600">
+                    <button
+                      onClick={(e) => handleApplicantsClick(e, job)}
+                      className="p-2 transition rounded-lg hover:bg-purple-50 group"
+                    >
+                      <div className="text-2xl font-bold text-purple-600 group-hover:text-purple-700">
                         {job.applicantCount || 0}
                       </div>
-                      <div className="text-sm text-gray-500">지원자</div>
-                    </div>
-                    <div>
+                      <div className="text-sm text-gray-500 group-hover:text-purple-600">
+                        지원자 보기 →
+                      </div>
+                    </button>
+                    <div className="p-2">
                       <div className="text-2xl font-bold text-purple-600">
                         {calculateAverageScore()}
                       </div>
