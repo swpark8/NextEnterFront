@@ -1,24 +1,43 @@
 import { useState, useEffect } from "react";
 import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
-import { searchTalents, TalentSearchResponse } from "../../api/talent";
-import { getResumeList, ResumeListItem } from "../../api/resume"; // 임시 해결책용
+import { searchTalents, TalentSearchResponse, saveTalent, unsaveTalent, contactTalent } from "../../api/talent";
+import TalentResumeDetailPage from "./TalentResumeDetailPage";
+import { useAuth } from "../../context/AuthContext";
 
 export default function TalentSearchPage() {
+  const { user } = useAuth();
   const { activeMenu, handleMenuClick } = useCompanyPageNavigation("talent", "talent-sub-1");
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState(""); // ✅ 검색 입력창 별도 관리
   const [selectedPosition, setSelectedPosition] = useState("전체");
   const [selectedExperience, setSelectedExperience] = useState("전체");
   const [talents, setTalents] = useState<TalentSearchResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  
+  // ✅ 상세보기 상태 추가
+  const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
 
   // 이력서 데이터 로드
   useEffect(() => {
     loadTalents();
-  }, [selectedPosition, selectedExperience, searchQuery, currentPage]);
+  }, [selectedPosition, selectedExperience, searchQuery, currentPage]); // searchQuery로 변경
+
+  // ✅ 검색 실행 함수
+  const handleSearch = () => {
+    setSearchQuery(searchInput);
+    setCurrentPage(0); // 검색 시 페이지 초기화
+  };
+
+  // ✅ Enter 키 처리
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
 
   const loadTalents = async () => {
     setIsLoading(true);
@@ -39,19 +58,8 @@ export default function TalentSearchPage() {
       }
 
       const response = await searchTalents(params);
-      
-      // ✅ 백엔드 API가 비어있으면 임시 해결책 사용
-      if (response.content.length === 0 && response.totalElements === 0) {
-        console.log("🚧 [임시해결책] 로컬 이력서 목록에서 공개된 이력서 필터링...");
-        
-        // 모든 사용자의 이력서를 가져오는 API가 없으므로 빈 결과 표시
-        setTalents([]);
-        setTotalPages(0);
-        console.log("⚠️ [임시해결책] 백엔드 API가 필요합니다. /api/resume/search 또는 /api/resume/public 엔드포인트를 구현해주세요.");
-      } else {
-        setTalents(response.content);
-        setTotalPages(response.totalPages);
-      }
+      setTalents(response.content);
+      setTotalPages(response.totalPages);
     } catch (error) {
       console.error("인재 검색 오류:", error);
       setTalents([]);
@@ -73,13 +81,64 @@ export default function TalentSearchPage() {
     return false;
   });
 
-  const handleContact = (talentId: number) => {
-    console.log(`인재 ${talentId} 연락하기`);
+  const handleContact = async (talentId: number, e: React.MouseEvent) => {
+    e.stopPropagation(); // ✅ 카드 클릭 이벤트 방지
+    
+    if (!user?.userId) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+    
+    const message = prompt("인재에게 보낼 메시지를 입력하세요:");
+    if (!message) return;
+    
+    try {
+      const response = await contactTalent(talentId, message, user.userId);
+      if (response.success) {
+        alert("연락 요청이 전송되었습니다!");
+      }
+    } catch (error: any) {
+      console.error("연락 요청 오류:", error);
+      alert(error.response?.data?.message || "연락 요청에 실패했습니다.");
+    }
   };
 
-  const handleSave = (talentId: number) => {
-    console.log(`인재 ${talentId} 저장하기`);
+  const handleSave = async (talentId: number, e: React.MouseEvent) => {
+    e.stopPropagation(); // ✅ 카드 클릭 이벤트 방지
+    
+    if (!user?.userId) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+    
+    try {
+      const response = await saveTalent(talentId, user.userId);
+      if (response.success) {
+        alert("인재가 저장되었습니다!");
+      } else {
+        alert("이미 저장된 인재입니다.");
+      }
+    } catch (error: any) {
+      console.error("인재 저장 오류:", error);
+      alert(error.response?.data?.message || "인재 저장에 실패했습니다.");
+    }
   };
+  
+  // ✅ 인재 클릭 시 상세보기
+  const handleTalentClick = (resumeId: number) => {
+    setSelectedResumeId(resumeId);
+  };
+  
+  // ✅ 상세보기에서 돌아오기
+  const handleBackToList = () => {
+    setSelectedResumeId(null);
+    loadTalents(); // 목록 새로고침
+  };
+  
+  // ✅ 상세보기 페이지 표시
+  if (selectedResumeId) {
+    return <TalentResumeDetailPage resumeId={selectedResumeId} onBack={handleBackToList} />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -143,13 +202,22 @@ export default function TalentSearchPage() {
               <label className="block mb-2 text-sm font-medium text-gray-700">
                 검색
               </label>
-              <input
-                type="text"
-                placeholder="기술 스택으로 검색"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="기술 스택으로 검색"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
+                />
+                <button
+                  onClick={handleSearch}
+                  className="px-6 py-2 text-white transition bg-purple-600 rounded-lg hover:bg-purple-700"
+                >
+                  검색
+                </button>
+              </div>
             </div>
           </div>
 
@@ -161,15 +229,7 @@ export default function TalentSearchPage() {
           ) : filteredTalents.length === 0 ? (
             <div className="py-20 text-center text-gray-500">
               <p className="mb-2 text-lg">검색 결과가 없습니다.</p>
-              <p className="mb-4 text-sm">다른 조건으로 검색해보세요.</p>
-              <div className="p-4 mx-auto mt-6 text-sm text-left bg-yellow-50 border border-yellow-200 rounded-lg max-w-2xl">
-                <div className="font-bold text-yellow-800 mb-2">💡 확인 사항:</div>
-                <ul className="space-y-1 text-yellow-700">
-                  <li>• 개인 사용자가 이력서를 "공개" 설정으로 저장했나요?</li>
-                  <li>• 백엔드 API가 공개된 이력서만 반환하도록 구현되었나요?</li>
-                  <li>• <code className="px-2 py-1 bg-yellow-100 rounded">/api/resume/search</code> 또는 <code className="px-2 py-1 bg-yellow-100 rounded">/api/resume/public</code> 엔드포인트가 필요합니다.</li>
-                </ul>
-              </div>
+              <p className="text-sm">다른 조건으로 검색해보세요.</p>
             </div>
           ) : (
             <>
@@ -180,7 +240,8 @@ export default function TalentSearchPage() {
                 {filteredTalents.map((talent) => (
                   <div
                     key={talent.resumeId}
-                    className="p-6 transition bg-white border border-gray-200 rounded-xl hover:shadow-lg"
+                    onClick={() => handleTalentClick(talent.resumeId)}
+                    className="p-6 transition bg-white border border-gray-200 cursor-pointer rounded-xl hover:shadow-lg hover:border-purple-300"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -245,13 +306,13 @@ export default function TalentSearchPage() {
 
                         <div className="flex flex-col w-32 gap-2">
                           <button
-                            onClick={() => handleContact(talent.resumeId)}
+                            onClick={(e) => handleContact(talent.resumeId, e)}
                             className="px-4 py-2 text-white transition bg-purple-600 rounded-lg hover:bg-purple-700"
                           >
                             연락하기
                           </button>
                           <button
-                            onClick={() => handleSave(talent.resumeId)}
+                            onClick={(e) => handleSave(talent.resumeId, e)}
                             className="px-4 py-2 text-gray-700 transition bg-gray-100 rounded-lg hover:bg-gray-200"
                           >
                             저장

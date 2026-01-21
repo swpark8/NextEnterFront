@@ -150,6 +150,19 @@ export const getResumeDetail = async (
   return response.data;
 };
 
+// ✅ 공개 이력서 조회 (기업회원용)
+export const getPublicResumeDetail = async (
+  resumeId: number,
+  viewerId: number
+): Promise<ResumeResponse> => {
+  const response = await api.get<ResumeResponse>(`/api/resume/public/${resumeId}`, {
+    headers: {
+      userId: viewerId.toString(),
+    },
+  });
+  return response.data;
+};
+
 // ✅ 이력서 생성 (백엔드 응답: {resumeId: number})
 export const createResume = async (
   request: CreateResumeRequest,

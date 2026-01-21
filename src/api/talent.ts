@@ -35,31 +35,53 @@ export const searchTalents = async (params?: {
 }): Promise<PageResponse<TalentSearchResponse>> => {
   console.log("🔍 [인재검색] 검색 파라미터:", params);
   
-  try {
-    // 백엔드에 /api/resume/search 엔드포인트가 있다면 사용
-    console.log("🚀 [인재검색] /api/resume/search 호출 시도...");
-    const response = await api.get(`${API_BASE_URL}/search`, { params });
-    console.log("✅ [인재검색] 검색 결과:", response.data);
-    return response.data;
-  } catch (error: any) {
-    // 엔드포인트가 없다면 /api/resume/public을 시도
-    console.log("⚠️ [인재검색] search 엔드포인트 실패, public 엔드포인트 시도:", error.response?.status);
-    try {
-      console.log("🚀 [인재검색] /api/resume/public 호출 시도...");
-      const response = await api.get(`${API_BASE_URL}/public`, { params });
-      console.log("✅ [인재검색] public 결과:", response.data);
-      return response.data;
-    } catch (publicError: any) {
-      console.error("❌ [인재검색] public 엔드포인트도 실패:", publicError.response?.status, publicError.response?.data);
-      // 임시로 빈 결과 반환
-      console.log("🚧 [인재검색] 빈 결과 반환");
-      return {
-        content: [],
-        totalPages: 0,
-        totalElements: 0,
-        size: params?.size || 20,
-        number: params?.page || 0,
-      };
+  // 백엔드 /api/resume/search 엔드포인트 호출
+  console.log("🚀 [인재검색] /api/resume/search 호출 시도...");
+  const response = await api.get(`${API_BASE_URL}/search`, { params });
+  console.log("✅ [인재검색] 검색 결과:", response.data);
+  return response.data;
+};
+
+// ✅ 인재 저장 (북마크)
+export const saveTalent = async (resumeId: number, companyUserId: number) => {
+  const response = await api.post(`${API_BASE_URL}/save/${resumeId}`, null, {
+    headers: {
+      userId: companyUserId.toString(),
+    },
+  });
+  return response.data;
+};
+
+// ✅ 인재 저장 취소
+export const unsaveTalent = async (resumeId: number, companyUserId: number) => {
+  const response = await api.delete(`${API_BASE_URL}/save/${resumeId}`, {
+    headers: {
+      userId: companyUserId.toString(),
+    },
+  });
+  return response.data;
+};
+
+// ✅ 인재 저장 여부 확인
+export const checkSavedTalent = async (resumeId: number, companyUserId: number) => {
+  const response = await api.get(`${API_BASE_URL}/save/check/${resumeId}`, {
+    headers: {
+      userId: companyUserId.toString(),
+    },
+  });
+  return response.data;
+};
+
+// ✅ 인재 연락하기
+export const contactTalent = async (resumeId: number, message: string, companyUserId: number) => {
+  const response = await api.post(
+    `${API_BASE_URL}/contact`,
+    { resumeId, message },
+    {
+      headers: {
+        userId: companyUserId.toString(),
+      },
     }
-  }
+  );
+  return response.data;
 };
