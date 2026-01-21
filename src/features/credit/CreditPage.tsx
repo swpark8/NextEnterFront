@@ -4,6 +4,7 @@ import { useApp } from "../../context/AppContext";
 import CreditSidebar from "./components/CreditSidebar";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 import { getActiveAdvertisements, Advertisement } from "../../api/advertisement";
+import { getCreditBalance } from "../../api/credit";
 
 interface CreditPageProps {
   onNavigate?: (page: string, subMenu?: string) => void;
@@ -24,6 +25,7 @@ export default function CreditPage({
   // ✅ AppContext에서 실제 데이터 가져오기
   const { 
     creditBalance, 
+    setCreditBalance, // ✅ 추가
     creditTransactions, 
     coupons, 
     useCoupon,
@@ -56,6 +58,34 @@ export default function CreditPage({
 
     fetchAdvertisements();
   }, []);
+
+// ✅ 크레딧 잔액 조회 (백엔드에서 가져오기)
+useEffect(() => {
+  const fetchCreditBalance = async () => {
+    if (user?.userId) {
+      try {
+        const balance = await getCreditBalance(user.userId);
+        setCreditBalance(balance.balance); // ✅ Context에 반영
+        // localStorage에도 저장
+        localStorage.setItem('nextenter_credit_balance', balance.balance.toString());
+      } catch (error) {
+        console.error("크레딧 잔액 조회 실패:", error);
+        // ⚠️ API 호출 실패 시 기존 값 유지 (0으로 초기화하지 않음)
+        // localStorage에 저장된 값이 있으면 그대로 사용
+        const savedBalance = localStorage.getItem('nextenter_credit_balance');
+        if (savedBalance) {
+          console.log("저장된 크레딧 사용:", savedBalance);
+        } else {
+          // localStorage에도 없으면 신규 회원이므로 0으로 설정
+          setCreditBalance(0);
+          localStorage.setItem('nextenter_credit_balance', '0');
+        }
+      }
+    }
+  };
+
+  fetchCreditBalance();
+}, [user?.userId, setCreditBalance]);
 
   // ✅ 사용 가능한 쿠폰만 필터링
   const availableCoupons = useMemo(() => {

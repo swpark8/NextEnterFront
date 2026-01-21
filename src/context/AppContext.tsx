@@ -153,9 +153,10 @@ interface AppContextType {
   jobListings: JobListing[];
   businessJobs: BusinessJob[];
   jobApplications: JobApplication[];
-  creditBalance: number; // ✅ 추가
-  creditTransactions: CreditTransaction[]; // ✅ 추가
-  coupons: Coupon[]; // ✅ 추가
+  creditBalance: number;
+  setCreditBalance: (balance: number) => void; // ✅ 추가
+  creditTransactions: CreditTransaction[];
+  coupons: Coupon[];
   matchingHistory: MatchingHistory[];
   interviewResults: InterviewResult[];
   interviewHistories: InterviewHistory[];
@@ -172,8 +173,8 @@ interface AppContextType {
   setBusinessJobs: (jobs: BusinessJob[]) => void;
   addJobApplication: (application: JobApplication) => void;
   cancelJobApplication: (id: number) => void;
-  addCreditTransaction: (transaction: Omit<CreditTransaction, 'id' | 'balance'>) => void; // ✅ 추가
-  useCoupon: (id: number) => void; // ✅ 추가
+  addCreditTransaction: (transaction: Omit<CreditTransaction, 'id' | 'balance'>) => void;
+  useCoupon: (id: number) => void;
   addMatchingHistory: (history: MatchingHistory) => void;
   clearMatchingHistory: () => void;
   addInterviewResult: (result: InterviewResult) => void;
@@ -250,6 +251,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const [creditBalance, setCreditBalanceState] = useState<number>(loadCreditBalanceFromStorage());
+
+  // ✅ 크레딧 잔액 설정 함수
+  const setCreditBalance = (balance: number) => {
+    setCreditBalanceState(balance);
+    try {
+      localStorage.setItem('nextenter_credit_balance', balance.toString());
+    } catch (error) {
+      console.error('크레딧 잔액 저장 실패:', error);
+    }
+  };
 
   // ✅ 크레딧 거래 내역
   const loadCreditTransactionsFromStorage = () => {
@@ -499,12 +510,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return updated;
     });
 
-    setCreditBalanceState(newBalance);
-    try {
-      localStorage.setItem('nextenter_credit_balance', newBalance.toString());
-    } catch (error) {
-      console.error('크레딧 잔액 저장 실패:', error);
-    }
+    setCreditBalance(newBalance);
   };
 
   // ✅ 쿠폰 사용
@@ -638,9 +644,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         jobListings,
         businessJobs,
         jobApplications,
-        creditBalance, // ✅ 추가
-        creditTransactions, // ✅ 추가
-        coupons, // ✅ 추가
+        creditBalance,
+        setCreditBalance, // ✅ 추가
+        creditTransactions,
+        coupons,
         matchingHistory,
         interviewResults,
         interviewHistories,
@@ -657,8 +664,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setBusinessJobs,
         addJobApplication,
         cancelJobApplication,
-        addCreditTransaction, // ✅ 추가
-        useCoupon, // ✅ 추가
+        addCreditTransaction,
+        useCoupon,
         addMatchingHistory,
         clearMatchingHistory,
         addInterviewResult,

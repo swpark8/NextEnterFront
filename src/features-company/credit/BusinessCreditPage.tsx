@@ -10,7 +10,7 @@ export default function BusinessCreditPage() {
     "credit-sub-1"
   );
 
-  const [currentCredit] = useState(4200);
+  const [currentCredit] = useState(0);
 
   const recommendedApplicants = [
     { name: "김0연", age: "23세", field: "무경력", cost: 50 },

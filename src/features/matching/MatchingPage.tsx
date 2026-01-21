@@ -1,14 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-<<<<<<< Updated upstream
 import { getResumeList, getResumeDetail } from "../../api/resume";
 import { getJobPostings } from "../../api/job";
 import { getAiRecommendation, CompanyInfo } from "../../api/ai";
 import { mapResumeToAiFormat } from "../../utils/resumeMapper";
-=======
-import { getResumeList, getResumeDetail, getAIRecommendation, AIRecommendRequest } from "../../api/resume";
->>>>>>> Stashed changes
 import MatchingSidebar from "./components/MatchingSidebar";
 import MatchingHistoryPage from "./components/MatchingHistoryPage";
 import ConfirmDialog from "./components/ConfirmDialog";
@@ -51,15 +47,9 @@ export default function MatchingPage({
   const [currentCredit, setCurrentCredit] = useState(200);
   const [hasAnalysis, setHasAnalysis] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-<<<<<<< Updated upstream
   const [recommendedCompanies, setRecommendedCompanies] = useState<CompanyInfo[]>([]);
   const [aiReport, setAiReport] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-=======
-  const [aiCompanies, setAICompanies] = useState<any>([]);
-  const [aiReport, setAIReport] = useState<any>("");
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
->>>>>>> Stashed changes
 
   // Context에서 실제 데이터 가져오기 - 기업 공고 사용!
   const { resumes, businessJobs, addMatchingHistory, setResumes, setBusinessJobs } = useApp();
@@ -162,7 +152,6 @@ export default function MatchingPage({
   };
 
   const handleConfirmAnalysis = async () => {
-<<<<<<< Updated upstream
     setShowConfirmDialog(false);
     setIsLoading(true);
 
@@ -211,16 +200,46 @@ export default function MatchingPage({
       console.log("🚀 [DEBUG] Final AI Request (sending to backend):", aiRequest);
 
       // 4. AI 추천 API 호출
-      const aiResult = await getAiRecommendation(aiRequest);
+      let aiResult: any = await getAiRecommendation(aiRequest);
 
-      // 5. 결과 저장 및 UI 표시
-      setRecommendedCompanies(aiResult.companies);
-      setAiReport(aiResult.ai_report);
+      // 5. API 응답 검증 및 파싱
+      // 응답이 문자열인 경우 (longtext로 받은 경우) JSON 파싱
+      if (typeof aiResult === 'string') {
+        // 에러 메시지로 시작하는 문자열인지 확인 (JSON이 아닌 경우)
+        if (aiResult.trim().startsWith('연동 에러') || aiResult.trim().startsWith('error') || !aiResult.trim().startsWith('{')) {
+          throw new Error(aiResult);
+        }
+        
+        try {
+          aiResult = JSON.parse(aiResult);
+          console.log("🔍 [DEBUG] Parsed JSON string response:", aiResult);
+        } catch (parseError) {
+          console.error("JSON 파싱 오류:", parseError, "응답 내용:", aiResult);
+          throw new Error("AI 응답을 파싱할 수 없습니다: " + aiResult);
+        }
+      }
+
+      // 에러 응답 체크 (백엔드가 에러를 Map으로 반환한 경우)
+      if (aiResult && typeof aiResult === 'object' && aiResult.error) {
+        throw new Error(aiResult.error);
+      }
+
+      if (!aiResult) {
+        throw new Error("AI 추천 결과를 받을 수 없습니다.");
+      }
+
+      // companies가 배열인지 확인하고 기본값 설정
+      const companies = Array.isArray(aiResult.companies) ? aiResult.companies : [];
+      const aiReport = aiResult.ai_report || "";
+
+      // 6. 결과 저장 및 UI 표시
+      setRecommendedCompanies(companies);
+      setAiReport(aiReport);
       setHasAnalysis(true);
       setCurrentCredit(currentCredit - CREDIT_COST);
 
-      // 6. 히스토리에 추가 (첫 번째 추천 기업 기준)
-      if (aiResult.companies.length > 0) {
+      // 7. 히스토리에 추가 (첫 번째 추천 기업 기준)
+      if (companies.length > 0) {
         const now = new Date();
         const date = now
           .toLocaleDateString("ko-KR")
@@ -228,7 +247,7 @@ export default function MatchingPage({
           .replace(".", "");
         const time = now.toTimeString().slice(0, 5);
 
-        const topCompany = aiResult.companies[0];
+        const topCompany = companies[0];
         const historyId = Date.now();
         const newHistory = {
           id: historyId,
@@ -248,49 +267,28 @@ export default function MatchingPage({
 
         addMatchingHistory(newHistory);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("AI 매칭 오류:", error);
-      alert("AI 분석 중 오류가 발생했습니다. NextEnterAI 서버가 실행 중인지 확인해주세요.");
+      
+      // 에러 메시지 추출
+      let errorMessage = "AI 분석 중 오류가 발생했습니다.";
+      
+      if (error?.response?.data?.error) {
+        // 백엔드에서 반환한 에러 메시지
+        errorMessage = error.response.data.error;
+      } else if (error?.response?.data && typeof error.response.data === 'object' && error.response.data.error) {
+        // Map 형태의 에러 응답
+        errorMessage = error.response.data.error;
+      } else if (error?.message) {
+        // 일반 에러 메시지
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      alert(errorMessage + "\n\nNextEnterAI 서버가 실행 중인지 확인해주세요.");
     } finally {
       setIsLoading(false);
-=======
-    setIsAnalyzing(true);
-    setShowConfirmDialog(false);
-
-    try {
-      // 1. 선택된 이력서 상세 정보 가져오기
-      const resumeDetail = await getResumeDetail(
-        Number(selectedResume),
-        user!.userId
-      );
-
-      // 2. AI 요청 데이터 구성
-      const aiRequest: AIRecommendRequest = {
-        id: selectedResume,
-        target_role: resumeDetail.jobCategory || "Backend Developer",
-        resume_content: JSON.parse(resumeDetail.structuredData || "{}"),
-      };
-
-      // 3. AI API 호출
-      const result = await getAIRecommendation(aiRequest);
-
-      // 4. 결과 저장
-      setAICompanies(result.companies);
-      setAIReport(result.ai_report);
-
-      // 5. 최고 점수 매칭 점수 사용
-      const topScore = result.companies[0]?.score || 0;
-      setMatchingScore(Math.round(topScore));
-
-      // 6. 크레딧 차감 및 완료
-      setCurrentCredit(currentCredit - CREDIT_COST);
-      setHasAnalysis(true);
-    } catch (error) {
-      console.error("AI 분석 오류:", error);
-      alert("AI 분석 중 오류가 발생했습니다.");
-    } finally {
-      setIsAnalyzing(false);
->>>>>>> Stashed changes
     }
   };
 
