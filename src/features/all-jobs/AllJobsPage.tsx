@@ -5,7 +5,7 @@ import { useApp } from "../../context/AppContext";
 import { useAuth } from "../../context/AuthContext";
 import JobsSidebar from "./components/JobsSidebar";
 import { getJobPostings, JobPostingListResponse } from "../../api/job";
-import { createApply, type ApplyCreateRequest } from "../../api/apply";
+import { createApply, getMyApplies, type ApplyCreateRequest } from "../../api/apply";
 
 interface AllJobsPageProps {
   onLogoClick?: () => void;
@@ -44,9 +44,29 @@ export default function AllJobsPage() {
   const [apiJobListings, setApiJobListings] = useState<JobListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [appliedJobIds, setAppliedJobIds] = useState<Set<number>>(new Set());
 
   // ✅ AppContext에서 데이터 가져오기
   const { resumes, addJobApplication } = useApp();
+  
+  // ✅ 사용자의 지원 내역 조회
+  useEffect(() => {
+    const fetchMyApplications = async () => {
+      if (!user?.userId) return;
+
+      try {
+        const applies = await getMyApplies(user.userId);
+        
+        // 지원한 공고 ID 목록을 Set으로 저장
+        const jobIds = new Set(applies.map((apply) => apply.jobId));
+        setAppliedJobIds(jobIds);
+      } catch (error) {
+        console.error("지원 내역 조회 실패:", error);
+      }
+    };
+
+    fetchMyApplications();
+  }, [user?.userId]);
   
   // ✅ 백엔드 API 호출하여 채용공고 데이터 가져오기
   useEffect(() => {
@@ -174,6 +194,13 @@ export default function AllJobsPage() {
       setShowResumeModal(false);
       setSelectedJobId(null);
       setSelectedResumeId(null);
+      
+      // 지원 완료 후 지원 내역 새로고침
+      if (user?.userId) {
+        const applies = await getMyApplies(user.userId);
+        const jobIds = new Set(applies.map((apply) => apply.jobId));
+        setAppliedJobIds(jobIds);
+      }
     } catch (error: any) {
       console.error("지원 실패:", error);
       if (error.response?.status === 409 || error.response?.data?.message?.includes("이미 지원")) {
@@ -306,46 +333,118 @@ export default function AllJobsPage() {
                     <p>등록된 채용공고가 없습니다.</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {currentJobs.map((job) => (
-                      <div
-                        key={job.id}
-                        className="p-6 transition bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center mb-2 space-x-2">
-                              <span className="text-sm font-medium text-gray-600">
-                                {job.company}
-                              </span>
-                            </div>
-                            <h3 
+                  <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                    {currentJobs.map((job) => {
+                      const isApplied = appliedJobIds.has(job.id);
+                      
+                      return (
+                        <div
+                          key={job.id}
+                          className="flex flex-col overflow-hidden transition bg-white border border-gray-300 rounded-xl shadow-sm hover:shadow-xl hover:border-purple-400"
+                        >
+                          {/* 로고 영역 - 크기 줄임 */}
+                          <div className="flex items-center justify-center h-20 bg-gradient-to-br from-gray-50 to-gray-100">
+                            {job.logoUrl ? (
+                              <img
+                                src={job.logoUrl}
+                                alt={job.company}
+                                className="object-contain w-16 h-16"
+                                onError={(e) => {
+                                  e.currentTarget.src = 'https://via.placeholder.com/150?text=No+Logo';
+                                }}
+                              />
+                            ) : (
+                              <div className="flex items-center justify-center w-16 h-16 text-2xl font-bold text-gray-400 bg-white rounded-lg">
+                                {job.company.charAt(0)}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* 내용 영역 */}
+                          <div className="flex flex-col flex-1 p-5">
+                            {/* 직무명 */}
+                            <h3
                               onClick={() => navigate(`/user/jobs/${job.id}`)}
-                              className="mb-3 text-lg font-bold text-gray-900 cursor-pointer hover:text-blue-600"
+                              className="mb-2 text-lg font-bold text-gray-900 cursor-pointer line-clamp-2 hover:text-purple-600"
                             >
                               {job.title}
                             </h3>
-                            <div className="flex items-center space-x-4 text-sm text-gray-600">
-                              <span>{job.location}</span>
-                              <span>{job.deadline}</span>
+
+                            {/* 회사명 */}
+                            <p className="mb-3 text-sm font-medium text-gray-600">
+                              {job.company}
+                            </p>
+
+                            {/* 썸네일 이미지 추가 */}
+                            <div className="mb-3 overflow-hidden rounded-lg">
+                              {job.thumbnailUrl ? (
+                                <img
+                                  src={job.thumbnailUrl}
+                                  alt={`${job.title} 썸네일`}
+                                  className="object-cover w-full h-32"
+                                  onError={(e) => {
+                                    e.currentTarget.src = 'https://via.placeholder.com/400x200?text=No+Image';
+                                  }}
+                                />
+                              ) : (
+                                <div className="flex items-center justify-center w-full h-32 bg-gradient-to-br from-purple-50 to-blue-50">
+                                  <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                </div>
+                              )}
                             </div>
-                          </div>
-                          <div className="flex flex-col items-end space-y-2">
-                            <button
-                              onClick={() => handleApply(job.id)}
-                              className="px-6 py-2 text-sm font-medium text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
-                            >
-                              입사지원
-                            </button>
-                            <div className="text-sm text-gray-500">
-                              <span className="font-medium text-blue-600">
+
+                            {/* 정보 태그 */}
+                            <div className="flex flex-wrap gap-2 mb-4">
+                              <span className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded-full">
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                {job.location}
+                              </span>
+                              <span className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-full">
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                                {job.experience || "경력무관"}
+                              </span>
+                            </div>
+
+                            {/* 하단 정보 */}
+                            <div className="flex items-center justify-between pt-4 mt-auto border-t border-gray-100">
+                              <div className="flex items-center gap-2">
+                                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span className="text-xs text-gray-600">
+                                  ~ {job.deadline}
+                                </span>
+                              </div>
+                              <span className={`text-sm font-bold ${
+                                job.daysLeft <= 7 ? 'text-red-600' : 'text-blue-600'
+                              }`}>
                                 D-{job.daysLeft}
                               </span>
                             </div>
+
+                            {/* 지원 버튼 */}
+                            <button
+                              onClick={() => isApplied ? null : handleApply(job.id)}
+                              disabled={isApplied}
+                              className={`w-full py-2.5 mt-4 text-sm font-semibold transition rounded-lg ${
+                                isApplied
+                                  ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                                  : "bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transform hover:scale-105"
+                              }`}
+                            >
+                              {isApplied ? "지원완료" : "입사지원"}
+                            </button>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
 

@@ -89,7 +89,7 @@ export default function CompanyHeader() {
     };
 
     const baseRoutes: { [key: string]: string } = {
-      jobs: "/company/jobs",
+      jobs: "/company/jobs/all",
       applicants: "/company/applicants",
       talent: "/company/talent-search",
       companyMy: "/company/mypage",
@@ -97,7 +97,7 @@ export default function CompanyHeader() {
     };
 
     const separateRoutes: { [key: string]: string } = {
-      "jobs-sub-2": "/company/jobs/create",
+      "jobs-sub-2": "/company/jobs",
       "credit-sub-2": "/company/credit/charge",
       "applicants-sub-2": "/company/applicants/1/compatibility",
     };
@@ -116,7 +116,7 @@ export default function CompanyHeader() {
   };
 
   const navItems = [
-    { id: "jobs", label: "채용공고 관리" },
+    { id: "jobs", label: "채용 공고" },
     { id: "applicants", label: "지원자 관리" },
     { id: "talent", label: "인재 검색" },
     { id: "companyMy", label: "마이페이지" },

@@ -70,6 +70,17 @@ export const createApply = async (
   return response.data;
 };
 
+// 내 지원 내역 조회 (개인회원용)
+export const getMyApplies = async (
+  userId: number
+): Promise<ApplyListResponse[]> => {
+  const response = await api.get("/api/applies/my", {
+    headers: { userId },
+  });
+  return response.data;
+};
+
+
 // 지원자 목록 조회
 export const getApplies = async (
   companyId: number,
