@@ -340,7 +340,8 @@ export default function AllJobsPage() {
                       return (
                         <div
                           key={job.id}
-                          className="flex flex-col overflow-hidden transition bg-white border border-gray-300 rounded-xl shadow-sm hover:shadow-xl hover:border-purple-400"
+                          onClick={() => navigate(`/user/jobs/${job.id}`)}
+                          className="flex flex-col overflow-hidden transition bg-white border border-gray-300 rounded-xl shadow-sm hover:shadow-xl hover:border-purple-400 cursor-pointer"
                         >
                           {/* 로고 영역 - 크기 줄임 */}
                           <div className="flex items-center justify-center h-20 bg-gradient-to-br from-gray-50 to-gray-100">
@@ -364,8 +365,7 @@ export default function AllJobsPage() {
                           <div className="flex flex-col flex-1 p-5">
                             {/* 직무명 */}
                             <h3
-                              onClick={() => navigate(`/user/jobs/${job.id}`)}
-                              className="mb-2 text-lg font-bold text-gray-900 cursor-pointer line-clamp-2 hover:text-purple-600"
+                              className="mb-2 text-lg font-bold text-gray-900 line-clamp-2"
                             >
                               {job.title}
                             </h3>
@@ -431,7 +431,10 @@ export default function AllJobsPage() {
 
                             {/* 지원 버튼 */}
                             <button
-                              onClick={() => isApplied ? null : handleApply(job.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (!isApplied) handleApply(job.id);
+                              }}
                               disabled={isApplied}
                               className={`w-full py-2.5 mt-4 text-sm font-semibold transition rounded-lg ${
                                 isApplied

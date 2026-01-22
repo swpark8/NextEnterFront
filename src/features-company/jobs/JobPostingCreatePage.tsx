@@ -6,7 +6,10 @@ import { createJobPosting, type JobPostingRequest } from "../../api/job";
 export default function JobPostingCreatePage() {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  
+  // 이미지 미리보기 state
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  const [detailImagePreview, setDetailImagePreview] = useState<string | null>(null);
   
   // 스킬 상태를 배열로 관리
   const [selectedRequiredSkills, setSelectedRequiredSkills] = useState<string[]>([]);
@@ -92,12 +95,23 @@ export default function JobPostingCreatePage() {
     setSelectedPreferredSkills(selectedPreferredSkills.filter((s) => s !== skill));
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+        setThumbnailPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDetailImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setDetailImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
@@ -179,6 +193,8 @@ export default function JobPostingCreatePage() {
         salaryMax: formData.salaryMax ? parseInt(formData.salaryMax) : undefined,
         location: formData.location,
         description: formData.description || undefined,
+        thumbnailUrl: thumbnailPreview || undefined,
+        detailImageUrl: detailImagePreview || undefined,
         deadline: formData.deadline,
       };
 
@@ -482,49 +498,97 @@ export default function JobPostingCreatePage() {
 
               {/* 오른쪽: 이미지 업로드 (1/3) */}
               <div className="space-y-6 lg:col-span-1">
-                {/* 이미지 미리보기 */}
+                {/* 썸네일 이미지 */}
                 <div>
                   <label className="block mb-3 text-sm font-semibold text-gray-700">
-                    모집 사진
+                    썸네일 이미지
                   </label>
                   <div
                     onClick={() =>
-                      document.getElementById("imageInput")?.click()
+                      document.getElementById("thumbnailInput")?.click()
                     }
-                    className={`relative w-full h-96 border-3 ${
-                      imagePreview
+                    className={`relative w-full h-48 border-3 ${
+                      thumbnailPreview
                         ? "border-blue-500 border-solid"
                         : "border-dashed border-gray-300"
                     } rounded-2xl cursor-pointer hover:border-blue-400 transition-all overflow-hidden group ${
-                      !imagePreview ? "bg-gray-50" : ""
+                      !thumbnailPreview ? "bg-gray-50" : ""
                     }`}
                   >
-                    {imagePreview ? (
+                    {thumbnailPreview ? (
                       <img
-                        src={imagePreview}
-                        alt="Preview"
+                        src={thumbnailPreview}
+                        alt="Thumbnail Preview"
                         className="object-cover w-full h-full"
                       />
                     ) : (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                        <div className="flex items-center justify-center w-16 h-16 text-3xl text-white rounded-full shadow-lg bg-gradient-to-br from-blue-500 to-blue-700">
-                          📷
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                        <div className="flex items-center justify-center w-12 h-12 text-2xl text-white bg-blue-500 rounded-full shadow-lg">
+                          🖼️
                         </div>
                         <div className="text-center">
-                          <div className="mb-1 text-lg font-semibold text-gray-700">
-                            모집 사진 추가
+                          <div className="mb-1 text-sm font-semibold text-gray-700">
+                            썸네일 추가
                           </div>
-                          <div className="text-sm text-gray-500">
-                            클릭하여 이미지를 업로드하세요
+                          <div className="text-xs text-gray-500">
+                            목록에 표시될 이미지
                           </div>
                         </div>
                       </div>
                     )}
                     <input
-                      id="imageInput"
+                      id="thumbnailInput"
                       type="file"
                       accept="image/*"
-                      onChange={handleImageChange}
+                      onChange={handleThumbnailChange}
+                      className="hidden"
+                    />
+                  </div>
+                </div>
+
+                {/* 상세 홍보 이미지 */}
+                <div>
+                  <label className="block mb-3 text-sm font-semibold text-gray-700">
+                    상세 홍보 이미지
+                  </label>
+                  <div
+                    onClick={() =>
+                      document.getElementById("detailImageInput")?.click()
+                    }
+                    className={`relative w-full h-64 border-3 ${
+                      detailImagePreview
+                        ? "border-purple-500 border-solid"
+                        : "border-dashed border-gray-300"
+                    } rounded-2xl cursor-pointer hover:border-purple-400 transition-all overflow-hidden group ${
+                      !detailImagePreview ? "bg-gray-50" : ""
+                    }`}
+                  >
+                    {detailImagePreview ? (
+                      <img
+                        src={detailImagePreview}
+                        alt="Detail Image Preview"
+                        className="object-cover w-full h-full"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                        <div className="flex items-center justify-center w-16 h-16 text-3xl text-white bg-purple-500 rounded-full shadow-lg">
+                          📋
+                        </div>
+                        <div className="text-center">
+                          <div className="mb-1 text-base font-semibold text-gray-700">
+                            상세 이미지 추가
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            상세 페이지에 표시될 포스터
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <input
+                      id="detailImageInput"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleDetailImageChange}
                       className="hidden"
                     />
                   </div>

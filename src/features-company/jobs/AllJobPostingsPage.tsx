@@ -198,7 +198,8 @@ export default function AllJobPostingsPage() {
                   return (
                     <div
                       key={job.jobId}
-                      className="flex flex-col overflow-hidden transition bg-white border border-gray-300 rounded-xl shadow-sm hover:shadow-xl hover:border-purple-400"
+                      onClick={() => handleJobClick(job.jobId)}
+                      className="flex flex-col overflow-hidden transition bg-white border border-gray-300 rounded-xl shadow-sm hover:shadow-xl hover:border-purple-400 cursor-pointer"
                     >
                       {/* 로고 영역 */}
                       <div className="flex items-center justify-center h-20 bg-gradient-to-br from-gray-50 to-gray-100">
@@ -222,8 +223,7 @@ export default function AllJobPostingsPage() {
                       <div className="flex flex-col flex-1 p-5">
                         {/* 직무명 */}
                         <h3
-                          onClick={() => handleJobClick(job.jobId)}
-                          className="mb-2 text-lg font-bold text-gray-900 cursor-pointer line-clamp-2 hover:text-purple-600"
+                          className="mb-2 text-lg font-bold text-gray-900 line-clamp-2"
                         >
                           {job.title}
                         </h3>
