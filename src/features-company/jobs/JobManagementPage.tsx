@@ -156,9 +156,10 @@ export default function JobManagementPage() {
     return `${min?.toLocaleString()} ~ ${max?.toLocaleString()}만원`;
   };
 
-  const calculateAverageScore = () => {
-    return (80 + Math.random() * 15).toFixed(1);
-  };
+  // 평균 점수 계산 (현재 미사용)
+  // const calculateAverageScore = () => {
+  //   return (80 + Math.random() * 15).toFixed(1);
+  // };
 
   const filteredJobs = jobs.filter((job) => {
     const statusMatch =

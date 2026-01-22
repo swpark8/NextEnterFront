@@ -58,7 +58,7 @@ export default function JobPostingEditPage() {
       } catch (error: any) {
         console.error("공고 조회 실패:", error);
         alert(
-          error.response?.data?.message || "공고를 불러오는데 실패했습니다."
+          error.response?.data?.message || "공고를 불러오는데 실패했습니다.",
         );
         navigate("/company/jobs");
       } finally {
@@ -83,7 +83,7 @@ export default function JobPostingEditPage() {
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    >,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
