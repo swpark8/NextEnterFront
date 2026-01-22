@@ -173,7 +173,10 @@ export default function CompanyHeader() {
             </div>
 
             {/* Search Bar */}
-            <form onSubmit={handleSearch} className="flex-1 max-w-md mx-8">
+            <form
+              onSubmit={handleSearch}
+              className="flex-1 max-w-md mx-auto transform -translate-x-[17.5px]"
+            >
               <div className="relative">
                 <svg
                   className="absolute w-5 h-5 text-gray-400 transform -translate-y-1/2 left-3 top-1/2"
