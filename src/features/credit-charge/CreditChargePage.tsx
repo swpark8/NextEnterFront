@@ -145,7 +145,7 @@ export default function CreditChargePage({
       alert("결제 수단을 선택해주세요.");
       return;
     }
-
+  
     // ✅ 카드결제인 경우 추가 검증
     if (selectedPaymentMethod === "card") {
       if (!selectedBank) {
@@ -156,19 +156,23 @@ export default function CreditChargePage({
         return;
       }
     }
-
+  
     if (!agreeTerms) {
       alert("결제 약관에 동의해주세요.");
       return;
     }
-    if (!user?.userId) {
+  
+    // ✅ 개인/기업 구분하여 ID 가져오기
+    const targetUserId = user?.userType === "company" ? user?.companyId : user?.userId;
+    
+    if (!targetUserId) {
       alert("로그인이 필요합니다.");
       return;
     }
-
+  
     const pkg = packages.find((p) => p.credits === selectedPackage);
     if (!pkg) return;
-
+  
     try {
       setIsProcessing(true);
   
@@ -181,9 +185,8 @@ export default function CreditChargePage({
         }
   
         const totalCredits = pkg.credits + pkg.bonus;
-        const paymentId = `credit_${user.userId}_${Date.now()}`;
+        const paymentId = `credit_${targetUserId}_${Date.now()}`;
   
-        // ✅ 결제 수단에 따라 설정 분리
         let channelKey: string;
         let easyPayProvider: string;
         let paymentMethodName: string;
@@ -193,19 +196,16 @@ export default function CreditChargePage({
           easyPayProvider = "KAKAOPAY";
           paymentMethodName = "카카오페이";
         } else {
-          // ✅ 토스페이 V2도 간편결제로 처리
           channelKey = PORTONE_CONFIG.channels.toss;
-          easyPayProvider = "TOSSPAY";  // ✅ 또는 "TOSS" 시도
+          easyPayProvider = "TOSSPAY";
           paymentMethodName = "토스페이";
         }
   
         console.log(`${paymentMethodName} 결제 시작:`, {
-          storeId: PORTONE_CONFIG.storeId,
-          channelKey: channelKey,
-          easyPayProvider: easyPayProvider
+          targetUserId,
+          totalCredits
         });
   
-        // PortOne 결제 요청
         const response = await window.PortOne.requestPayment({
           storeId: PORTONE_CONFIG.storeId,
           channelKey: channelKey,
@@ -213,12 +213,12 @@ export default function CreditChargePage({
           orderName: `크레딧 ${pkg.credits} 충전`,
           totalAmount: pkg.price,
           currency: "KRW",
-          payMethod: "EASY_PAY",  // ✅ 둘 다 EASY_PAY
+          payMethod: "EASY_PAY",
           easyPay: {
-            easyPayProvider: easyPayProvider,  // ✅ KAKAOPAY 또는 TOSSPAY
+            easyPayProvider: easyPayProvider,
           },
           customer: {
-            customerId: user.userId.toString(),
+            customerId: targetUserId.toString(),
             fullName: user.name,
             email: user.email,
           },
@@ -226,15 +226,14 @@ export default function CreditChargePage({
   
         console.log("PortOne 결제 응답:", response);
   
-        // 결제 실패
         if (response.code != null) {
           alert(`결제에 실패했습니다: ${response.message}`);
           setIsProcessing(false);
           return;
         }
   
-        // ✅ 결제 성공 - 백엔드로 검증 요청
-        const verifyResult = await verifyPayment(user.userId, {
+        // ✅ 백엔드 검증
+        const verifyResult = await verifyPayment(targetUserId, {
           paymentId: response.paymentId,
           transactionId: response.transactionId || response.paymentId,
           amount: pkg.price,
@@ -242,7 +241,6 @@ export default function CreditChargePage({
         });
   
         if (verifyResult.success) {
-          // localStorage에도 저장
           const today = new Date();
           const dateString = `${today.getFullYear()}.${String(
             today.getMonth() + 1
@@ -255,15 +253,27 @@ export default function CreditChargePage({
             description: `크레딧 ${pkg.credits} + 보너스 ${pkg.bonus} (${paymentMethodName})`,
           });
   
-          // 결제 완료 페이지로 이동
-          navigate("/user/credit/complete", {
-            state: {
-              amount: pkg.price,
-              credits: pkg.credits,
-              bonus: pkg.bonus,
-              newBalance: verifyResult.credits,
-            },
-          });
+          // ✅ 개인/기업 구분
+          if (user?.userType === "company") {
+            navigate("/company/credit", {
+              state: {
+                charged: true,
+                amount: pkg.price,
+                credits: pkg.credits,
+                bonus: pkg.bonus,
+              },
+            });
+            alert(`충전 완료! ${totalCredits} 크레딧이 충전되었습니다.`);
+          } else {
+            navigate("/user/credit/complete", {
+              state: {
+                amount: pkg.price,
+                credits: pkg.credits,
+                bonus: pkg.bonus,
+                newBalance: verifyResult.credits,
+              },
+            });
+          }
         } else {
           alert(verifyResult.message || "결제 검증에 실패했습니다.");
         }
@@ -271,13 +281,13 @@ export default function CreditChargePage({
         setIsProcessing(false);
         return;
       }
-
-      // ✅ 기존 카드결제 및 네이버페이 (테스트)
+  
+      // ✅ 기존 카드결제/네이버페이
       await new Promise((resolve) => setTimeout(resolve, 1000));
-
+  
       const totalCredits = pkg.credits + pkg.bonus;
-
-      const response = await chargeCredit(user.userId, {
+  
+      const response = await chargeCredit(targetUserId, {
         amount: totalCredits,
         paymentMethod:
           selectedPaymentMethod === "card"
@@ -288,28 +298,41 @@ export default function CreditChargePage({
                 ?.name || selectedPaymentMethod,
         description: `크레딧 ${pkg.credits} + 보너스 ${pkg.bonus}`,
       });
-
+  
       if (response.success && response.balance) {
         const today = new Date();
         const dateString = `${today.getFullYear()}.${String(
           today.getMonth() + 1
         ).padStart(2, "0")}.${String(today.getDate()).padStart(2, "0")}`;
-
+  
         addCreditTransaction({
           date: dateString,
           amount: totalCredits,
           type: "충전",
           description: `크레딧 ${pkg.credits} + 보너스 ${pkg.bonus}`,
         });
-
-        navigate("/user/credit/complete", {
-          state: {
-            amount: pkg.price,
-            credits: pkg.credits,
-            bonus: pkg.bonus,
-            newBalance: response.balance.balance,
-          },
-        });
+  
+        // ✅ 개인/기업 구분
+        if (user?.userType === "company") {
+          navigate("/company/credit", {
+            state: {
+              charged: true,
+              amount: pkg.price,
+              credits: pkg.credits,
+              bonus: pkg.bonus,
+            },
+          });
+          alert(`충전 완료! ${totalCredits} 크레딧이 충전되었습니다.`);
+        } else {
+          navigate("/user/credit/complete", {
+            state: {
+              amount: pkg.price,
+              credits: pkg.credits,
+              bonus: pkg.bonus,
+              newBalance: response.balance.balance,
+            },
+          });
+        }
       } else {
         alert(response.message || "크레딧 충전에 실패했습니다.");
       }

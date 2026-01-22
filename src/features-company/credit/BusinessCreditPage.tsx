@@ -1,16 +1,45 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
+import { getCreditBalance } from "../../api/credit";
 
 export default function BusinessCreditPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { activeMenu, handleMenuClick } = useCompanyPageNavigation(
     "credit",
     "credit-sub-1"
   );
 
-  const [currentCredit] = useState(0);
+  // ✅ 초기값은 0이지만, useEffect에서 백엔드에서 실제 값을 가져옴
+  const [currentCredit, setCurrentCredit] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // ✅ 크레딧 잔액 조회
+  useEffect(() => {
+    const fetchCreditBalance = async () => {
+      if (user?.companyId) {
+        try {
+          console.log("📡 기업 크레딧 잔액 조회:", user.companyId);
+          const balance = await getCreditBalance(user.companyId);
+          console.log("✅ 크레딧 잔액:", balance.balance);
+          setCurrentCredit(balance.balance);
+        } catch (error) {
+          console.error("❌ 크레딧 잔액 조회 실패:", error);
+          // 에러 발생 시 0 유지 (신규 회원)
+          setCurrentCredit(0);
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCreditBalance();
+  }, [user?.companyId]);
 
   const recommendedApplicants = [
     { name: "김0연", age: "23세", field: "무경력", cost: 50 },
@@ -67,12 +96,18 @@ export default function BusinessCreditPage() {
                 </div>
               </div>
               <div className="flex items-center px-10 py-5 space-x-3 bg-white rounded-full shadow-lg">
-                <span className="text-5xl font-bold text-gray-900">
-                  {currentCredit.toLocaleString()}
-                </span>
-                <div className="flex items-center justify-center w-12 h-12 text-2xl rounded-full bg-gradient-to-br from-yellow-400 to-orange-400">
-                  🪙
-                </div>
+                {isLoading ? (
+                  <span className="text-3xl text-gray-400">로딩 중...</span>
+                ) : (
+                  <>
+                    <span className="text-5xl font-bold text-gray-900">
+                      {currentCredit.toLocaleString()}
+                    </span>
+                    <div className="flex items-center justify-center w-12 h-12 text-2xl rounded-full bg-gradient-to-br from-yellow-400 to-orange-400">
+                      🪙
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

@@ -64,22 +64,26 @@ useEffect(() => {
   const fetchCreditBalance = async () => {
     if (user?.userId) {
       try {
+        console.log("📡 크레딧 잔액 조회 시작:", user.userId);
         const balance = await getCreditBalance(user.userId);
-        setCreditBalance(balance.balance); // ✅ Context에 반영
-        // localStorage에도 저장
+        console.log("✅ 크레딧 잔액 조회 성공:", balance);
+        setCreditBalance(balance.balance);
         localStorage.setItem('nextenter_credit_balance', balance.balance.toString());
-      } catch (error) {
-        console.error("크레딧 잔액 조회 실패:", error);
-        // ⚠️ API 호출 실패 시 기존 값 유지 (0으로 초기화하지 않음)
-        // localStorage에 저장된 값이 있으면 그대로 사용
-        const savedBalance = localStorage.getItem('nextenter_credit_balance');
-        if (savedBalance) {
-          console.log("저장된 크레딧 사용:", savedBalance);
-        } else {
-          // localStorage에도 없으면 신규 회원이므로 0으로 설정
-          setCreditBalance(0);
-          localStorage.setItem('nextenter_credit_balance', '0');
+      } catch (error: any) {
+        console.error("❌ 크레딧 잔액 조회 실패:", error);
+        
+        // ⚠️ 401 에러가 아니면 기존 값 유지
+        if (error.response?.status !== 401) {
+          const savedBalance = localStorage.getItem('nextenter_credit_balance');
+          if (savedBalance) {
+            console.log("💾 저장된 크레딧 사용:", savedBalance);
+            setCreditBalance(parseInt(savedBalance));
+          } else {
+            setCreditBalance(0);
+            localStorage.setItem('nextenter_credit_balance', '0');
+          }
         }
+        // 401 에러는 axios 인터셉터가 처리
       }
     }
   };
