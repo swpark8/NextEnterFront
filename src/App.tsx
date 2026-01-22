@@ -32,6 +32,7 @@ import AIRecommendedJobsPage from "./features/all-jobs/AIRecommendedJobsPage";
 import PositionJobsPage from "./features/all-jobs/PositionJobsPage";
 import LocationJobsPage from "./features/all-jobs/LocationJobsPage";
 import UserJobDetailPage from "./features/all-jobs/UserJobDetailPage";
+import UserNotificationsPage from "./pages/UserNotificationsPage";
 
 // 기업회원 페이지들
 import CompanyHomePage from "./features-company/home/CompanyHomePage";
@@ -46,6 +47,7 @@ import TalentSearchPage from "./features-company/talent-search/TalentSearchPage"
 import ScrapTalentPage from "./features-company/talent-search/ScrapTalentPage";
 import BusinessCreditPage from "./features-company/credit/BusinessCreditPage";
 import CompanyMyPage from "./features-company/company-mypage/CompanyMyPage";
+import CompanyNotificationsPage from "./features-company/pages/CompanyNotificationsPage";
 
 // 화면 전환시 상단으로 끌어 올림
 import ScrollToTop from "./components/ScrollToTop";
@@ -197,6 +199,14 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="notifications"
+              element={
+                <ProtectedRoute allowedUserType="personal">
+                  <UserNotificationsPage />
+                </ProtectedRoute>
+              }
+            />
           </Route>
 
           {/* ===== 기업회원 영역 (/company) ===== */}
@@ -314,6 +324,14 @@ function App() {
               element={
                 <ProtectedRoute allowedUserType="company">
                   <CreditChargePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="notifications"
+              element={
+                <ProtectedRoute allowedUserType="company">
+                  <CompanyNotificationsPage />
                 </ProtectedRoute>
               }
             />
