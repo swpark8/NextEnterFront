@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { getPublicResumeDetail, ResumeResponse, ResumeSections } from "../../api/resume";
+import { saveTalent, contactTalent } from "../../api/talent";
 import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
 
@@ -51,6 +52,47 @@ export default function TalentResumeDetailPage({
       setError(err.response?.data?.message || "이력서를 불러오는 중 오류가 발생했습니다.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // ✅ 연락하기
+  const handleContact = async () => {
+    if (!user?.userId) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+    
+    const message = prompt("인재에게 보낼 메시지를 입력하세요:");
+    if (!message) return;
+    
+    try {
+      const response = await contactTalent(resumeId, message, user.userId);
+      if (response.success) {
+        alert("연락 요청이 전송되었습니다!");
+      }
+    } catch (error: any) {
+      console.error("연락 요청 오류:", error);
+      alert(error.response?.data?.message || "연락 요청에 실패했습니다.");
+    }
+  };
+
+  // ✅ 스크랩
+  const handleSave = async () => {
+    if (!user?.userId) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+    
+    try {
+      const response = await saveTalent(resumeId, user.userId);
+      if (response.success) {
+        alert("인재가 스크랩되었습니다!");
+      } else {
+        alert("이미 스크랩된 인재입니다.");
+      }
+    } catch (error: any) {
+      console.error("인재 스크랩 오류:", error);
+      alert(error.response?.data?.message || "인재 스크랩에 실패했습니다.");
     }
   };
 
@@ -311,11 +353,17 @@ export default function TalentResumeDetailPage({
               목록으로
             </button>
             <div className="flex gap-4">
-              <button className="px-8 py-3 font-semibold text-white transition bg-purple-600 rounded-full hover:bg-purple-700">
+              <button 
+                onClick={handleContact}
+                className="px-8 py-3 font-semibold text-white transition bg-purple-600 rounded-full hover:bg-purple-700"
+              >
                 연락하기
               </button>
-              <button className="px-8 py-3 font-semibold text-gray-700 transition bg-gray-200 rounded-full hover:bg-gray-300">
-                저장
+              <button 
+                onClick={handleSave}
+                className="px-8 py-3 font-semibold text-purple-700 transition bg-purple-100 rounded-full hover:bg-purple-200"
+              >
+                스크랩
               </button>
             </div>
           </div>

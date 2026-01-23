@@ -96,11 +96,6 @@ export default function CompanyMyPage({
   const [newPassword, setNewPassword] = useState<string>("");
   const [confirmPassword, setConfirmPassword] = useState<string>("");
 
-  // 6. 알림 설정 상태
-  const [emailNewApplicant, setEmailNewApplicant] = useState<boolean>(true);
-  const [emailDeadlineAlert, setEmailDeadlineAlert] = useState<boolean>(true);
-  const [emailMarketing, setEmailMarketing] = useState<boolean>(false);
-
   // 초기 데이터 로드
   useEffect(() => {
     const loadCompanyProfile = async () => {
@@ -288,14 +283,10 @@ export default function CompanyMyPage({
                   creditHistory={creditHistory}
                 />
               )}
-              {activeMenu === "companyMy-sub-4" && (
+              {activeMenu === "companyMy-sub-4" && user?.companyId && (
                 <NotificationSettings
-                  emailNewApplicant={emailNewApplicant}
-                  setEmailNewApplicant={setEmailNewApplicant}
-                  emailDeadlineAlert={emailDeadlineAlert}
-                  setEmailDeadlineAlert={setEmailDeadlineAlert}
-                  emailMarketing={emailMarketing}
-                  setEmailMarketing={setEmailMarketing}
+                  companyId={user.companyId}
+                  onSave={() => console.log('알림 설정 저장 완료')}
                 />
               )}
             </div>

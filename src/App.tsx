@@ -33,6 +33,7 @@ import AIRecommendedJobsPage from "./features/all-jobs/AIRecommendedJobsPage";
 import PositionJobsPage from "./features/all-jobs/PositionJobsPage";
 import LocationJobsPage from "./features/all-jobs/LocationJobsPage";
 import UserJobDetailPage from "./features/all-jobs/UserJobDetailPage";
+import UserNotificationsPage from "./pages/UserNotificationsPage";
 
 // 기업회원 페이지들
 import CompanyHomePage from "./features-company/home/CompanyHomePage";
@@ -44,8 +45,10 @@ import ApplicantManagementPage from "./features-company/applicants/ApplicantMana
 import ApplicantDetailPage from "./features-company/applicants/ApplicantDetailPage";
 import ApplicantCompatibilityPage from "./features-company/applicants/ApplicantCompatibilityPage";
 import TalentSearchPage from "./features-company/talent-search/TalentSearchPage";
+import ScrapTalentPage from "./features-company/talent-search/ScrapTalentPage";
 import BusinessCreditPage from "./features-company/credit/BusinessCreditPage";
 import CompanyMyPage from "./features-company/company-mypage/CompanyMyPage";
+import CompanyNotificationsPage from "./features-company/pages/CompanyNotificationsPage";
 
 // 화면 전환시 상단으로 끌어 올림
 import ScrollToTop from "./components/ScrollToTop";
@@ -294,6 +297,14 @@ function App() {
               }
             />
             <Route
+              path="scrap-talent"
+              element={
+                <ProtectedRoute allowedUserType="company">
+                  <ScrapTalentPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="mypage"
               element={
                 <ProtectedRoute allowedUserType="company">
@@ -314,6 +325,14 @@ function App() {
               element={
                 <ProtectedRoute allowedUserType="company">
                   <CreditChargePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="notifications"
+              element={
+                <ProtectedRoute allowedUserType="company">
+                  <CompanyNotificationsPage />
                 </ProtectedRoute>
               }
             />

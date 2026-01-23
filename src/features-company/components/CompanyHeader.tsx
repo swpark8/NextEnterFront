@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import CompanyHoverMenu from "../navigation-menu/components/CompanyHoverMenu";
 import CompanyDropdownMenu from "../navigation-menu/components/CompanyDropdownMenu";
 import { useAuth } from "../../context/AuthContext";
@@ -14,11 +14,15 @@ export default function CompanyHeader() {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams(); // ✅ URL 파라미터 가져오기
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+  // TODO: 알림 개수는 API로 가져와야 함
+  const unreadCount = 0; // 임시로 0으로 설정
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -105,6 +109,15 @@ export default function CompanyHeader() {
     const targetMenuId = menuId || defaultSubMenus[tabId];
     const targetPath = separateRoutes[targetMenuId] || baseRoutes[tabId];
 
+    // ✅ 같은 메뉴 클릭 감지
+    const currentMenu = searchParams.get("menu");
+    if (currentMenu === targetMenuId) {
+      // 같은 메뉴 클릭 시 reload 파라미터 추가
+      const timestamp = Date.now();
+      navigate(`${targetPath}?menu=${targetMenuId}&reload=${timestamp}`);
+      return;
+    }
+
     if (targetPath) {
       navigate(`${targetPath}?menu=${targetMenuId}`);
     }
@@ -190,6 +203,31 @@ export default function CompanyHeader() {
 
             {/* Right Buttons */}
             <div className="flex items-center space-x-4">
+              {/* 알림 아이콘 */}
+              {isAuthenticated && (
+                <button
+                  onClick={() => navigate("/company/notifications")}
+                  className="relative p-2 text-gray-700 transition hover:text-purple-600 hover:bg-gray-100 rounded-full"
+                >
+                    <svg
+                      className="w-6 h-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                      />
+                    </svg>
+                    {/* 빨간 점 배지 - 읽지 않은 알림이 있을 때만 표시 */}
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                    )}
+                  </button>
+              )}
               {isAuthenticated ? (
                 <div className="relative">
                   <button
@@ -329,6 +367,7 @@ export default function CompanyHeader() {
                     onSubMenuClick={(tabId, subId) =>
                       handleMenuClick(tabId, subId)
                     }
+                    onClose={() => setHoveredTab(null)} // ✅ 호버 닫기
                   />
                 )}
               </div>

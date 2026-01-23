@@ -290,6 +290,84 @@ export default function ApplicantDetailPage() {
               </div>
             </div>
 
+            {/* 주요 스킬 */}
+            {applicant.skills && applicant.skills.length > 0 && (
+              <div className="p-6 mb-8 border-2 border-purple-200 rounded-lg bg-purple-50">
+                <h2 className="mb-4 text-lg font-bold text-gray-900">
+                  주요 스킬
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {applicant.skills.map((skill, idx) => (
+                    <span
+                      key={idx}
+                      className="px-4 py-2 text-sm font-semibold text-purple-700 bg-white border-2 border-purple-300 rounded-lg"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 이력서 */}
+            <div className="p-6 mb-8 border-2 border-blue-200 rounded-lg bg-blue-50">
+              <h2 className="mb-4 text-lg font-bold text-gray-900">
+                이력서 {applicant.resumeTitle && `- ${applicant.resumeTitle}`}
+              </h2>
+              
+              <div className="space-y-4">
+                {/* 경력 */}
+                {applicant.experience && (
+                  <div>
+                    <div className="mb-2 text-sm font-semibold text-gray-700">💼 경력</div>
+                    <div className="p-4 bg-white border border-blue-200 rounded-lg">
+                      <span className="text-gray-900">{applicant.experience}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* 학력 */}
+                {applicant.education && (
+                  <div>
+                    <div className="mb-2 text-sm font-semibold text-gray-700">🎓 학력</div>
+                    <div className="p-4 bg-white border border-blue-200 rounded-lg">
+                      <p className="text-gray-900 whitespace-pre-wrap">{applicant.education}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* 자격증 */}
+                {applicant.certifications && (
+                  <div>
+                    <div className="mb-2 text-sm font-semibold text-gray-700">🏆 자격증</div>
+                    <div className="p-4 bg-white border border-blue-200 rounded-lg">
+                      <p className="text-gray-900 whitespace-pre-wrap">{applicant.certifications}</p>
+                    </div>
+                  </div>
+                )}
+
+                {!applicant.experience && !applicant.education && !applicant.certifications && (
+                  <div className="p-4 text-center text-gray-500">
+                    이력서 정보가 없습니다.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 자기소개서 */}
+            {applicant.coverLetterContent && (
+              <div className="p-6 mb-8 border-2 border-green-200 rounded-lg bg-green-50">
+                <h2 className="mb-4 text-lg font-bold text-gray-900">
+                  자기소개서
+                </h2>
+                <div className="p-4 bg-white border border-green-200 rounded-lg">
+                  <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">
+                    {applicant.coverLetterContent}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* 메모 */}
             {applicant.notes && (
               <div className="p-6 mb-8 rounded-lg bg-blue-50">

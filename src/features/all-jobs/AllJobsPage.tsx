@@ -466,8 +466,7 @@ export default function AllJobsPage() {
                           <div className="flex flex-col flex-1 p-5">
                             {/* 직무명 */}
                             <h3
-                              onClick={() => navigate(`/user/jobs/${job.id}`)}
-                              className="mb-2 text-lg font-bold text-gray-900 cursor-pointer line-clamp-2 hover:text-purple-600"
+                              className="mb-2 text-lg font-bold text-gray-900 line-clamp-2"
                             >
                               {job.title}
                             </h3>

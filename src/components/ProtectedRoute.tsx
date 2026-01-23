@@ -15,8 +15,18 @@ export default function ProtectedRoute({
   const { isAuthenticated, user, isLoading } = useAuth();
   const location = useLocation();
 
-  // ✅ 로딩 중일 때는 아무것도 렌더링하지 않음
+  console.log("🛡️ ProtectedRoute 검사:", {
+    path: location.pathname,
+    isLoading,
+    isAuthenticated,
+    userType: user?.userType,
+    allowedUserType,
+    requireAuth
+  });
+
+  // ✅ 로딩 중일 때는 로딩 화면 표시
   if (isLoading) {
+    console.log("⏳ 로딩 중...");
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -29,29 +39,47 @@ export default function ProtectedRoute({
 
   // 인증이 필요한데 로그인하지 않은 경우
   if (requireAuth && !isAuthenticated) {
-    // 현재 경로가 /company로 시작하면 기업 로그인으로
+    console.warn("❌ 인증 필요 - 로그인 페이지로 리다이렉트");
+    
     if (location.pathname.startsWith("/company")) {
       return (
         <Navigate to="/company/login" state={{ from: location }} replace />
       );
     }
-    // 그 외는 개인 로그인으로
     return <Navigate to="/user/login" state={{ from: location }} replace />;
   }
 
-  // userType 체크
-  if (allowedUserType && user?.userType !== allowedUserType) {
-    // 잘못된 userType으로 접근 시
+  // ✅ userType 체크 - undefined는 personal로 간주
+  if (allowedUserType && user?.userType && user.userType !== allowedUserType) {
+    console.error("❌ userType 불일치:", {
+      required: allowedUserType,
+      actual: user?.userType
+    });
+    
     if (allowedUserType === "personal") {
-      // 개인회원 페이지인데 기업회원이 접근
       alert("개인회원 전용 페이지입니다. 기업 페이지로 이동합니다.");
       return <Navigate to="/company" replace />;
     } else {
-      // 기업회원 페이지인데 개인회원이 접근
       alert("기업회원 전용 페이지입니다. 개인 페이지로 이동합니다.");
       return <Navigate to="/user" replace />;
     }
   }
 
+  // ✅ userType이 undefined인 경우 경고만 표시하고 통과
+  if (allowedUserType && !user?.userType) {
+    console.warn("⚠️ userType이 없습니다. 경로를 기반으로 판단합니다.");
+    // /user로 시작하면 personal, /company로 시작하면 company
+    const inferredType = location.pathname.startsWith("/company") ? "company" : "personal";
+    if (inferredType !== allowedUserType) {
+      console.error("❌ 경로와 요구 타입 불일치");
+      if (allowedUserType === "personal") {
+        return <Navigate to="/company" replace />;
+      } else {
+        return <Navigate to="/user" replace />;
+      }
+    }
+  }
+
+  console.log("✅ ProtectedRoute 통과");
   return <>{children}</>;
 }

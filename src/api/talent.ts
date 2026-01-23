@@ -15,6 +15,7 @@ export interface TalentSearchResponse {
   matchScore: number;
   isAvailable: boolean;
   viewCount: number;
+  contactStatus?: string; // 연락 상태 (PENDING, ACCEPTED, REJECTED)
 }
 
 // 페이징 응답 타입
@@ -32,12 +33,25 @@ export const searchTalents = async (params?: {
   keyword?: string;
   page?: number;
   size?: number;
+  companyUserId?: number; // ✅ 기업 ID 추가
 }): Promise<PageResponse<TalentSearchResponse>> => {
   console.log("🔍 [인재검색] 검색 파라미터:", params);
   
+  // ✅ companyUserId를 params에서 분리
+  const { companyUserId, ...searchParams } = params || {};
+  
+  // ✅ headers 설정
+  const headers: any = {};
+  if (companyUserId) {
+    headers.userId = companyUserId.toString();
+  }
+  
   // 백엔드 /api/resume/search 엔드포인트 호출
-  console.log("🚀 [인재검색] /api/resume/search 호출 시도...");
-  const response = await api.get(`${API_BASE_URL}/search`, { params });
+  console.log("🚀 [인재검색] /api/resume/search 호출 시도...", { params: searchParams, headers });
+  const response = await api.get(`${API_BASE_URL}/search`, { 
+    params: searchParams,
+    headers 
+  });
   console.log("✅ [인재검색] 검색 결과:", response.data);
   return response.data;
 };
@@ -69,6 +83,18 @@ export const checkSavedTalent = async (resumeId: number, companyUserId: number) 
       userId: companyUserId.toString(),
     },
   });
+  return response.data;
+};
+
+// ✅ 스크랩한 인재 목록 조회
+export const getSavedTalents = async (companyUserId: number): Promise<PageResponse<TalentSearchResponse>> => {
+  console.log("📋 [스크랩인재] 스크랩 목록 조회 요청, companyUserId:", companyUserId);
+  const response = await api.get(`${API_BASE_URL}/saved`, {
+    headers: {
+      userId: companyUserId.toString(),
+    },
+  });
+  console.log("✅ [스크랩인재] 스크랩 목록 조회 성공:", response.data);
   return response.data;
 };
 

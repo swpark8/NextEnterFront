@@ -65,12 +65,22 @@ export const useCompanyPageNavigation = (
         "jobs-sub-1": "/company/jobs/all",
         "jobs-sub-2": "/company/jobs",
         applicants: "/company/applicants",
+        "talent-sub-1": "/company/talent-search",
+        "talent-sub-2": "/company/scrap-talent",
         talent: "/company/talent-search",
         companyMy: "/company/mypage",
         credit: "/company/credit",
       };
 
       const targetBaseRoute = baseRoutes[menuId] || baseRoutes[targetTab];
+
+      // ✅ 같은 메뉴를 클릭했을 때도 처리
+      if (activeMenu === menuId) {
+        // 같은 메뉴 클릭 시 URL에 timestamp 추가해서 강제 리로드
+        const timestamp = Date.now();
+        setSearchParams({ menu: menuId, reload: timestamp.toString() });
+        return;
+      }
 
       if (targetBaseRoute && location.pathname !== targetBaseRoute) {
         navigate(`${targetBaseRoute}?menu=${menuId}`);
@@ -89,6 +99,8 @@ export const useCompanyPageNavigation = (
           "jobs-sub-2": "/company/jobs",
           jobs: "/company/jobs",
           applicants: "/company/applicants",
+          "talent-sub-1": "/company/talent-search",
+          "talent-sub-2": "/company/scrap-talent",
           talent: "/company/talent-search",
           companyMy: "/company/mypage",
           credit: "/company/credit",

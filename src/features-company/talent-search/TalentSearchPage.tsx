@@ -4,10 +4,12 @@ import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
 import { searchTalents, TalentSearchResponse, saveTalent, unsaveTalent, contactTalent } from "../../api/talent";
 import TalentResumeDetailPage from "./TalentResumeDetailPage";
 import { useAuth } from "../../context/AuthContext";
+import { useSearchParams } from "react-router-dom";
 
 export default function TalentSearchPage() {
   const { user } = useAuth();
   const { activeMenu, handleMenuClick } = useCompanyPageNavigation("talent", "talent-sub-1");
+  const [searchParams] = useSearchParams(); // ✅ URL 파라미터 감지
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchInput, setSearchInput] = useState(""); // ✅ 검색 입력창 별도 관리
@@ -25,6 +27,14 @@ export default function TalentSearchPage() {
   useEffect(() => {
     loadTalents();
   }, [selectedPosition, selectedExperience, searchQuery, currentPage]); // searchQuery로 변경
+
+  // ✅ URL reload 파라미터 변경 감지 - 같은 메뉴 클릭 시 새로고침
+  useEffect(() => {
+    const reloadParam = searchParams.get("reload");
+    if (reloadParam) {
+      loadTalents();
+    }
+  }, [searchParams.get("reload")]);
 
   // ✅ 검색 실행 함수
   const handleSearch = () => {
@@ -46,6 +56,11 @@ export default function TalentSearchPage() {
         page: currentPage,
         size: 20,
       };
+
+      // ✅ 기업 ID 추가
+      if (user?.userId) {
+        params.companyUserId = user.userId;
+      }
 
       // 포지션 필터
       if (selectedPosition !== "전체") {
@@ -96,6 +111,7 @@ export default function TalentSearchPage() {
       const response = await contactTalent(talentId, message, user.userId);
       if (response.success) {
         alert("연락 요청이 전송되었습니다!");
+        loadTalents(); // ✅ 목록 새로고침
       }
     } catch (error: any) {
       console.error("연락 요청 오류:", error);
@@ -114,13 +130,13 @@ export default function TalentSearchPage() {
     try {
       const response = await saveTalent(talentId, user.userId);
       if (response.success) {
-        alert("인재가 저장되었습니다!");
+        alert("인재가 스크랩되었습니다!");
       } else {
-        alert("이미 저장된 인재입니다.");
+        alert("이미 스크랩된 인재입니다.");
       }
     } catch (error: any) {
-      console.error("인재 저장 오류:", error);
-      alert(error.response?.data?.message || "인재 저장에 실패했습니다.");
+      console.error("인재 스크랩 오류:", error);
+      alert(error.response?.data?.message || "인재 스크랩에 실패했습니다.");
     }
   };
   
@@ -168,16 +184,12 @@ export default function TalentSearchPage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
               >
                 <option value="전체">전체</option>
-                <option value="Backend">백엔드</option>
-                <option value="Frontend">프론트엔드</option>
-                <option value="Fullstack">풀스택</option>
-                <option value="AI/LLM">AI/LLM</option>
-                <option value="DevOps">DevOps</option>
-                <option value="Mobile">모바일</option>
-                <option value="Data">데이터</option>
-                <option value="Security">보안</option>
-                <option value="PM">프로젝트 매니저</option>
-                <option value="Design">디자인</option>
+                <option value="프론트엔드">프론트엔드</option>
+                <option value="백엔드">백엔드</option>
+                <option value="풀스택">풀스택</option>
+                <option value="PM">PM</option>
+                <option value="데이터 분석가">데이터 분석가</option>
+                <option value="디자이너">디자이너</option>
               </select>
             </div>
 
@@ -202,23 +214,25 @@ export default function TalentSearchPage() {
               <label className="block mb-2 text-sm font-medium text-gray-700">
                 검색
               </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="기술 스택으로 검색"
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
-                />
-                <button
-                  onClick={handleSearch}
-                  className="px-6 py-2 text-white transition bg-purple-600 rounded-lg hover:bg-purple-700"
-                >
-                  검색
-                </button>
-              </div>
+              <input
+                type="text"
+                placeholder="기술 스택으로 검색"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
+              />
             </div>
+          </div>
+
+          {/* 검색 버튼 */}
+          <div className="flex justify-end mb-8">
+            <button
+              onClick={handleSearch}
+              className="px-8 py-2 text-white transition bg-purple-600 rounded-lg hover:bg-purple-700"
+            >
+              검색
+            </button>
           </div>
 
           {/* 인재 목록 */}
@@ -250,11 +264,23 @@ export default function TalentSearchPage() {
                           <span className="px-3 py-1 text-sm font-medium text-purple-600 bg-purple-100 rounded">
                             {talent.jobCategory}
                           </span>
-                          {talent.isAvailable && (
+                          {talent.contactStatus === "ACCEPTED" ? (
+                            <span className="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded">
+                              면접 요청이 수락되었습니다
+                            </span>
+                          ) : talent.contactStatus === "PENDING" ? (
+                            <span className="px-3 py-1 text-sm font-medium text-yellow-600 bg-yellow-100 rounded">
+                              연락 대기중
+                            </span>
+                          ) : talent.contactStatus === "REJECTED" ? (
+                            <span className="px-3 py-1 text-sm font-medium text-red-600 bg-red-100 rounded">
+                              연락 거절됨
+                            </span>
+                          ) : talent.isAvailable ? (
                             <span className="px-3 py-1 text-sm font-medium text-green-600 bg-green-100 rounded">
                               연락 가능
                             </span>
-                          )}
+                          ) : null}
                         </div>
 
                         <div className="grid grid-cols-3 gap-4 mb-4 text-sm">
@@ -313,9 +339,9 @@ export default function TalentSearchPage() {
                           </button>
                           <button
                             onClick={(e) => handleSave(talent.resumeId, e)}
-                            className="px-4 py-2 text-gray-700 transition bg-gray-100 rounded-lg hover:bg-gray-200"
+                            className="px-4 py-2 text-purple-700 transition bg-purple-50 rounded-lg hover:bg-purple-100"
                           >
-                            저장
+                            스크랩
                           </button>
                         </div>
                       </div>

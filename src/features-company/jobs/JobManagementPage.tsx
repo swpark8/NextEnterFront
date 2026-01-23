@@ -4,7 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
 import {
-  getJobPostings,
+  getCompanyJobPostings,
   updateJobPostingStatus,
   type JobPostingListResponse,
 } from "../../api/job";
@@ -38,10 +38,8 @@ export default function JobManagementPage() {
         setLoading(true);
         setError(null);
 
-        const response = await getJobPostings({
-          page: 0,
-          size: 1000,
-        });
+        // 기업의 모든 공고 조회 (상태 무관)
+        const myJobs = await getCompanyJobPostings(user.companyId);
 
         // 현재 기업의 공고만 필터링
         const myJobs = response.content.filter(
@@ -93,7 +91,7 @@ export default function JobManagementPage() {
       return;
     }
 
-    const applicantCount = 0; // TODO: 실제 지원자 수 가져오기
+    const applicantCount = job.applicantCount || 0;
 
     if (
       window.confirm(

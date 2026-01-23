@@ -95,6 +95,14 @@ export const usePageNavigation = (
 
       const targetBaseRoute = baseRoutes[targetTab];
 
+      // ✅ 같은 메뉴를 클릭했을 때도 처리
+      if (activeMenu === menuId) {
+        // 같은 메뉴 클릭 시 URL에 timestamp 추가해서 강제 리로드
+        const timestamp = Date.now();
+        setSearchParams({ menu: menuId, reload: timestamp.toString() });
+        return;
+      }
+
       // "목적지가 기본 페이지인데, 현재 내 주소가 거기가 아니라면?" -> 이동해라!
       if (targetBaseRoute && location.pathname !== targetBaseRoute) {
         navigate(`${targetBaseRoute}?menu=${menuId}`);

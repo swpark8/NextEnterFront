@@ -29,6 +29,14 @@ export interface ApplyDetailResponse {
   userPhone: string;
   jobTitle: string;
   jobCategory: string;
+  // 이력서 정보
+  resumeTitle?: string;
+  skills?: string[];
+  experience?: string;
+  education?: string;
+  certifications?: string;
+  // 자기소개서 정보
+  coverLetterContent?: string;
   status: string;
   aiScore: number;
   notes: string;

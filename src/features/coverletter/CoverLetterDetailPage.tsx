@@ -2,6 +2,8 @@
 // 자소서 상세보기 페이지
 
 import ResumeSidebar from "../resume/components/ResumeSidebar";
+import { downloadCoverLetterFile, triggerFileDownload } from "../../api/coverletter";
+import { useAuth } from "../../context/AuthContext";
 
 // 자소서 데이터 타입
 interface CoverLetterItem {
@@ -15,12 +17,12 @@ interface CoverLetterItem {
 }
 
 interface CoverLetterDetailPageProps {
-  coverLetter: CoverLetterItem; // 선택된 자소서 데이터
-  onBack: () => void; // 목록으로 돌아가기
-  onEdit: () => void; // 수정 모드로 전환
-  onDelete: () => void; // 삭제 처리
-  onMenuClick: (menuId: string) => void; // 사이드바 메뉴 클릭
-  activeMenu: string; // 현재 활성 메뉴 (부모에서 전달)
+  coverLetter: CoverLetterItem;
+  onBack: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  onMenuClick: (menuId: string) => void;
+  activeMenu: string;
 }
 
 export default function CoverLetterDetailPage({
@@ -31,6 +33,7 @@ export default function CoverLetterDetailPage({
   onMenuClick,
   activeMenu,
 }: CoverLetterDetailPageProps) {
+  const { user } = useAuth();
   // 사이드바 클릭 시 확인 후 이동
   const handleSidebarClick = (menuId: string) => {
     if (window.confirm("페이지를 이동하시겠습니까?")) {
@@ -42,6 +45,50 @@ export default function CoverLetterDetailPage({
   const handleDelete = () => {
     if (window.confirm("정말 이 자소서를 삭제하시겠습니까?")) {
       onDelete();
+    }
+  };
+
+  // ✅ 파일 다운로드 핸들러
+  const handleFileDownload = (fileName: string) => {
+    // 파일명이 URL이면 새 탭에서 열기
+    if (fileName.startsWith('http://') || fileName.startsWith('https://')) {
+      window.open(fileName, '_blank');
+      return;
+    }
+
+    // 파일명이 /uploads/로 시작하면 백엔드 URL 추가
+    if (fileName.startsWith('/uploads/')) {
+      const fileUrl = `http://localhost:8080${fileName}`;
+      window.open(fileUrl, '_blank');
+      return;
+    }
+
+    // 그 외에는 파일명으로 다운로드
+    // 실제로는 백엔드 API를 호출해야 하지만, 일단 알림만 표시
+    alert(`파일 다운로드: ${fileName}\n\n백엔드 파일 저장 기능이 구현되면 다운로드가 가능합니다.`);
+  };
+
+  // ✅ 파일 확장자에 따른 아이콘 반환
+  const getFileIcon = (fileName: string) => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    switch (ext) {
+      case 'pdf':
+        return '📄';
+      case 'doc':
+      case 'docx':
+        return '📝';
+      case 'hwp':
+        return '📋';
+      case 'txt':
+        return '📃';
+      case 'xlsx':
+      case 'xls':
+        return '📊';
+      case 'ppt':
+      case 'pptx':
+        return '📊';
+      default:
+        return '📎';
     }
   };
 
@@ -110,7 +157,7 @@ export default function CoverLetterDetailPage({
               </div>
             </div>
 
-            {/* 첨부파일 영역 */}
+            {/* ✅ 첨부파일 영역 - 클릭 가능하게 수정 */}
             {coverLetter.files && coverLetter.files.length > 0 && (
               <div className="pt-6 border-t border-gray-200">
                 <h4 className="mb-3 text-lg font-semibold text-gray-800">
@@ -118,13 +165,19 @@ export default function CoverLetterDetailPage({
                 </h4>
                 <div className="space-y-2">
                   {coverLetter.files.map((file, index) => (
-                    <div
+                    <button
                       key={index}
-                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
+                      onClick={() => handleFileDownload(file)}
+                      className="flex items-center w-full gap-3 p-4 transition border border-gray-200 bg-gray-50 rounded-lg hover:bg-blue-50 hover:border-blue-300 group"
                     >
-                      <span className="text-gray-500">📎</span>
-                      <span className="text-gray-700">{file}</span>
-                    </div>
+                      <span className="text-2xl">{getFileIcon(file)}</span>
+                      <span className="flex-1 text-left text-gray-700 group-hover:text-blue-600">
+                        {file}
+                      </span>
+                      <span className="text-sm text-gray-400 group-hover:text-blue-600">
+                        다운로드 →
+                      </span>
+                    </button>
                   ))}
                 </div>
               </div>

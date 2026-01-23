@@ -150,13 +150,18 @@ export default function ResumeFormPage({
       // 스킬
       if (resume.skills) {
         try {
+          console.log("🔍 [디버그] resume.skills 원본:", resume.skills);
           const skillsArray = JSON.parse(resume.skills);
+          console.log("🔍 [디버그] 파싱된 skillsArray:", skillsArray);
           if (Array.isArray(skillsArray)) {
             setSelectedSkills(skillsArray);
+            console.log("✅ [디버그] 스킬 설정 성공:", skillsArray);
           }
-        } catch {
-          // JSON 파싱 실패하면 무시
+        } catch (error) {
+          console.error("❌ [디버그] 스킬 파싱 오류:", error);
         }
+      } else {
+        console.log("⚠️ [디버그] resume.skills가 비어있음");
       }
     } catch (err: any) {
       console.error("이력서 데이터 로드 오류:", err);

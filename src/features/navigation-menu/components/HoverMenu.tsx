@@ -3,9 +3,10 @@ import { navigationMenuData } from "../data/menuData";
 interface HoverMenuProps {
   tabId: string;
   onSubMenuClick?: (tabId: string, subId: string) => void;
+  onClose?: () => void; // ✅ 호버 닫기 함수 추가
 }
 
-export default function HoverMenu({ tabId, onSubMenuClick }: HoverMenuProps) {
+export default function HoverMenu({ tabId, onSubMenuClick, onClose }: HoverMenuProps) {
   const menuData = navigationMenuData[tabId as keyof typeof navigationMenuData];
 
   if (!menuData || menuData.items.length === 0) return null;
@@ -18,6 +19,7 @@ export default function HoverMenu({ tabId, onSubMenuClick }: HoverMenuProps) {
             <li key={item.id}>
               <button
                 onClick={() => {
+                  if (onClose) onClose(); // ✅ 클릭 시 호버 먼저 닫기
                   if (onSubMenuClick) onSubMenuClick(tabId, item.id);
                 }}
                 className="w-full px-4 py-2 text-sm text-left text-gray-700 transition hover:bg-gray-100 hover:text-blue-600"

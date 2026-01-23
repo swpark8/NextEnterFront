@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom"; // ✅ 1. URL 제어용 훅 추가
+import { useSearchParams } from "react-router-dom";
 import OfferSidebar from "./components/OfferSidebar";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 import { useApp } from "../../context/AppContext";
+import { useAuth } from "../../context/AuthContext";
+import { getReceivedContacts, ContactMessage, updateContactStatus } from "../../api/contact";
 
 interface InterviewOfferPageProps {
   initialMenu?: string;
@@ -23,10 +25,35 @@ export default function InterviewOfferPage({
     onNavigate
   );
 
-  // 2. AppContext에서 면접 제안 데이터 가져오기
+  // 2. 상태 관리
+  const { user } = useAuth();
   const { interviewOffers, deleteInterviewOffer } = useApp();
+  const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // 3. 상태 관리
+  // 3. 연락 메시지 로드
+  useEffect(() => {
+    if (user?.userId) {
+      loadContactMessages();
+    }
+  }, [user?.userId]);
+
+  const loadContactMessages = async () => {
+    if (!user?.userId) return;
+
+    setIsLoading(true);
+    try {
+      const data = await getReceivedContacts(user.userId);
+      setContactMessages(data);
+      console.log("연락 메시지 로드 성공:", data);
+    } catch (error) {
+      console.error("연락 메시지 로드 실패:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 4. 상태 관리
   const [selectedOfferId, setSelectedOfferId] = useState<number | null>(null);
   const [hoveredId, setHoveredId] = useState<number | null>(null);
 
@@ -54,7 +81,37 @@ export default function InterviewOfferPage({
     setSearchParams(newParams);
   };
 
-  // 4. 핸들러
+  // 5. 핸들러
+  const handleAcceptContact = async (contactId: number) => {
+    if (!user?.userId) return;
+
+    if (window.confirm("연락 제안을 수락하시겊습니까?")) {
+      try {
+        await updateContactStatus(contactId, "ACCEPTED", user.userId);
+        alert("연락 제안을 수락했습니다.");
+        loadContactMessages(); // 새로고침
+      } catch (error) {
+        console.error("상태 변경 실패:", error);
+        alert("상태 변경에 실패했습니다.");
+      }
+    }
+  };
+
+  const handleRejectContact = async (contactId: number) => {
+    if (!user?.userId) return;
+
+    if (window.confirm("연락 제안을 거절하시겊습니까?")) {
+      try {
+        await updateContactStatus(contactId, "REJECTED", user.userId);
+        alert("연락 제안을 거절했습니다.");
+        loadContactMessages(); // 새로고침
+      } catch (error) {
+        console.error("상태 변경 실패:", error);
+        alert("상태 변경에 실패했습니다.");
+      }
+    }
+  };
+
   const handleDelete = (id: number, event: React.MouseEvent) => {
     event.stopPropagation(); // 카드 클릭 방지
     if (window.confirm("제안을 삭제하시겠습니까?")) {
@@ -67,6 +124,31 @@ export default function InterviewOfferPage({
   };
 
   const selectedOffer = interviewOffers.find((o) => o.id === selectedOfferId);
+  const selectedContact = contactMessages.find((c) => c.contactId === selectedOfferId);
+
+  // 상태 한글 변환
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return "대기중";
+      case "ACCEPTED":
+        return "수락";
+      case "REJECTED":
+        return "거절";
+      default:
+        return status;
+    }
+  };
+
+  // 날짜 포맷
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
 
   return (
     <div className="px-4 py-8 mx-auto max-w-7xl">
@@ -82,9 +164,87 @@ export default function InterviewOfferPage({
               면접 제안
             </h3>
 
-            {selectedOfferId && selectedOffer ? (
+            {selectedOfferId && (selectedOffer || selectedContact) ? (
               // 🟦 상세 화면
-              <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
+              selectedContact ? (
+                // 연락 메시지 상세
+                <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
+                  <div className="flex items-center justify-between pb-6 mb-8 border-b border-gray-100">
+                    <div>
+                      <div className="flex items-center gap-3 mb-2">
+                        <h2 className="text-2xl font-bold">기업 연락 제안</h2>
+                        <span className="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded-full">
+                          {getStatusText(selectedContact.status)}
+                        </span>
+                      </div>
+                      <p className="text-gray-500">
+                        {formatDate(selectedContact.createdAt)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleBackToList}
+                      className="px-6 py-2 text-gray-700 transition bg-gray-100 rounded-lg hover:bg-gray-200"
+                    >
+                      목록으로
+                    </button>
+                  </div>
+
+                  <div className="mb-8 space-y-6">
+                    <div className="p-6 border border-gray-200 bg-gray-50 rounded-xl">
+                      <h3 className="mb-2 font-bold text-gray-900">
+                        📩 연락 메시지
+                      </h3>
+                      <p className="leading-relaxed text-gray-700 whitespace-pre-wrap">
+                        {selectedContact.message}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-4 border rounded-lg">
+                        <span className="block mb-1 text-sm text-gray-500">
+                          제안일
+                        </span>
+                        <span className="font-medium">
+                          {formatDate(selectedContact.createdAt)}
+                        </span>
+                      </div>
+                      <div className="p-4 border rounded-lg">
+                        <span className="block mb-1 text-sm text-gray-500">
+                          상태
+                        </span>
+                        <span className="font-medium">
+                          {getStatusText(selectedContact.status)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
+                    {selectedContact.status === "PENDING" && (
+                      <>
+                        <button
+                          onClick={() => handleRejectContact(selectedContact.contactId)}
+                          className="px-6 py-3 font-semibold text-red-600 transition rounded-lg bg-red-50 hover:bg-red-100"
+                        >
+                          거절하기
+                        </button>
+                        <button
+                          onClick={() => handleAcceptContact(selectedContact.contactId)}
+                          className="px-6 py-3 font-semibold text-white transition bg-blue-600 rounded-lg shadow-md hover:bg-blue-700"
+                        >
+                          수락하기
+                        </button>
+                      </>
+                    )}
+                    {selectedContact.status !== "PENDING" && (
+                      <p className="text-gray-500">
+                        이 제안은 이미 {getStatusText(selectedContact.status)}했습니다.
+                      </p>
+                    )}
+                  </div>
+                </section>
+              ) : selectedOffer ? (
+                // 기존 면접 제안 상세
+                <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
                 <div className="flex items-center justify-between pb-6 mb-8 border-b border-gray-100">
                   <div>
                     <div className="flex items-center gap-3 mb-2">
@@ -146,16 +306,59 @@ export default function InterviewOfferPage({
                   </button>
                 </div>
               </section>
+              ) : null
             ) : (
               // 🟦 목록 화면
               <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
-                <div className="space-y-4">
-                  {interviewOffers.length === 0 ? (
-                    <div className="py-12 text-center text-gray-500 border-2 border-dashed rounded-xl">
-                      받은 면접 제안이 없습니다.
-                    </div>
-                  ) : (
-                    interviewOffers.map((offer) => (
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {contactMessages.length === 0 && interviewOffers.length === 0 ? (
+                      <div className="py-12 text-center text-gray-500 border-2 border-dashed rounded-xl">
+                        받은 면접 제안이 없습니다.
+                      </div>
+                    ) : (
+                      <>
+                        {/* 연락 메시지 목록 */}
+                        {contactMessages.map((contact) => (
+                          <div
+                            key={`contact-${contact.contactId}`}
+                            onClick={() => handleOfferClick(contact.contactId)}
+                            onMouseEnter={() => setHoveredId(contact.contactId)}
+                            onMouseLeave={() => setHoveredId(null)}
+                            className={`p-4 bg-white border-2 rounded-lg cursor-pointer transition-all flex items-center justify-between ${
+                              hoveredId === contact.contactId
+                                ? "border-blue-500 shadow-md transform scale-[1.01]"
+                                : "border-gray-200 hover:border-gray-300"
+                            }`}
+                          >
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4
+                                  className={`transition-all ${
+                                    hoveredId === contact.contactId
+                                      ? "text-xl font-bold text-gray-900"
+                                      : "text-lg font-semibold text-gray-800"
+                                  }`}
+                                >
+                                  기업 연락 제안
+                                </h4>
+                                <span className="px-2 py-0.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-md border border-blue-100">
+                                  {getStatusText(contact.status)}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-600">
+                                {formatDate(contact.createdAt)}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+
+                        {/* 기존 면접 제안 목록 */}
+                        {interviewOffers.map((offer) => (
                       <div
                         key={offer.id}
                         onClick={() => handleOfferClick(offer.id)}
@@ -211,9 +414,11 @@ export default function InterviewOfferPage({
                           </svg>
                         </button>
                       </div>
-                    ))
-                  )}
-                </div>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                )}
               </section>
             )}
           </div>

@@ -1,11 +1,26 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
+import { ResumeResponse, ResumeSections } from '../api/resume';
 
-// 이력서 타입
+// 이력서 타입 (기존 간단한 타입)
 export interface Resume {
   id: number;
   title: string;
   industry: string;
   applications: number;
+}
+
+// ✅ 상세한 이력서 타입 (백엔드와 동기화)
+export interface DetailedResume {
+  resumeId: number;
+  title: string;
+  jobCategory: string;
+  skills: string[];
+  visibility: 'PUBLIC' | 'PRIVATE';
+  sections: ResumeSections;
+  status: string;
+  viewCount: number;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 // 채용공고 타입 (일반 사용자용)
@@ -150,6 +165,8 @@ export interface InterviewOffer {
 
 interface AppContextType {
   resumes: Resume[];
+  detailedResumes: DetailedResume[]; // ✅ 상세한 이력서 목록
+  currentResume: DetailedResume | null; // ✅ 현재 편집 중인 이력서
   jobListings: JobListing[];
   businessJobs: BusinessJob[];
   jobApplications: JobApplication[];
@@ -166,6 +183,11 @@ interface AppContextType {
   updateResume: (id: number, resume: Resume) => void;
   deleteResume: (id: number) => void;
   setResumes: (resumes: Resume[]) => void;
+  setDetailedResumes: (resumes: DetailedResume[]) => void; // ✅ 상세 이력서 목록 설정
+  addDetailedResume: (resume: DetailedResume) => void; // ✅ 상세 이력서 추가
+  updateDetailedResume: (resumeId: number, resume: DetailedResume) => void; // ✅ 상세 이력서 수정
+  deleteDetailedResume: (resumeId: number) => void; // ✅ 상세 이력서 삭제
+  setCurrentResume: (resume: DetailedResume | null) => void; // ✅ 현재 이력서 설정
   setJobListings: (jobs: JobListing[]) => void;
   addBusinessJob: (job: BusinessJob) => void;
   updateBusinessJob: (id: number, job: BusinessJob) => void;
@@ -204,6 +226,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const [resumes, setResumesState] = useState<Resume[]>(loadResumesFromStorage());
+
+  // ✅ 상세한 이력서 데이터 관리
+  const loadDetailedResumesFromStorage = () => {
+    try {
+      const savedResumes = localStorage.getItem('nextenter_detailed_resumes');
+      if (savedResumes) {
+        return JSON.parse(savedResumes);
+      }
+    } catch (error) {
+      console.error('상세 이력서 데이터 로드 실패:', error);
+    }
+    return [];
+  };
+
+  const [detailedResumes, setDetailedResumesState] = useState<DetailedResume[]>(loadDetailedResumesFromStorage());
+  const [currentResume, setCurrentResumeState] = useState<DetailedResume | null>(null);
 
   const [jobListings, setJobListingsState] = useState<JobListing[]>([]);
 
@@ -410,6 +448,56 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('이력서 저장 실패:', error);
     }
+  };
+
+  // ✅ 상세 이력서 관리 함수들
+  const setDetailedResumes = (resumes: DetailedResume[]) => {
+    setDetailedResumesState(resumes);
+    try {
+      localStorage.setItem('nextenter_detailed_resumes', JSON.stringify(resumes));
+    } catch (error) {
+      console.error('상세 이력서 저장 실패:', error);
+    }
+  };
+
+  const addDetailedResume = (resume: DetailedResume) => {
+    setDetailedResumesState(prev => {
+      const updated = [...prev, resume];
+      try {
+        localStorage.setItem('nextenter_detailed_resumes', JSON.stringify(updated));
+      } catch (error) {
+        console.error('상세 이력서 추가 실패:', error);
+      }
+      return updated;
+    });
+  };
+
+  const updateDetailedResume = (resumeId: number, resume: DetailedResume) => {
+    setDetailedResumesState(prev => {
+      const updated = prev.map(r => r.resumeId === resumeId ? resume : r);
+      try {
+        localStorage.setItem('nextenter_detailed_resumes', JSON.stringify(updated));
+      } catch (error) {
+        console.error('상세 이력서 업데이트 실패:', error);
+      }
+      return updated;
+    });
+  };
+
+  const deleteDetailedResume = (resumeId: number) => {
+    setDetailedResumesState(prev => {
+      const updated = prev.filter(r => r.resumeId !== resumeId);
+      try {
+        localStorage.setItem('nextenter_detailed_resumes', JSON.stringify(updated));
+      } catch (error) {
+        console.error('상세 이력서 삭제 실패:', error);
+      }
+      return updated;
+    });
+  };
+
+  const setCurrentResume = (resume: DetailedResume | null) => {
+    setCurrentResumeState(resume);
   };
 
   const setJobListings = (jobs: JobListing[]) => {
@@ -641,6 +729,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider 
       value={{ 
         resumes, 
+        detailedResumes, // ✅ 상세 이력서 목록
+        currentResume, // ✅ 현재 이력서
         jobListings,
         businessJobs,
         jobApplications,
@@ -657,6 +747,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updateResume, 
         deleteResume,
         setResumes,
+        setDetailedResumes, // ✅ 상세 이력서 목록 설정
+        addDetailedResume, // ✅ 상세 이력서 추가
+        updateDetailedResume, // ✅ 상세 이력서 업데이트
+        deleteDetailedResume, // ✅ 상세 이력서 삭제
+        setCurrentResume, // ✅ 현재 이력서 설정
         setJobListings,
         addBusinessJob,
         updateBusinessJob,

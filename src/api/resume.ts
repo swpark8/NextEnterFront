@@ -171,13 +171,16 @@ export const createResume = async (
   const payload = {
     title: request.title,
     jobCategory: request.jobCategory,
+    skills: JSON.stringify(request.skills || []), // 스킬 추가
     visibility: request.visibility || "PUBLIC", // 공개 설정 추가
     sections: JSON.stringify(request.sections),
     status: request.status || "DRAFT",
   };
 
   console.log("🚀 [API] 이력서 생성 요청:", payload);
+  console.log("🚀 [API] skills:", request.skills);
   console.log("🚀 [API] visibility:", payload.visibility);
+  console.log("🚀 [API] skills:", payload.skills);
 
   const response = await api.post<{ resumeId: number }>(
     "/api/resume",
@@ -202,13 +205,16 @@ export const updateResume = async (
   const payload = {
     title: request.title,
     jobCategory: request.jobCategory,
+    skills: JSON.stringify(request.skills || []), // 스킬 추가
     visibility: request.visibility || "PUBLIC", // 공개 설정 추가
     sections: JSON.stringify(request.sections),
     status: request.status || "DRAFT",
   };
 
   console.log("🔄 [API] 이력서 수정 요청 (ID:", resumeId, "):", payload);
+  console.log("🔄 [API] skills:", request.skills);
   console.log("🔄 [API] visibility:", payload.visibility);
+  console.log("🔄 [API] skills:", payload.skills);
 
   const response = await api.put<{ resumeId: number }>(
     `/api/resume/${resumeId}`,
