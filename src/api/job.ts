@@ -58,6 +58,8 @@ export interface JobPostingListResponse {
   viewCount: number;
   applicantCount: number;
   createdAt: string;
+  thumbnailUrl?: string; // 수정!!!!!!!!!!!!!!!!!!!!!!!!
+  logoUrl?: string; // 수정!!!!!!!!!!!!!!!!!!!!!!!!
 }
 
 // 페이징 응답 타입
@@ -69,12 +71,16 @@ export interface PageResponse<T> {
   number: number;
 }
 
-// 공고 목록 조회
+// src/api/job.ts 파일을 열어서 'getJobPostings' 부분 확인
+
+// 1. 파라미터 타입에 regions, jobCategories 추가 (없으면 에러 남)
 export const getJobPostings = async (params?: {
-  category?: string;
-  keyword?: string;
   page?: number;
   size?: number;
+  keyword?: string;
+  regions?: string;
+  jobCategories?: string;
+  status?: string;
 }): Promise<PageResponse<JobPostingListResponse>> => {
   const response = await api.get(`${API_BASE_URL}/list`, { params });
   return response.data;
@@ -82,7 +88,7 @@ export const getJobPostings = async (params?: {
 
 // 공고 상세 조회
 export const getJobPosting = async (
-  jobId: number
+  jobId: number,
 ): Promise<JobPostingResponse> => {
   const response = await api.get(`${API_BASE_URL}/${jobId}`);
   return response.data;
@@ -91,7 +97,7 @@ export const getJobPosting = async (
 // 공고 등록
 export const createJobPosting = async (
   data: JobPostingRequest,
-  companyId: number
+  companyId: number,
 ): Promise<{ jobId: number }> => {
   const response = await api.post(API_BASE_URL, data, {
     headers: {
@@ -105,7 +111,7 @@ export const createJobPosting = async (
 export const updateJobPosting = async (
   jobId: number,
   data: JobPostingRequest,
-  companyId: number
+  companyId: number,
 ): Promise<{ jobId: number }> => {
   const response = await api.put(`${API_BASE_URL}/${jobId}`, data, {
     headers: {
@@ -118,7 +124,7 @@ export const updateJobPosting = async (
 // 공고 삭제 (상태를 CLOSED로 변경)
 export const deleteJobPosting = async (
   jobId: number,
-  companyId: number
+  companyId: number,
 ): Promise<{ message: string }> => {
   const response = await api.delete(`${API_BASE_URL}/${jobId}`, {
     headers: {
@@ -132,7 +138,7 @@ export const deleteJobPosting = async (
 export const updateJobPostingStatus = async (
   jobId: number,
   companyId: number,
-  status: string
+  status: string,
 ): Promise<{ message: string }> => {
   const response = await api.patch(
     `${API_BASE_URL}/${jobId}/status`,
@@ -141,7 +147,7 @@ export const updateJobPostingStatus = async (
       headers: {
         companyId: companyId.toString(),
       },
-    }
+    },
   );
   return response.data;
 };

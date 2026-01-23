@@ -5,7 +5,14 @@ import { useApp } from "../../context/AppContext";
 import { useAuth } from "../../context/AuthContext";
 import JobsSidebar from "./components/JobsSidebar";
 import { getJobPostings, JobPostingListResponse } from "../../api/job";
-import { createApply, getMyApplies, type ApplyCreateRequest } from "../../api/apply";
+import {
+  createApply,
+  getMyApplies,
+  type ApplyCreateRequest,
+} from "../../api/apply";
+
+// 👇 필터 컴포넌트와 타입 가져오기
+import JobSearchFilter, { SearchFilters } from "./components/JobSearchFilter";
 
 interface AllJobsPageProps {
   onLogoClick?: () => void;
@@ -23,6 +30,7 @@ type JobListing = {
   location: string;
   deadline: string;
   daysLeft: number;
+  thumbnailUrl?: string;
 };
 
 export default function AllJobsPage() {
@@ -30,34 +38,44 @@ export default function AllJobsPage() {
   const { activeMenu, handleMenuClick } = usePageNavigation("job", "job-sub-1");
   const { user } = useAuth();
 
-  const [locationFilter, setLocationFilter] = useState("위치기준 선택");
-  const [sortOrder, setSortOrder] = useState("정렬순서 선택");
-  const [itemsPerPage, setItemsPerPage] = useState(50);
-  const [displayOrder, setDisplayOrder] = useState("주소순");
+  // ✅ [수정됨] status 제거함. SearchFilters 인터페이스와 완벽 일치.
+  const [filters, setFilters] = useState<SearchFilters>({
+    keyword: "",
+    regions: [],
+    jobCategories: [],
+    status: "전체",
+  });
+
+  // 🔍 검색 및 페이징 상태
+  const [searchQuery, setSearchQuery] = useState("");
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
   const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // ✅ 백엔드에서 가져온 채용공고 데이터
+  // ✅ 백엔드 데이터 관리
   const [apiJobListings, setApiJobListings] = useState<JobListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [appliedJobIds, setAppliedJobIds] = useState<Set<number>>(new Set());
 
-  // ✅ AppContext에서 데이터 가져오기
+  // ✅ AppContext 데이터
   const { resumes, addJobApplication } = useApp();
-  
-  // ✅ 사용자의 지원 내역 조회
+
+  const handleFilterChange = (newFilters: SearchFilters) => {
+    setFilters(newFilters);
+    setCurrentPage(1);
+  };
+
+  // ✅ 1. 사용자의 지원 내역 조회
   useEffect(() => {
     const fetchMyApplications = async () => {
       if (!user?.userId) return;
 
       try {
         const applies = await getMyApplies(user.userId);
-        
-        // 지원한 공고 ID 목록을 Set으로 저장
         const jobIds = new Set(applies.map((apply) => apply.jobId));
         setAppliedJobIds(jobIds);
       } catch (error) {
@@ -67,39 +85,62 @@ export default function AllJobsPage() {
 
     fetchMyApplications();
   }, [user?.userId]);
-  
-  // ✅ 백엔드 API 호출하여 채용공고 데이터 가져오기
+
+  // 2. 채용공고 데이터 조회 (필터 적용)
   useEffect(() => {
     const fetchJobPostings = async () => {
       try {
         setLoading(true);
         setError(null);
-        
-        // API 호출
-        const response = await getJobPostings({
+
+        // API 파라미터 구성
+        const params: any = {
           page: 0,
-          size: 1000 // 모든 공고를 가져오기 위해 큰 값 설정
-        });
-        
-        // 백엔드 응답을 JobListing 형식으로 변환
-        const convertedJobs: JobListing[] = response.content.map((job: JobPostingListResponse) => {
-          const deadline = new Date(job.deadline);
-          const today = new Date();
-          const diffTime = deadline.getTime() - today.getTime();
-          const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          
-          return {
-            id: job.jobId,
-            company: job.companyName || "회사명",
-            title: job.title,
-            requirements: [],
-            tags: [job.jobCategory],
-            location: job.location,
-            deadline: job.deadline,
-            daysLeft: daysLeft > 0 ? daysLeft : 0,
-          };
-        });
-        
+          size: 1000,
+        };
+
+        // 필터 적용 (변수명 일치)
+        if (filters.keyword) {
+          params.keyword = filters.keyword;
+        }
+
+        if (filters.regions.length > 0) {
+          params.regions = filters.regions.join(",");
+        }
+
+        if (filters.jobCategories.length > 0) {
+          params.jobCategories = filters.jobCategories.join(",");
+        }
+
+        if (filters.status && filters.status !== "전체") {
+          params.status = filters.status;
+        }
+
+        // API 호출
+        const response = await getJobPostings(params);
+
+        // 데이터 변환
+        const convertedJobs: JobListing[] = response.content.map(
+          (job: JobPostingListResponse) => {
+            const deadline = new Date(job.deadline);
+            const today = new Date();
+            const diffTime = deadline.getTime() - today.getTime();
+            const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            return {
+              id: job.jobId,
+              company: job.companyName || "회사명",
+              title: job.title,
+              requirements: [],
+              tags: [job.jobCategory],
+              location: job.location,
+              deadline: job.deadline,
+              daysLeft: daysLeft > 0 ? daysLeft : 0,
+              thumbnailUrl: job.thumbnailUrl,
+            };
+          },
+        );
+
         setApiJobListings(convertedJobs);
       } catch (err) {
         console.error("채용공고 조회 실패:", err);
@@ -108,13 +149,19 @@ export default function AllJobsPage() {
         setLoading(false);
       }
     };
-    
-    fetchJobPostings();
-  }, []);
-  
-  // ✅ API에서 가져온 데이터 사용
-  const allJobListings = apiJobListings;
 
+    fetchJobPostings();
+  }, [filters]);
+
+  // ✅ 검색 필터링 + 페이징 처리
+  const allJobListings = apiJobListings.filter((job) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      job.title.toLowerCase().includes(query) ||
+      job.company.toLowerCase().includes(query)
+    );
+  });
   const totalJobs = allJobListings.length;
   const totalPages = Math.ceil(totalJobs / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -126,6 +173,7 @@ export default function AllJobsPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // ✅ 지원하기 관련 핸들러들
   const handleApply = (jobId: number) => {
     if (confirm("입사지원 하시겠습니까?")) {
       setSelectedJobId(jobId);
@@ -136,50 +184,55 @@ export default function AllJobsPage() {
   const handleResumeSelect = (resumeId: number) =>
     setSelectedResumeId(resumeId);
 
+  const handleCancelResume = () => {
+    setShowResumeModal(false);
+    setSelectedJobId(null);
+    setSelectedResumeId(null);
+  };
+
   const handleFinalSubmit = async () => {
     if (!selectedResumeId || !selectedJobId) {
       alert("이력서를 선택해주세요.");
       return;
     }
-  
+
     if (!user?.userId) {
       alert("로그인이 필요합니다.");
       navigate("/user/login");
       return;
     }
-  
+
     const selectedResume = resumes.find((r) => r.id === selectedResumeId);
     const selectedJob = allJobListings.find((j) => j.id === selectedJobId);
-  
+
     if (!selectedJob) {
       alert("공고 정보를 찾을 수 없습니다.");
       return;
     }
-  
+
     if (!confirm(`"${selectedResume?.title}"로 지원하시겠습니까?`)) {
       return;
     }
-  
+
     try {
       setSubmitting(true);
-  
-      // 백엔드 API 호출
+
       const applyRequest: ApplyCreateRequest = {
         jobId: selectedJob.id,
         resumeId: selectedResumeId,
       };
-  
+
       await createApply(user.userId, applyRequest);
-  
-      // localStorage에도 저장 (화면 표시용)
+
+      // 로컬 스토리지 업데이트 (UI용)
       const today = new Date();
       const applicationId = Date.now();
-  
+
       addJobApplication({
         id: applicationId,
         jobId: selectedJob.id,
         resumeId: selectedResumeId,
-        date: today.toISOString().split('T')[0].replace(/-/g, '.'),
+        date: today.toISOString().split("T")[0].replace(/-/g, "."),
         company: selectedJob.company,
         position: selectedJob.title,
         jobType: "정규직",
@@ -189,13 +242,13 @@ export default function AllJobsPage() {
         status: "지원완료",
         canCancel: true,
       });
-  
+
       alert("지원이 완료되었습니다!");
       setShowResumeModal(false);
       setSelectedJobId(null);
       setSelectedResumeId(null);
-      
-      // 지원 완료 후 지원 내역 새로고침
+
+      // 지원 내역 갱신
       if (user?.userId) {
         const applies = await getMyApplies(user.userId);
         const jobIds = new Set(applies.map((apply) => apply.jobId));
@@ -203,7 +256,10 @@ export default function AllJobsPage() {
       }
     } catch (error: any) {
       console.error("지원 실패:", error);
-      if (error.response?.status === 409 || error.response?.data?.message?.includes("이미 지원")) {
+      if (
+        error.response?.status === 409 ||
+        error.response?.data?.message?.includes("이미 지원")
+      ) {
         alert("이미 지원한 공고입니다.");
       } else {
         alert(error.response?.data?.message || "지원에 실패했습니다.");
@@ -211,12 +267,6 @@ export default function AllJobsPage() {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const handleCancelResume = () => {
-    setShowResumeModal(false);
-    setSelectedJobId(null);
-    setSelectedResumeId(null);
   };
 
   const getPageNumbers = () => {
@@ -235,7 +285,7 @@ export default function AllJobsPage() {
 
   return (
     <>
-      {/* 이력서 선택 다이얼로그 */}
+      {/* 이력서 선택 모달 */}
       {showResumeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
@@ -289,8 +339,8 @@ export default function AllJobsPage() {
                     disabled={submitting}
                     className="flex-1 px-6 py-3 font-medium text-white transition bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
-                  {submitting ? "지원 중..." : "지원하기"}
-                </button>
+                    {submitting ? "지원 중..." : "지원하기"}
+                  </button>
                 </div>
               </>
             )}
@@ -310,11 +360,62 @@ export default function AllJobsPage() {
 
             {/* 메인 컨텐츠 */}
             <div className="flex-1 space-y-8">
+              {/* 필터 컴포넌트 */}
+              <JobSearchFilter onFilterChange={handleFilterChange} />
+
               <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
+                {/* 검색 헤더 */}
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold">
-                    전체 채용정보 <span className="text-blue-600">{totalJobs}</span>건
+                    전체 채용정보{" "}
+                    <span className="text-blue-600">{totalJobs}</span>건
                   </h2>
+
+                  {/* 검색창 + 개수 선택 */}
+                  <div className="flex items-center gap-3">
+                    {/* 검색창 */}
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                          setCurrentPage(1); // 검색 시 1페이지로 초기화
+                        }}
+                        placeholder="기업명, 공고제목 등 검색"
+                        className="w-80 pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      />
+                      <svg
+                        className="absolute w-5 h-5 text-gray-400 transform -translate-y-1/2 left-3 top-1/2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
+                      </svg>
+                    </div>
+
+                    {/* 개수 선택 드롭다운 */}
+                    <select
+                      value={itemsPerPage}
+                      onChange={(e) => {
+                        setItemsPerPage(Number(e.target.value));
+                        setCurrentPage(1); // 개수 변경 시 1페이지로 초기화
+                      }}
+                      className="px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                    >
+                      <option value={10}>10개씩</option>
+                      <option value={20}>20개씩</option>
+                      <option value={30}>30개씩</option>
+                      <option value={40}>40개씩</option>
+                      <option value={50}>50개씩</option>
+                    </select>
+                  </div>
                 </div>
 
                 {loading ? (
@@ -330,27 +431,28 @@ export default function AllJobsPage() {
                 ) : allJobListings.length === 0 ? (
                   <div className="p-12 text-center text-gray-500">
                     <div className="mb-4 text-4xl">📋</div>
-                    <p>등록된 채용공고가 없습니다.</p>
+                    <p>조건에 맞는 채용공고가 없습니다.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
                     {currentJobs.map((job) => {
                       const isApplied = appliedJobIds.has(job.id);
-                      
+
                       return (
                         <div
                           key={job.id}
-                          className="flex flex-col overflow-hidden transition bg-white border border-gray-300 rounded-xl shadow-sm hover:shadow-xl hover:border-purple-400"
+                          className="flex flex-col overflow-hidden transition bg-white border border-gray-300 shadow-sm rounded-xl hover:shadow-xl hover:border-purple-400"
                         >
-                          {/* 로고 영역 - 크기 줄임 */}
+                          {/* 로고 영역 */}
                           <div className="flex items-center justify-center h-20 bg-gradient-to-br from-gray-50 to-gray-100">
-                            {job.logoUrl ? (
+                            {job.thumbnailUrl ? (
                               <img
-                                src={job.logoUrl}
+                                src={job.thumbnailUrl}
                                 alt={job.company}
-                                className="object-contain w-16 h-16"
+                                className="object-contain w-full h-full"
                                 onError={(e) => {
-                                  e.currentTarget.src = 'https://via.placeholder.com/150?text=No+Logo';
+                                  e.currentTarget.src =
+                                    "https://via.placeholder.com/150?text=No+Logo";
                                 }}
                               />
                             ) : (
@@ -375,63 +477,44 @@ export default function AllJobsPage() {
                               {job.company}
                             </p>
 
-                            {/* 썸네일 이미지 추가 */}
-                            <div className="mb-3 overflow-hidden rounded-lg">
-                              {job.thumbnailUrl ? (
-                                <img
-                                  src={job.thumbnailUrl}
-                                  alt={`${job.title} 썸네일`}
-                                  className="object-cover w-full h-32"
-                                  onError={(e) => {
-                                    e.currentTarget.src = 'https://via.placeholder.com/400x200?text=No+Image';
-                                  }}
-                                />
-                              ) : (
-                                <div className="flex items-center justify-center w-full h-32 bg-gradient-to-br from-purple-50 to-blue-50">
-                                  <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                  </svg>
-                                </div>
-                              )}
-                            </div>
-
                             {/* 정보 태그 */}
                             <div className="flex flex-wrap gap-2 mb-4">
                               <span className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded-full">
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
                                 {job.location}
                               </span>
-                              <span className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-full">
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                </svg>
-                                {job.experience || "경력무관"}
-                              </span>
+                              {job.tags.map((tag, i) => (
+                                <span
+                                  key={i}
+                                  className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-full"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
                             </div>
 
                             {/* 하단 정보 */}
                             <div className="flex items-center justify-between pt-4 mt-auto border-t border-gray-100">
                               <div className="flex items-center gap-2">
-                                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
                                 <span className="text-xs text-gray-600">
                                   ~ {job.deadline}
                                 </span>
                               </div>
-                              <span className={`text-sm font-bold ${
-                                job.daysLeft <= 7 ? 'text-red-600' : 'text-blue-600'
-                              }`}>
+                              <span
+                                className={`text-sm font-bold ${
+                                  job.daysLeft <= 7
+                                    ? "text-red-600"
+                                    : "text-blue-600"
+                                }`}
+                              >
                                 D-{job.daysLeft}
                               </span>
                             </div>
 
                             {/* 지원 버튼 */}
                             <button
-                              onClick={() => isApplied ? null : handleApply(job.id)}
+                              onClick={() =>
+                                isApplied ? null : handleApply(job.id)
+                              }
                               disabled={isApplied}
                               className={`w-full py-2.5 mt-4 text-sm font-semibold transition rounded-lg ${
                                 isApplied

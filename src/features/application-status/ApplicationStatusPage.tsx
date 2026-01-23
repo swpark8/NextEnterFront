@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 import { useApp } from "../../context/AppContext";
 import ApplicationStautsSidebar from "./components/ApplicationStatusPageSidebar";
@@ -12,9 +13,12 @@ export default function ApplicationStatusPage({
   initialMenu: _initialMenu,
   onNavigate: _onNavigate,
 }: ApplicationStatusPageProps) {
+  const [searchParams] = useSearchParams();
+  const menuFromUrl = searchParams.get("menu") || "mypage-sub-3";
+  
   const { activeMenu, handleMenuClick } = usePageNavigation(
     "mypage",
-    _initialMenu,
+    _initialMenu || menuFromUrl,
     _onNavigate
   );
 

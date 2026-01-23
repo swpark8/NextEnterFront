@@ -7,8 +7,6 @@ export const navigationMenuData = {
     items: [
       { id: "job-sub-1", label: "전체 공고" },
       { id: "job-sub-2", label: "AI 추천 공고" },
-      { id: "job-sub-3", label: "직무별 공고" },
-      { id: "job-sub-4", label: "지역별 공고" },
     ],
   },
   resume: {
@@ -51,6 +49,7 @@ export const navigationMenuData = {
       { id: "mypage-sub-1", label: "마이페이지" },
       { id: "mypage-sub-2", label: "내 정보" },
       { id: "mypage-sub-3", label: "지원 현황" },
+      { id: "mypage-sub-4", label: "스크랩 현황" },
     ],
   },
   credit: {

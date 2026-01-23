@@ -124,6 +124,8 @@ export default function Header() {
       "offer-sub-2": "/user/offers/interview",
       "credit-sub-2": "/user/credit/charge",
       "mypage-sub-2": "/user/profile",
+      "mypage-sub-3": "/user/application-status", // 지원 현황
+      "mypage-sub-4": "/user/scrap-status", // 스크랩 현황
     };
 
     const targetMenuId = menuId || defaultSubMenus[tabId];

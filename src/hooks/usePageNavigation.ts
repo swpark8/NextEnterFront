@@ -47,6 +47,7 @@ export const usePageNavigation = (
       "credit-sub-2": "/user/credit/charge",
       "mypage-sub-2": "/user/profile",
       "mypage-sub-3": "/user/application-status", // ✅ 입사지원 현황 추가
+      "mypage-sub-4": "/user/scrap-status", // ✅ 스크랩 현황 추가
     };
 
     // ✅ 특별 처리: 페이지 ID로 직접 이동하는 경우

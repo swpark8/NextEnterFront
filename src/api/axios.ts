@@ -15,6 +15,7 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
       console.log("🔑 토큰 포함하여 요청:", config.url);
     }
+    
     return config;
   },
   (error) => {
