@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useApp } from "../../context/AppContext";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
-import { chargeCredit } from "../../api/credit";
+import { chargeCredit, getCreditBalance } from "../../api/credit";
 import { verifyPayment } from "../../api/payment";
 
 interface CreditChargePageProps {
@@ -52,13 +52,17 @@ export default function CreditChargePage({
 }: CreditChargePageProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { creditBalance, addCreditTransaction } = useApp();
+  const { addCreditTransaction } = useApp();
   const { handleMenuClick } = usePageNavigation(
     "credit",
     initialMenu || "credit-sub-2",
     onNavigate
   );
 
+  // ✅ 실제 크레딧 잔액 상태
+  const [currentCredit, setCurrentCredit] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  
   const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] =
     useState<string>("");
@@ -69,6 +73,33 @@ export default function CreditChargePage({
   const [cardNumber, setCardNumber] = useState<string>("");
   const [cardNumberError, setCardNumberError] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // ✅ 크레딧 잔액 조회
+  useEffect(() => {
+    const fetchCreditBalance = async () => {
+      // ✅ 개인/기업 구분
+      const targetUserId = user?.userType === "company" ? user?.companyId : user?.userId;
+      
+      if (targetUserId) {
+        try {
+          setIsLoading(true);
+          console.log("💰 크레딧 잔액 조회:", { userType: user?.userType, targetUserId });
+          const balance = await getCreditBalance(targetUserId);
+          console.log("✅ 크레딧 잔액:", balance.balance);
+          setCurrentCredit(balance.balance);
+        } catch (error) {
+          console.error("❌ 크레딧 잔액 조회 실패:", error);
+          setCurrentCredit(0);
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCreditBalance();
+  }, [user?.userId, user?.companyId, user?.userType]);
 
   const packages = [
     { credits: 100, price: 10000, bonus: 0 },
@@ -387,8 +418,14 @@ export default function CreditChargePage({
                 {user?.name || "사용자"}님의 현재 사용 가능 크레딧
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-4xl font-bold">{creditBalance}</span>
-                <span className="text-xl">💰</span>
+                {isLoading ? (
+                  <span className="text-2xl text-white">로딩 중...</span>
+                ) : (
+                  <>
+                    <span className="text-4xl font-bold">{currentCredit.toLocaleString()}</span>
+                    <span className="text-xl">💰</span>
+                  </>
+                )}
               </div>
             </div>
           </div>

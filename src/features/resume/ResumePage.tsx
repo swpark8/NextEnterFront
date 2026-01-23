@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useApp } from "../../context/AppContext";
 import { getResumeList, deleteResume, ResumeListItem } from "../../api/resume";
@@ -7,6 +8,7 @@ import ResumeFormPage from "./ResumeFormPage";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 
 export default function ResumePage() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { setResumes: setContextResumes } = useApp();
 
@@ -236,7 +238,8 @@ export default function ResumePage() {
                       {resumes.map((resume) => (
                         <div
                           key={resume.resumeId}
-                          className="p-6 transition bg-white border-2 border-gray-300 rounded-lg hover:shadow-md"
+                          onClick={() => navigate(`/user/resume/${resume.resumeId}`)}
+                          className="p-6 transition bg-white border-2 border-gray-300 rounded-lg cursor-pointer hover:shadow-md hover:border-blue-400"
                         >
                           <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-3">
@@ -253,24 +256,10 @@ export default function ResumePage() {
                                 </span>
                               )}
                             </div>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleEdit(resume.resumeId)}
-                                className="px-4 py-2 text-sm font-medium text-blue-600 transition border-2 border-blue-600 rounded-lg cursor-pointer hover:bg-blue-600 hover:text-white"
-                              >
-                                수정
-                              </button>
-                              <button
-                                onClick={() => handleDelete(resume.resumeId)}
-                                className="px-4 py-2 text-sm font-medium text-red-600 transition border-2 border-red-600 rounded-lg cursor-pointer hover:bg-red-600 hover:text-white"
-                              >
-                                삭제
-                              </button>
-                            </div>
                           </div>
                           <div className="grid grid-cols-3 gap-4 text-sm">
                             <div>
-                              <span className="text-gray-600">산업:</span>
+                              <span className="text-gray-600">직무:</span>
                               <span className="ml-2 font-medium">
                                 {resume.jobCategory || "미지정"}
                               </span>
@@ -287,17 +276,6 @@ export default function ResumePage() {
                               <span className="text-gray-600">조회수:</span>
                               <span className="ml-2 font-medium">
                                 {resume.viewCount}회
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-gray-600">지원 내역:</span>
-                              <span
-                                onClick={() =>
-                                  handleApplicationClick(resume.resumeId)
-                                }
-                                className="ml-2 text-blue-600 underline cursor-pointer hover:text-blue-800"
-                              >
-                                보기 &gt;
                               </span>
                             </div>
                           </div>

@@ -21,6 +21,8 @@ import PaymentCompletePage from "./features/payment-complete/PaymentCompletePage
 import InterviewPage from "./features/interview/InterviewPage";
 import InterviewResultPage from "./features/interview/InterviewResultPage";
 import ResumePage from "./features/resume/ResumePage";
+import ResumeDetailPage from "./features/resume/ResumeDetailPage";
+import ResumeFormPage from "./features/resume/ResumeFormPage";
 import CoverLetterPage from "./features/coverletter/CoverLetterPage";
 import AIRecommendationPage from "./features/ai-recommendation/AIRecommendationPage";
 import MatchingPage from "./features/matching/MatchingPage";
@@ -114,10 +116,11 @@ function App() {
               path="credit/charge"
               element={
                 <ProtectedRoute allowedUserType="personal">
-                  <CreditChargePage />
+                  <CreditChargePage initialMenu="credit-sub-2" />
                 </ProtectedRoute>
               }
             />
+
             {/* ✅ 결제 완료 페이지 추가 */}
             <Route
               path="credit/complete"
@@ -148,6 +151,22 @@ function App() {
               element={
                 <ProtectedRoute allowedUserType="personal">
                   <ResumePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="resume/:resumeId"
+              element={
+                <ProtectedRoute allowedUserType="personal">
+                  <ResumeDetailPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="resume/edit/:resumeId"
+              element={
+                <ProtectedRoute allowedUserType="personal">
+                  <ResumeFormPage onBack={() => {}} />
                 </ProtectedRoute>
               }
             />
@@ -323,10 +342,11 @@ function App() {
               path="credit/charge"
               element={
                 <ProtectedRoute allowedUserType="company">
-                  <CreditChargePage />
+                  <CreditChargePage initialMenu="credit-sub-2" />
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="notifications"
               element={

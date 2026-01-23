@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
   createResume,
@@ -11,19 +12,22 @@ import ResumeSidebar from "./components/ResumeSidebar";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 
 interface ResumeFormPageProps {
-  onBack: () => void;
-  resumeId?: number | null; // 수정 시 이력서 ID, null이면 새 이력서 작성
+  onBack?: () => void; // 옵션널로 변경
   initialMenu?: string;
   onNavigate?: (page: string, subMenu?: string) => void;
 }
 
 export default function ResumeFormPage({
   onBack,
-  resumeId,
   initialMenu,
   onNavigate,
 }: ResumeFormPageProps) {
+  const navigate = useNavigate();
+  const { resumeId: resumeIdParam } = useParams();
   const { user } = useAuth();
+
+  // 라우트 파라미터에서 resumeId 가져오기
+  const resumeId = resumeIdParam ? parseInt(resumeIdParam) : null;
 
   // ✅ 커스텀 훅 사용
   const { activeMenu, handleMenuClick } = usePageNavigation(
@@ -347,7 +351,7 @@ export default function ResumeFormPage({
         response = await updateResume(resumeId, resumeData, user.userId);
         if (response.resumeId) {
           alert("이력서가 수정되었습니다!");
-          onBack();
+          navigate("/user/resume");
         } else {
           setError("이력서 수정에 실패했습니다.");
         }
@@ -356,7 +360,7 @@ export default function ResumeFormPage({
         response = await createResume(resumeData, user.userId);
         if (response.resumeId) {
           alert("이력서가 등록되었습니다!");
-          onBack();
+          navigate("/user/resume");
         } else {
           setError("이력서 등록에 실패했습니다.");
         }
@@ -375,7 +379,7 @@ export default function ResumeFormPage({
   // 취소 처리
   const handleCancel = () => {
     if (window.confirm("정말 취소하시겠습니까?")) {
-      onBack();
+      navigate("/user/resume");
     }
   };
 

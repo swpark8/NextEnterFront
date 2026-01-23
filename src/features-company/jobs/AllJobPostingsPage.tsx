@@ -535,7 +535,7 @@ export default function AllJobPostingsPage() {
                     className="flex flex-col overflow-hidden transition bg-white border border-gray-300 shadow-sm rounded-xl hover:shadow-xl hover:border-purple-400 cursor-pointer"
                   >
                     {/* 로고 영역 */}
-                    <div className="flex items-center justify-center h-20 bg-gradient-to-br from-gray-50 to-gray-100">
+                    <div className="flex items-center justify-center h-12 bg-gradient-to-br from-gray-50 to-gray-100">
                       {job.logoUrl ? (
                         <img
                           src={job.logoUrl}
@@ -573,7 +573,7 @@ export default function AllJobPostingsPage() {
                           <img
                             src={job.thumbnailUrl}
                             alt={`${job.title} 썸네일`}
-                            className="object-cover w-full h-32"
+                            className="object-cover w-full h-50"
                             onError={(e) => {
                               e.currentTarget.src =
                                 "https://via.placeholder.com/400x200?text=No+Image";

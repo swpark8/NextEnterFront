@@ -13,7 +13,10 @@ export interface JobPostingRequest {
   salaryMin?: number;
   salaryMax?: number;
   location: string;
+  locationCity?: string; // 시/도 정보 (필터링용)
   description?: string;
+  thumbnailUrl?: string;
+  detailImageUrl?: string;
   deadline: string; // YYYY-MM-DD 형식
   status?: string;
 }
@@ -23,6 +26,7 @@ export interface JobPostingResponse {
   jobId: number;
   companyId: number;
   companyName: string;
+  logoUrl?: string;
   title: string;
   jobCategory: string;
   requiredSkills?: string;
@@ -32,7 +36,10 @@ export interface JobPostingResponse {
   salaryMin?: number;
   salaryMax?: number;
   location: string;
+  locationCity?: string; // 시/도 정보 (필터링용)
   description?: string;
+  thumbnailUrl?: string;
+  detailImageUrl?: string;
   deadline: string;
   status: string;
   viewCount: number;
@@ -52,6 +59,7 @@ export interface JobPostingListResponse {
   thumbnailUrl?: string;
   jobCategory: string;
   location: string;
+  locationCity?: string; // 시/도 정보 (필터링용)
   experienceMin?: number;
   experienceMax?: number;
   salaryMin?: number;

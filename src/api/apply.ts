@@ -29,13 +29,22 @@ export interface ApplyDetailResponse {
   userPhone: string;
   jobTitle: string;
   jobCategory: string;
-  // 이력서 정보
+  // 이력서 인적사항
   resumeTitle?: string;
+  gender?: string;
+  birthDate?: string;
+  address?: string;
+  profileImage?: string;
+  // 이력서 스킬 및 경력
   skills?: string[];
   experience?: string;
-  education?: string;
-  certifications?: string;
+  // 이력서 상세 정보 (배열)
+  experiences?: ExperienceItem[];
+  certificates?: CertificateItem[];
+  educations?: EducationItem[];
+  careers?: CareerItem[];
   // 자기소개서 정보
+  coverLetterTitle?: string;
   coverLetterContent?: string;
   status: string;
   aiScore: number;
@@ -43,6 +52,30 @@ export interface ApplyDetailResponse {
   appliedAt: string;
   reviewedAt: string;
   updatedAt: string;
+}
+
+// 경험/활동/교육 아이템
+export interface ExperienceItem {
+  title: string;
+  period: string;
+}
+
+// 자격증/어학/수상 아이템
+export interface CertificateItem {
+  title: string;
+  date: string;
+}
+
+// 학력 아이템
+export interface EducationItem {
+  school: string;
+  period: string;
+}
+
+// 경력 아이템
+export interface CareerItem {
+  company: string;
+  period: string;
 }
 
 // 상태 변경 요청 타입

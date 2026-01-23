@@ -23,9 +23,35 @@ export default function JobPostingCreatePage() {
     salaryMin: "",
     salaryMax: "",
     location: "",
+    locationCity: "", // 시/도 정보 (필터링용)
     description: "",
     deadline: "",
   });
+
+  // 주소 검색 함수
+  const handleAddressSearch = () => {
+    if (window.daum && window.daum.Postcode) {
+      new window.daum.Postcode({
+        oncomplete: (data: any) => {
+          // 도로명 주소 우선, 없으면 지번 주소
+          const fullAddress = data.roadAddress || data.jibunAddress;
+          
+          // 시/도 정보 추출
+          const city = data.sido; // 예: "서울특별시", "경기도" 등
+          
+          setFormData(prev => ({
+            ...prev,
+            location: fullAddress,
+            locationCity: city
+          }));
+        },
+        width: '100%',
+        height: 600,
+      }).open();
+    } else {
+      alert('주소 검색 서비스를 불러오는 중 오류가 발생했습니다.');
+    }
+  };
 
   // 사용 가능한 스킬 목록 (이력서 작성과 동일)
   const availableSkills = [
@@ -192,6 +218,7 @@ export default function JobPostingCreatePage() {
         salaryMin: formData.salaryMin ? parseInt(formData.salaryMin) : undefined,
         salaryMax: formData.salaryMax ? parseInt(formData.salaryMax) : undefined,
         location: formData.location,
+        locationCity: formData.locationCity, // 시/도 정보 추가
         description: formData.description || undefined,
         thumbnailUrl: thumbnailPreview || undefined,
         detailImageUrl: detailImagePreview || undefined,
@@ -282,16 +309,31 @@ export default function JobPostingCreatePage() {
                   <label className="block mb-2 text-sm font-semibold text-gray-700">
                     근무지 <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    name="location"
-                    value={formData.location}
-                    onChange={handleInputChange}
-                    placeholder="서울특별시 강남구 테헤란로 123"
-                    maxLength={100}
-                    className="w-full px-4 py-3 transition-colors border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500"
-                    required
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      name="location"
+                      value={formData.location}
+                      onChange={handleInputChange}
+                      placeholder="주소 검색 버튼을 클릭해주세요"
+                      maxLength={100}
+                      className="flex-1 px-4 py-3 transition-colors border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500"
+                      readOnly
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddressSearch}
+                      className="px-6 py-3 font-semibold text-white transition-colors bg-blue-600 rounded-xl hover:bg-blue-700 whitespace-nowrap"
+                    >
+                      📍 주소 검색
+                    </button>
+                  </div>
+                  {formData.locationCity && (
+                    <p className="mt-2 text-sm text-gray-600">
+                      필터링 지역: <span className="font-semibold text-blue-600">{formData.locationCity}</span>
+                    </p>
+                  )}
                 </div>
 
                 {/* 경력 범위 */}

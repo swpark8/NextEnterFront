@@ -4,6 +4,9 @@ import { useAuth } from "../../context/AuthContext";
 import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
 import { getCreditBalance } from "../../api/credit";
+import { searchTalents, type TalentSearchResponse } from "../../api/talent";
+import { getCompanyJobPostings, type JobPostingListResponse } from "../../api/job";
+import { getApplies, type ApplyListResponse } from "../../api/apply";
 
 export default function BusinessCreditPage() {
   const navigate = useNavigate();
@@ -13,11 +16,13 @@ export default function BusinessCreditPage() {
     "credit-sub-1"
   );
 
-  // ✅ 초기값은 0이지만, useEffect에서 백엔드에서 실제 값을 가져옴
   const [currentCredit, setCurrentCredit] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [recommendedApplicants, setRecommendedApplicants] = useState<TalentSearchResponse[]>([]);
+  const [myJobPostings, setMyJobPostings] = useState<JobPostingListResponse[]>([]);
+  const [appliedCandidates, setAppliedCandidates] = useState<ApplyListResponse[]>([]);
 
-  // ✅ 크레딧 잔액 조회
+  // 크레딧 잔액 조회
   useEffect(() => {
     const fetchCreditBalance = async () => {
       if (user?.companyId) {
@@ -28,7 +33,6 @@ export default function BusinessCreditPage() {
           setCurrentCredit(balance.balance);
         } catch (error) {
           console.error("❌ 크레딧 잔액 조회 실패:", error);
-          // 에러 발생 시 0 유지 (신규 회원)
           setCurrentCredit(0);
         } finally {
           setIsLoading(false);
@@ -41,20 +45,74 @@ export default function BusinessCreditPage() {
     fetchCreditBalance();
   }, [user?.companyId]);
 
-  const recommendedApplicants = [
-    { name: "김0연", age: "23세", field: "무경력", cost: 50 },
-    { name: "송0서", age: "30세", field: "2년", cost: 110 },
-    { name: "유0현", age: "28세", field: "1년", cost: 80 },
-    { name: "서0민", age: "36세", field: "7년", cost: 400 },
-  ];
+  // 추천 지원자 조회 (인재 검색 API 사용)
+  useEffect(() => {
+    const fetchRecommendedApplicants = async () => {
+      if (user?.companyId) {
+        try {
+          const result = await searchTalents({
+            page: 0,
+            size: 4,
+            companyUserId: user.companyId,
+          });
+          setRecommendedApplicants(result.content);
+        } catch (error) {
+          console.error("추천 지원자 조회 실패:", error);
+        }
+      }
+    };
 
-  const appliedCandidates = [
-    { name: "이0영", age: "32세", status: "신입의 마음가짐으로..." },
-    { name: "고0영", age: "41세", status: "15년 이상의 경력..." },
-  ];
+    fetchRecommendedApplicants();
+  }, [user?.companyId]);
+
+  // 내가 올린 공고 조회
+  useEffect(() => {
+    const fetchMyJobPostings = async () => {
+      if (user?.companyId) {
+        try {
+          const postings = await getCompanyJobPostings(user.companyId);
+          // ACTIVE 상태의 공고만 필터링하고 최대 3개만
+          const activePostings = postings
+            .filter(p => p.status === "ACTIVE")
+            .slice(0, 3);
+          setMyJobPostings(activePostings);
+        } catch (error) {
+          console.error("공고 목록 조회 실패:", error);
+        }
+      }
+    };
+
+    fetchMyJobPostings();
+  }, [user?.companyId]);
+
+  // 지원한 인재 조회
+  useEffect(() => {
+    const fetchAppliedCandidates = async () => {
+      if (user?.companyId) {
+        try {
+          const result = await getApplies(user.companyId, {
+            page: 0,
+            size: 2,
+          });
+          setAppliedCandidates(result.content);
+        } catch (error) {
+          console.error("지원자 목록 조회 실패:", error);
+        }
+      }
+    };
+
+    fetchAppliedCandidates();
+  }, [user?.companyId]);
 
   const handleChargeClick = () => {
     navigate("/company/credit/charge");
+  };
+
+  // 경력 포맷팅 함수
+  const formatExperience = (years: number) => {
+    if (years === 0) return "신입";
+    if (years < 0) return "경력무관";
+    return `${years}년`;
   };
 
   return (
@@ -122,33 +180,48 @@ export default function BusinessCreditPage() {
                   추천 지원자에게 연락 보내기
                 </h2>
               </div>
-              <div className="overflow-hidden border-2 border-purple-300 rounded-xl">
-                <table className="w-full">
-                  <tbody className="divide-y divide-purple-200">
-                    {recommendedApplicants.map((candidate, idx) => (
-                      <tr key={idx} className="transition hover:bg-purple-50">
-                        <td className="px-6 py-4 font-bold text-gray-900">
-                          {candidate.name}
-                        </td>
-                        <td className="px-6 py-4 font-semibold text-gray-700">
-                          {candidate.age}
-                        </td>
-                        <td className="px-6 py-4 font-semibold text-gray-700">
-                          {candidate.field}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center justify-center space-x-2">
-                            <span className="text-xl">🪙</span>
-                            <span className="text-lg font-bold text-gray-900">
-                              {candidate.cost}
-                            </span>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {recommendedApplicants.length > 0 ? (
+                <div className="overflow-hidden border-2 border-purple-300 rounded-xl">
+                  <table className="w-full">
+                    <tbody className="divide-y divide-purple-200">
+                      {recommendedApplicants.map((candidate, idx) => (
+                        <tr
+                          key={idx}
+                          className="transition cursor-pointer hover:bg-purple-50"
+                          onClick={() => navigate("/company/talent-search")}
+                        >
+                          <td className="px-6 py-4 font-bold text-gray-900">
+                            {candidate.name}
+                          </td>
+                          <td className="px-6 py-4 font-semibold text-gray-700">
+                            {candidate.jobCategory}
+                          </td>
+                          <td className="px-6 py-4 font-semibold text-gray-700">
+                            {formatExperience(candidate.experienceYears)}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center justify-center space-x-2">
+                              <span className="px-3 py-1 text-sm font-semibold text-blue-700 bg-blue-100 rounded-full">
+                                매칭 {candidate.matchScore}%
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="py-12 text-center border-2 border-gray-300 border-dashed bg-gray-50 rounded-xl">
+                  <p className="mb-4 text-gray-600">추천 지원자가 없습니다</p>
+                  <button
+                    onClick={() => navigate("/company/talent-search")}
+                    className="px-6 py-2 text-purple-600 transition border-2 border-purple-600 rounded-lg hover:bg-purple-50"
+                  >
+                    인재 검색하기
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* 오른쪽 상단: 내가 올린 공고 보기 */}
@@ -167,19 +240,55 @@ export default function BusinessCreditPage() {
                   +
                 </button>
               </div>
-              <div className="p-12 text-center border-2 border-gray-300 border-dashed bg-gray-50 rounded-xl">
-                <div className="mb-4">
-                  <h3 className="mb-4 text-xl font-bold text-gray-900">
-                    등록된 공고가 없습니다
-                  </h3>
+              {myJobPostings.length > 0 ? (
+                <div className="space-y-3">
+                  {myJobPostings.map((job) => (
+                    <div
+                      key={job.jobId}
+                      className="p-4 transition border-2 border-purple-300 cursor-pointer rounded-xl hover:bg-purple-50"
+                      onClick={() => navigate(`/company/jobs/${job.jobId}`)}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="mb-2 font-bold text-gray-900 line-clamp-1">
+                            {job.title}
+                          </h3>
+                          <div className="flex items-center space-x-3 text-sm text-gray-600">
+                            <span>📍 {job.location}</span>
+                            <span>•</span>
+                            <span>
+                              👁️ {job.viewCount} · 📝 {job.applicantCount}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="px-3 py-1 text-sm font-semibold text-green-700 bg-green-100 rounded-full">
+                          모집중
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => navigate("/company/jobs")}
+                    className="w-full py-2 text-purple-600 transition border-2 border-purple-600 rounded-lg hover:bg-purple-50"
+                  >
+                    전체 공고 보기
+                  </button>
                 </div>
-                <button
-                  onClick={() => navigate("/company/jobs")}
-                  className="px-6 py-2 text-purple-600 transition border-2 border-purple-600 rounded-lg hover:bg-purple-50"
-                >
-                  공고 관리 바로가기
-                </button>
-              </div>
+              ) : (
+                <div className="py-12 text-center border-2 border-gray-300 border-dashed bg-gray-50 rounded-xl">
+                  <div className="mb-4">
+                    <h3 className="mb-4 text-xl font-bold text-gray-900">
+                      등록된 공고가 없습니다
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => navigate("/company/jobs")}
+                    className="px-6 py-2 text-purple-600 transition border-2 border-purple-600 rounded-lg hover:bg-purple-50"
+                  >
+                    공고 관리 바로가기
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* 왼쪽 하단: 크레딧은 어디에 쓸 수 있나요? */}
@@ -202,25 +311,41 @@ export default function BusinessCreditPage() {
                 <span className="text-2xl">👤</span>
                 <h2 className="text-xl font-bold text-gray-900">지원한 인재</h2>
               </div>
-              <div className="overflow-hidden border-2 border-purple-300 rounded-xl">
-                <table className="w-full">
-                  <tbody className="divide-y divide-purple-200">
-                    {appliedCandidates.map((candidate, idx) => (
-                      <tr key={idx} className="transition hover:bg-purple-50">
-                        <td className="px-6 py-4 font-bold text-gray-900">
-                          {candidate.name}
-                        </td>
-                        <td className="px-6 py-4 font-semibold text-gray-700">
-                          {candidate.age}
-                        </td>
-                        <td className="max-w-xs px-6 py-4 text-gray-700 truncate">
-                          {candidate.status}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {appliedCandidates.length > 0 ? (
+                <div className="overflow-hidden border-2 border-purple-300 rounded-xl">
+                  <table className="w-full">
+                    <tbody className="divide-y divide-purple-200">
+                      {appliedCandidates.map((candidate, idx) => (
+                        <tr
+                          key={idx}
+                          className="transition cursor-pointer hover:bg-purple-50"
+                          onClick={() => navigate(`/company/applicants/${candidate.applyId}`)}
+                        >
+                          <td className="px-6 py-4 font-bold text-gray-900">
+                            {candidate.userName}
+                          </td>
+                          <td className="px-6 py-4 font-semibold text-gray-700">
+                            {candidate.userAge}세
+                          </td>
+                          <td className="max-w-xs px-6 py-4 text-gray-700 truncate">
+                            {candidate.jobTitle}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="py-12 text-center border-2 border-gray-300 border-dashed bg-gray-50 rounded-xl">
+                  <p className="mb-4 text-gray-600">지원자가 없습니다</p>
+                  <button
+                    onClick={() => navigate("/company/applicants")}
+                    className="px-6 py-2 text-purple-600 transition border-2 border-purple-600 rounded-lg hover:bg-purple-50"
+                  >
+                    지원자 관리 바로가기
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -290,11 +290,38 @@ export default function ApplicantDetailPage() {
               </div>
             </div>
 
+            {/* 인적사항 */}
+            <div className="p-6 mb-8 border-2 border-indigo-200 rounded-lg bg-indigo-50">
+              <h2 className="mb-4 text-lg font-bold text-gray-900">
+                📋 인적사항
+              </h2>
+              <div className="grid grid-cols-2 gap-4">
+                {applicant.gender && (
+                  <div className="p-3 bg-white border border-indigo-200 rounded-lg">
+                    <div className="mb-1 text-xs font-medium text-gray-500">성별</div>
+                    <div className="font-semibold text-gray-900">{applicant.gender}</div>
+                  </div>
+                )}
+                {applicant.birthDate && (
+                  <div className="p-3 bg-white border border-indigo-200 rounded-lg">
+                    <div className="mb-1 text-xs font-medium text-gray-500">생년월일</div>
+                    <div className="font-semibold text-gray-900">{applicant.birthDate}</div>
+                  </div>
+                )}
+                {applicant.address && (
+                  <div className="col-span-2 p-3 bg-white border border-indigo-200 rounded-lg">
+                    <div className="mb-1 text-xs font-medium text-gray-500">주소</div>
+                    <div className="font-semibold text-gray-900">{applicant.address}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* 주요 스킬 */}
             {applicant.skills && applicant.skills.length > 0 && (
               <div className="p-6 mb-8 border-2 border-purple-200 rounded-lg bg-purple-50">
                 <h2 className="mb-4 text-lg font-bold text-gray-900">
-                  주요 스킬
+                  💻 주요 스킬
                 </h2>
                 <div className="flex flex-wrap gap-2">
                   {applicant.skills.map((skill, idx) => (
@@ -309,56 +336,80 @@ export default function ApplicantDetailPage() {
               </div>
             )}
 
-            {/* 이력서 */}
-            <div className="p-6 mb-8 border-2 border-blue-200 rounded-lg bg-blue-50">
-              <h2 className="mb-4 text-lg font-bold text-gray-900">
-                이력서 {applicant.resumeTitle && `- ${applicant.resumeTitle}`}
-              </h2>
-              
-              <div className="space-y-4">
-                {/* 경력 */}
-                {applicant.experience && (
-                  <div>
-                    <div className="mb-2 text-sm font-semibold text-gray-700">💼 경력</div>
-                    <div className="p-4 bg-white border border-blue-200 rounded-lg">
-                      <span className="text-gray-900">{applicant.experience}</span>
+            {/* 경험/활동/교육 */}
+            {applicant.experiences && applicant.experiences.length > 0 && (
+              <div className="p-6 mb-8 border-2 border-orange-200 rounded-lg bg-orange-50">
+                <h2 className="mb-4 text-lg font-bold text-gray-900">
+                  🌟 경험/활동/교육
+                </h2>
+                <div className="space-y-3">
+                  {applicant.experiences.map((exp, idx) => (
+                    <div key={idx} className="p-4 bg-white border border-orange-200 rounded-lg">
+                      <div className="font-semibold text-gray-900">{exp.title}</div>
+                      <div className="text-sm text-gray-600">{exp.period}</div>
                     </div>
-                  </div>
-                )}
-
-                {/* 학력 */}
-                {applicant.education && (
-                  <div>
-                    <div className="mb-2 text-sm font-semibold text-gray-700">🎓 학력</div>
-                    <div className="p-4 bg-white border border-blue-200 rounded-lg">
-                      <p className="text-gray-900 whitespace-pre-wrap">{applicant.education}</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* 자격증 */}
-                {applicant.certifications && (
-                  <div>
-                    <div className="mb-2 text-sm font-semibold text-gray-700">🏆 자격증</div>
-                    <div className="p-4 bg-white border border-blue-200 rounded-lg">
-                      <p className="text-gray-900 whitespace-pre-wrap">{applicant.certifications}</p>
-                    </div>
-                  </div>
-                )}
-
-                {!applicant.experience && !applicant.education && !applicant.certifications && (
-                  <div className="p-4 text-center text-gray-500">
-                    이력서 정보가 없습니다.
-                  </div>
-                )}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* 자격증/어학/수상 */}
+            {applicant.certificates && applicant.certificates.length > 0 && (
+              <div className="p-6 mb-8 border-2 border-yellow-200 rounded-lg bg-yellow-50">
+                <h2 className="mb-4 text-lg font-bold text-gray-900">
+                  🏆 자격증/어학/수상
+                </h2>
+                <div className="space-y-3">
+                  {applicant.certificates.map((cert, idx) => (
+                    <div key={idx} className="p-4 bg-white border border-yellow-200 rounded-lg">
+                      <div className="font-semibold text-gray-900">{cert.title}</div>
+                      <div className="text-sm text-gray-600">{cert.date}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 학력 */}
+            {applicant.educations && applicant.educations.length > 0 && (
+              <div className="p-6 mb-8 border-2 border-blue-200 rounded-lg bg-blue-50">
+                <h2 className="mb-4 text-lg font-bold text-gray-900">
+                  🎓 학력
+                </h2>
+                <div className="space-y-3">
+                  {applicant.educations.map((edu, idx) => (
+                    <div key={idx} className="p-4 bg-white border border-blue-200 rounded-lg">
+                      <div className="font-semibold text-gray-900">{edu.school}</div>
+                      <div className="text-sm text-gray-600">{edu.period}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 경력 */}
+            {applicant.careers && applicant.careers.length > 0 && (
+              <div className="p-6 mb-8 border-2 border-teal-200 rounded-lg bg-teal-50">
+                <h2 className="mb-4 text-lg font-bold text-gray-900">
+                  💼 경력 ({applicant.experience || "신입"})
+                </h2>
+                <div className="space-y-3">
+                  {applicant.careers.map((career, idx) => (
+                    <div key={idx} className="p-4 bg-white border border-teal-200 rounded-lg">
+                      <div className="font-semibold text-gray-900">{career.company}</div>
+                      <div className="text-sm text-gray-600">{career.period}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* 자기소개서 */}
             {applicant.coverLetterContent && (
               <div className="p-6 mb-8 border-2 border-green-200 rounded-lg bg-green-50">
                 <h2 className="mb-4 text-lg font-bold text-gray-900">
-                  자기소개서
+                  ✍️ 자기소개서
+                  {applicant.coverLetterTitle && ` - ${applicant.coverLetterTitle}`}
                 </h2>
                 <div className="p-4 bg-white border border-green-200 rounded-lg">
                   <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">
