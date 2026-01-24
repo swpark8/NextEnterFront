@@ -18,6 +18,7 @@ export default function UserNotificationsPage() {
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [selectedNotification, setSelectedNotification] = useState<NotificationData | null>(null);
 
   // 웹소켓 연결하여 실시간 알림 수신
   useNotificationWebSocket({
@@ -146,6 +147,47 @@ export default function UserNotificationsPage() {
     }
   };
 
+  const handleNotificationClick = (notification: NotificationData) => {
+    // 상세 모달 표시
+    setSelectedNotification(notification);
+  };
+
+  const handleCloseModal = () => {
+    if (selectedNotification) {
+      // 모달을 닫을 때 알림을 읽음 처리
+      handleMarkAsRead(selectedNotification.id);
+    }
+    setSelectedNotification(null);
+  };
+
+  const handleGoToRelatedPage = () => {
+    if (!selectedNotification) return;
+    
+    // 알림을 읽음 처리
+    handleMarkAsRead(selectedNotification.id);
+    
+    // 알림 타입에 따라 페이지 이동
+    switch (selectedNotification.type) {
+      case 'INTERVIEW_OFFER':
+        navigate('/user/offers/interview');
+        break;
+      case 'APPLICATION_STATUS':
+        navigate('/user/application-status');
+        break;
+      case 'INTERVIEW_ACCEPTED':
+      case 'INTERVIEW_REJECTED':
+        navigate('/user/offers/interview');
+        break;
+      default:
+        if (selectedNotification.link) {
+          navigate(selectedNotification.link);
+        }
+        break;
+    }
+    
+    setSelectedNotification(null);
+  };
+
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'INTERVIEW_OFFER':
@@ -159,6 +201,23 @@ export default function UserNotificationsPage() {
         return '📊';
       default:
         return '🔔';
+    }
+  };
+
+  const getNotificationTypeText = (type: string) => {
+    switch (type) {
+      case 'INTERVIEW_OFFER':
+        return '면접 제안';
+      case 'INTERVIEW_ACCEPTED':
+        return '면접 수락 확인';
+      case 'INTERVIEW_REJECTED':
+        return '면접 거절 확인';
+      case 'POSITION_OFFER':
+        return '포지션 제안';
+      case 'APPLICATION_STATUS':
+        return '지원 상태 변경';
+      default:
+        return '알림';
     }
   };
 
@@ -212,7 +271,8 @@ export default function UserNotificationsPage() {
             {notifications.map((notification) => (
               <div
                 key={notification.id}
-                className="p-6 hover:bg-gray-50 transition group"
+                onClick={() => handleNotificationClick(notification)}
+                className="p-6 hover:bg-blue-50 transition group cursor-pointer"
               >
                 <div className="flex items-start space-x-4">
                   <span className="text-3xl flex-shrink-0">
@@ -233,7 +293,7 @@ export default function UserNotificationsPage() {
                         읽음 표시
                       </button>
                     </div>
-                    <p className="text-sm text-gray-600 mb-3">
+                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">
                       {notification.content}
                     </p>
                     <p className="text-xs text-gray-400">
@@ -249,6 +309,101 @@ export default function UserNotificationsPage() {
           </div>
         )}
       </div>
+
+      {/* 상세 모달 */}
+      {selectedNotification && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={handleCloseModal}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[85vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 헤더 */}
+            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 flex items-start justify-between">
+              <div className="flex items-start space-x-4 flex-1">
+                <span className="text-5xl">
+                  {getNotificationIcon(selectedNotification.type)}
+                </span>
+                <div className="flex-1">
+                  <div className="inline-block px-3 py-1 bg-white bg-opacity-20 rounded-full text-white text-xs font-medium mb-3">
+                    {getNotificationTypeText(selectedNotification.type)}
+                  </div>
+                  <h2 className="text-2xl font-bold text-white mb-2">
+                    {selectedNotification.title}
+                  </h2>
+                  <p className="text-sm text-blue-100">
+                    {formatDistanceToNow(new Date(selectedNotification.createdAt), {
+                      addSuffix: true,
+                      locale: ko
+                    })}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleCloseModal}
+                className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition flex-shrink-0 ml-4"
+              >
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* 본문 */}
+            <div className="p-8">
+              <div className="mb-6">
+                <h3 className="text-sm font-semibold text-gray-500 mb-3 flex items-center">
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                  </svg>
+                  메시지 내용
+                </h3>
+                <div className="bg-gray-50 rounded-xl p-6 border-l-4 border-blue-500">
+                  <p className="text-gray-800 leading-relaxed whitespace-pre-wrap text-base">
+                    {selectedNotification.content}
+                  </p>
+                </div>
+              </div>
+
+              {/* 날짜 정보 */}
+              <div className="bg-blue-50 rounded-lg p-4 mb-6">
+                <div className="flex items-center text-sm text-gray-600">
+                  <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span className="font-medium">
+                    {new Date(selectedNotification.createdAt).toLocaleString('ko-KR', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                </div>
+              </div>
+
+              {/* 액션 버튼 */}
+              <div className="flex gap-3 pt-4 border-t border-gray-200">
+                <button
+                  onClick={handleCloseModal}
+                  className="flex-1 py-3 px-6 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition"
+                >
+                  닫기
+                </button>
+                <button
+                  onClick={handleGoToRelatedPage}
+                  className="flex-1 py-3 px-6 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition shadow-lg shadow-blue-200"
+                >
+                  관련 페이지로 이동
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

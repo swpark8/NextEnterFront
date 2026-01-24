@@ -331,12 +331,40 @@ export default function TalentSearchPage() {
                         </div>
 
                         <div className="flex flex-col w-32 gap-2">
-                          <button
-                            onClick={(e) => handleContact(talent.resumeId, e)}
-                            className="px-4 py-2 text-white transition bg-purple-600 rounded-lg hover:bg-purple-700"
-                          >
-                            연락하기
-                          </button>
+                          {/* ✅ 연락 상태에 따라 버튼 표시/비활성화 */}
+                          {!talent.contactStatus || talent.contactStatus === "" ? (
+                            // 연락하지 않은 경우 - 연락하기 버튼 표시
+                            <button
+                              onClick={(e) => handleContact(talent.resumeId, e)}
+                              className="px-4 py-2 text-white transition bg-purple-600 rounded-lg hover:bg-purple-700"
+                            >
+                              연락하기
+                            </button>
+                          ) : talent.contactStatus === "ACCEPTED" ? (
+                            // 수락된 경우 - 비활성화된 버튼
+                            <button
+                              disabled
+                              className="px-4 py-2 text-gray-400 bg-gray-100 rounded-lg cursor-not-allowed"
+                            >
+                              수락됨
+                            </button>
+                          ) : talent.contactStatus === "PENDING" ? (
+                            // 대기중인 경우 - 비활성화된 버튼
+                            <button
+                              disabled
+                              className="px-4 py-2 text-gray-400 bg-gray-100 rounded-lg cursor-not-allowed"
+                            >
+                              대기중
+                            </button>
+                          ) : talent.contactStatus === "REJECTED" ? (
+                            // 거절된 경우 - 비활성화된 버튼
+                            <button
+                              disabled
+                              className="px-4 py-2 text-gray-400 bg-gray-100 rounded-lg cursor-not-allowed"
+                            >
+                              거절됨
+                            </button>
+                          ) : null}
                           <button
                             onClick={(e) => handleSave(talent.resumeId, e)}
                             className="px-4 py-2 text-purple-700 transition bg-purple-50 rounded-lg hover:bg-purple-100"

@@ -85,10 +85,10 @@ export default function InterviewOfferPage({
   const handleAcceptContact = async (contactId: number) => {
     if (!user?.userId) return;
 
-    if (window.confirm("연락 제안을 수락하시겊습니까?")) {
+    if (window.confirm("면접 제안을 수락하시겠습니까?")) {
       try {
         await updateContactStatus(contactId, "ACCEPTED", user.userId);
-        alert("연락 제안을 수락했습니다.");
+        alert("면접 제안을 수락했습니다.");
         loadContactMessages(); // 새로고침
       } catch (error) {
         console.error("상태 변경 실패:", error);
@@ -100,10 +100,10 @@ export default function InterviewOfferPage({
   const handleRejectContact = async (contactId: number) => {
     if (!user?.userId) return;
 
-    if (window.confirm("연락 제안을 거절하시겊습니까?")) {
+    if (window.confirm("면접 제안을 거절하시겠습니까?")) {
       try {
         await updateContactStatus(contactId, "REJECTED", user.userId);
-        alert("연락 제안을 거절했습니다.");
+        alert("면접 제안을 거절했습니다.");
         loadContactMessages(); // 새로고침
       } catch (error) {
         console.error("상태 변경 실패:", error);

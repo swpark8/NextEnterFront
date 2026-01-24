@@ -30,68 +30,136 @@ export const useNotificationWebSocket = ({
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const clientRef = useRef<Client | null>(null);
+  const callbackRef = useRef(onNotificationReceived);
+  const reconnectAttempts = useRef(0);
+  const maxReconnectAttempts = 3;
+
+  // 콜백 업데이트
+  useEffect(() => {
+    callbackRef.current = onNotificationReceived;
+  }, [onNotificationReceived]);
 
   useEffect(() => {
     if (!userId) {
       return;
     }
 
+    // 이미 연결되어 있으면 중복 연결 방지
+    if (clientRef.current?.connected) {
+      console.log('이미 WebSocket 연결됨, 중복 연결 방지');
+      return;
+    }
+
+    console.log(`WebSocket 연결 시도 (${reconnectAttempts.current + 1}/${maxReconnectAttempts})`);
+
+    // 최대 재연결 시도 횟수 초과
+    if (reconnectAttempts.current >= maxReconnectAttempts) {
+      console.warn('WebSocket 최대 재연결 시도 횟수 초과');
+      setError('알림 서버 연결 실패 (재시도 횟수 초과)');
+      return;
+    }
+
+    let isCleanedUp = false;
+
     // WebSocket 클라이언트 초기화
     const socket = new SockJS('http://localhost:8080/ws/notifications');
     const stompClient = new Client({
       webSocketFactory: () => socket as any,
       debug: (str) => {
-        console.log('STOMP: ', str);
+        // 프로덕션에서는 debug 로그 비활성화
+        if (process.env.NODE_ENV === 'development') {
+          console.log('STOMP: ', str);
+        }
       },
-      reconnectDelay: 5000,
-      heartbeatIncoming: 4000,
-      heartbeatOutgoing: 4000,
+      reconnectDelay: 0, // 자동 재연결 비활성화
+      heartbeatIncoming: 10000,
+      heartbeatOutgoing: 10000,
     });
 
     // 연결 성공 콜백
     stompClient.onConnect = () => {
-      console.log('WebSocket 연결 성공');
+      if (isCleanedUp) return;
+      
+      console.log('✅ WebSocket 연결 성공');
       setConnected(true);
       setError(null);
+      reconnectAttempts.current = 0; // 재연결 카운터 리셋
 
       // 알림 구독
       const destination = `/topic/notifications/${userType}/${userId}`;
       console.log('알림 구독:', destination);
 
       stompClient.subscribe(destination, (message: IMessage) => {
-        const notification: NotificationMessage = JSON.parse(message.body);
-        console.log('알림 수신:', notification);
+        if (isCleanedUp) return;
         
-        if (onNotificationReceived) {
-          onNotificationReceived(notification);
+        try {
+          const notification: NotificationMessage = JSON.parse(message.body);
+          console.log('📩 알림 수신:', notification);
+          
+          if (callbackRef.current) {
+            callbackRef.current(notification);
+          }
+        } catch (err) {
+          console.error('알림 파싱 오류:', err);
         }
       });
     };
 
     // 연결 실패 콜백
     stompClient.onStompError = (frame) => {
-      console.error('STOMP 에러:', frame);
-      setError('WebSocket 연결 실패');
+      if (isCleanedUp) return;
+      
+      console.error('❌ STOMP 에러:', frame);
+      setError('알림 서버 연결 실패');
       setConnected(false);
+      reconnectAttempts.current++;
     };
 
     // 연결 끊김 콜백
     stompClient.onDisconnect = () => {
-      console.log('WebSocket 연결 끊김');
+      if (isCleanedUp) return;
+      
+      console.log('🔌 WebSocket 연결 끊김');
       setConnected(false);
     };
 
+    // 웹소켓 에러 핸들링
+    stompClient.onWebSocketError = (event) => {
+      if (isCleanedUp) return;
+      
+      console.error('🚫 WebSocket 에러:', event);
+      setError('WebSocket 연결 오류');
+      setConnected(false);
+      reconnectAttempts.current++;
+    };
+
     // 연결 시작
-    stompClient.activate();
-    clientRef.current = stompClient;
+    try {
+      stompClient.activate();
+      clientRef.current = stompClient;
+    } catch (err) {
+      console.error('WebSocket 활성화 실패:', err);
+      setError('WebSocket 초기화 실패');
+      reconnectAttempts.current++;
+    }
 
     // Cleanup
     return () => {
+      isCleanedUp = true;
+      console.log('WebSocket cleanup 실행');
+      
       if (clientRef.current) {
-        clientRef.current.deactivate();
+        try {
+          if (clientRef.current.connected) {
+            clientRef.current.deactivate();
+          }
+          clientRef.current = null;
+        } catch (err) {
+          console.error('WebSocket cleanup 오류:', err);
+        }
       }
     };
-  }, [userId, userType, onNotificationReceived]);
+  }, [userId, userType]); // onNotificationReceived 제거
 
   return { connected, error };
 };
