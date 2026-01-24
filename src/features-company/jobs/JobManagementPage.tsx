@@ -41,11 +41,6 @@ export default function JobManagementPage() {
         // 기업의 모든 공고 조회 (상태 무관)
         const myJobs = await getCompanyJobPostings(user.companyId);
 
-        // 현재 기업의 공고만 필터링
-        const myJobs = response.content.filter(
-          (job) => job.companyId === user.companyId,
-        );
-
         setJobs(myJobs);
       } catch (err: any) {
         console.error("공고 목록 조회 실패:", err);
