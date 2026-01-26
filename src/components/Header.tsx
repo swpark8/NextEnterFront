@@ -71,16 +71,12 @@ export default function Header() {
     window.addEventListener('notification-read', handleNotificationRead);
     
     // 웹소켓 연결
-    // ❗ 임시 비활성화 - 백엔드 웹소켓 설정 확인 후 활성화
-    console.log('⏸️ 웹소켓 연결 비활성화 (백엔드 설정 필요)');
-    /* 원래 코드 - 백엔드 웹소켓 설정 후 활성화
     if (isAuthenticated && user?.userId) {
       console.log('✅ 웹소켓 연결 조건 충족 - userId:', user.userId);
       websocketService.connect(user.userId, 'individual', handleNewNotification);
     } else {
       console.log('❌ 웹소켓 연결 조건 미충족 - isAuthenticated:', isAuthenticated, 'userId:', user?.userId);
     }
-    */
     
     return () => {
       clearInterval(interval);
