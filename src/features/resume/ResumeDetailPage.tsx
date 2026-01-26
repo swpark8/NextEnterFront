@@ -337,10 +337,64 @@ export default function ResumeDetailPage() {
                   </div>
                 )}
 
+                {structuredData?.portfolios && structuredData.portfolios.length > 0 && (
+                  <div className="p-6 mb-8 border-2 border-pink-200 rounded-lg bg-pink-50">
+                    <h2 className="mb-4 text-lg font-bold text-gray-900">📁 포트폴리오</h2>
+                    <div className="space-y-3">
+                      {structuredData.portfolios.map((portfolio: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between p-4 bg-white border border-pink-200 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl">
+                              {portfolio.filename.endsWith('.pdf') ? '📄' : '📃'}
+                            </span>
+                            <div>
+                              <p className="font-semibold text-gray-900">{portfolio.filename}</p>
+                              <p className="text-sm text-gray-600">포트폴리오 파일</p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => alert('파일 다운로드 기능은 백엔드 API 구현 후 사용 가능합니다.')}
+                            className="px-4 py-2 text-sm font-semibold text-pink-700 transition bg-white border-2 border-pink-300 rounded-lg hover:bg-pink-100"
+                          >
+                            다운로드
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {structuredData?.coverLetter?.files && structuredData.coverLetter.files.length > 0 && (
+                  <div className="p-6 mb-8 border-2 border-green-200 rounded-lg bg-green-50">
+                    <h2 className="mb-4 text-lg font-bold text-gray-900">📄 자기소개서 파일</h2>
+                    <div className="space-y-3">
+                      {structuredData.coverLetter.files.map((filename: string, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between p-4 bg-white border border-green-200 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl">
+                              {filename.endsWith('.pdf') ? '📄' : '📃'}
+                            </span>
+                            <div>
+                              <p className="font-semibold text-gray-900">{filename}</p>
+                              <p className="text-sm text-gray-600">자기소개서 파일</p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => alert('파일 다운로드 기능은 백엔드 API 구현 후 사용 가능합니다.')}
+                            className="px-4 py-2 text-sm font-semibold text-green-700 transition bg-white border-2 border-green-300 rounded-lg hover:bg-green-100"
+                          >
+                            다운로드
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {structuredData?.coverLetter && structuredData.coverLetter.content && (
                   <div className="p-6 mb-8 border-2 border-green-200 rounded-lg bg-green-50">
                     <h2 className="mb-4 text-lg font-bold text-gray-900">
-                      ✍️ 자기소개서
+                      ✍️ 자기소개서 (텍스트)
                       {structuredData.coverLetter.title && ` - ${structuredData.coverLetter.title}`}
                     </h2>
                     <div className="p-4 bg-white border border-green-200 rounded-lg">

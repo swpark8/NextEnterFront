@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useApp } from "../../context/AppContext";
@@ -31,14 +31,8 @@ export default function ResumePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // 이력서 목록 불러오기
-  useEffect(() => {
-    if (user?.userId) {
-      loadResumes();
-    }
-  }, [user?.userId]);
-
-  const loadResumes = async () => {
+  // ✅ loadResumes 함수를 useCallback으로 감싸서 안정화
+  const loadResumes = useCallback(async () => {
     if (!user?.userId) return;
 
     setIsLoading(true);
@@ -66,7 +60,13 @@ export default function ResumePage() {
     } finally {
       setIsLoading(false);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.userId]); // ✅ setContextResumes는 의도적으로 제외 (무한 루프 방지)
+
+  // 이력서 목록 불러오기
+  useEffect(() => {
+    loadResumes();
+  }, [loadResumes]); // ✅ user?.userId 체크 제거 (loadResumes에 이미 포함)
 
   const handleFileUpload = () => {
     fileInputRef.current?.click();
