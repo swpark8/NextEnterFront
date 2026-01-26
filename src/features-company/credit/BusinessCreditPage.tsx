@@ -5,7 +5,7 @@ import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
 import { getCreditBalance } from "../../api/credit";
 import { searchTalents, type TalentSearchResponse } from "../../api/talent";
-import { getCompanyJobPostings, type JobPostingListResponse } from "../../api/job";
+import { getJobPostings, type JobPostingListResponse } from "../../api/job";
 import { getApplies, type ApplyListResponse } from "../../api/apply";
 
 export default function BusinessCreditPage() {
@@ -13,14 +13,20 @@ export default function BusinessCreditPage() {
   const { user } = useAuth();
   const { activeMenu, handleMenuClick } = useCompanyPageNavigation(
     "credit",
-    "credit-sub-1"
+    "credit-sub-1",
   );
 
   const [currentCredit, setCurrentCredit] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [recommendedApplicants, setRecommendedApplicants] = useState<TalentSearchResponse[]>([]);
-  const [myJobPostings, setMyJobPostings] = useState<JobPostingListResponse[]>([]);
-  const [appliedCandidates, setAppliedCandidates] = useState<ApplyListResponse[]>([]);
+  const [recommendedApplicants, setRecommendedApplicants] = useState<
+    TalentSearchResponse[]
+  >([]);
+  const [myJobPostings, setMyJobPostings] = useState<JobPostingListResponse[]>(
+    [],
+  );
+  const [appliedCandidates, setAppliedCandidates] = useState<
+    ApplyListResponse[]
+  >([]);
 
   // 크레딧 잔액 조회
   useEffect(() => {
@@ -70,10 +76,14 @@ export default function BusinessCreditPage() {
     const fetchMyJobPostings = async () => {
       if (user?.companyId) {
         try {
-          const postings = await getCompanyJobPostings(user.companyId);
-          // ACTIVE 상태의 공고만 필터링하고 최대 3개만
+          // API에서 제공하는 일반 공고 목록을 받아오고 클라이언트에서 회사 ID로 필터링
+          const res = await getJobPostings({ page: 0, size: 20 });
+          const postings = res?.content ?? [];
+          // ACTIVE 상태의 공고 중 해당 회사의 게시물만 가져오고 최대 3개로 제한
           const activePostings = postings
-            .filter(p => p.status === "ACTIVE")
+            .filter(
+              (p) => p.status === "ACTIVE" && p.companyId === user.companyId,
+            )
             .slice(0, 3);
           setMyJobPostings(activePostings);
         } catch (error) {
@@ -81,6 +91,7 @@ export default function BusinessCreditPage() {
         }
       }
     };
+    // test
 
     fetchMyJobPostings();
   }, [user?.companyId]);
@@ -319,7 +330,9 @@ export default function BusinessCreditPage() {
                         <tr
                           key={idx}
                           className="transition cursor-pointer hover:bg-purple-50"
-                          onClick={() => navigate(`/company/applicants/${candidate.applyId}`)}
+                          onClick={() =>
+                            navigate(`/company/applicants/${candidate.applyId}`)
+                          }
                         >
                           <td className="px-6 py-4 font-bold text-gray-900">
                             {candidate.userName}

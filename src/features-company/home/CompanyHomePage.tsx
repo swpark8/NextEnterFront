@@ -1,14 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import CompanyJobPostingCard, {
   JobPostingData,
 } from "../components/CompanyJobPostingCard";
+import { getCompanyJobPostings, getJobPostings, JobPostingListResponse } from "../../api/job";
 
 export default function CompanyHomePage() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [activeService, setActiveService] = useState<string>("");
+  const [jobPostings, setJobPostings] = useState<JobPostingData[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // 로그인 필요한 페이지 이동 처리
   const handleProtectedNavigation = (path: string) => {
@@ -46,12 +50,12 @@ export default function CompanyHomePage() {
       path: "/company/applicants",
     },
     {
-      id: "credit",
+      id: "mypage",
       icon: "🏢",
       title: "마이페이지",
       description: "회사 정보 수정 및 관리",
       features: ["크레딧 충전", "사용 내역", "충전 혜택"],
-      path: "/company/credit",
+      path: "/company/mypage",
     },
     {
       id: "credit",
@@ -63,59 +67,40 @@ export default function CompanyHomePage() {
     },
   ];
 
-  // TODO: 나중에 API로 데이터 받아오기
-  const jobPostings: JobPostingData[] = [
-    {
-      id: 1,
-      badge: "프리미엄 급구 추천",
-      badgeColor: "orange",
-      title: "시니어 프론트엔드 개발자",
-      description: "React, TypeScript 경험 5년 이상 | 월급 500만원 이상",
-      tags: [
-        "5년 이상 경력 필수",
-        "React, TypeScript 전문가",
-        "대규모 프로젝트 경험",
-        "팀 리딩 경험 우대",
-        "혁신적인 UI/UX 구현 능력",
-      ],
-      company: "테크 스타트업 A사",
-      period: "급구 + 상시채용",
-      salary: "연봉 6,000만원",
-    },
-    {
-      id: 2,
-      badge: "인기 급상승",
-      badgeColor: "orange",
-      title: "백엔드 개발자 (Node.js)",
-      description: "Node.js, Express 기반 API 개발 | 3년 이상 경력",
-      tags: [
-        "3년 이상 실무 경험",
-        "RESTful API 설계 및 구현",
-        "데이터베이스 최적화 경험",
-        "MSA 아키텍처 이해",
-      ],
-      company: "핀테크 기업 B사",
-      period: "상시채용",
-      salary: "연봉 5,000만원",
-    },
-    {
-      id: 3,
-      badge: "원격근무 가능",
-      badgeColor: "purple",
-      title: "풀스택 개발자",
-      description: "React + Spring Boot 풀스택 | 경력 무관",
-      tags: [
-        "신입/경력 모두 가능",
-        "React 및 Spring Boot 경험",
-        "원격근무 주 2일 가능",
-        "유연한 근무 환경",
-        "성장 지향적인 팀 문화",
-      ],
-      company: "이커머스 C사",
-      period: "상시채용",
-      salary: "연봉 4,500만원",
-    },
-  ];
+  // 기업 공고 목록 조회
+  useEffect(() => {
+    const fetchCompanyJobs = async () => {
+      if (!user?.companyId) {
+        console.log("⚠️ companyId가 없습니다:", user);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log("🔄 API 호출 시작: companyId =", user.companyId);
+        
+        // ✅ /api/jobs/list를 사용하고 클라이언트에서 필터링
+        const response = await getJobPostings({ size: 1000 }); // 전체 조회
+        const myJobs = response.content.filter(
+          (job: JobPostingListResponse) => job.companyId === user.companyId
+        );
+        
+        console.log("✅ API 응답 받음:", myJobs);
+        setJobPostings(myJobs);
+      } catch (err: any) {
+        console.error("❌ 공고 목록 조회 실패:", err);
+        console.error("상태 코드:", err.response?.status);
+        console.error("에러 메시지:", err.response?.data);
+        setError("공고를 불러오는데 실패했습니다.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCompanyJobs();
+  }, [user?.companyId]);
 
   const handleJobDetailClick = (jobId: number) => {
     handleProtectedNavigation(`/company/jobs/${jobId}`);
@@ -169,15 +154,30 @@ export default function CompanyHomePage() {
         {/* 등록된 공고 섹션 */}
         <div>
           <h2 className="mb-6 text-xl font-bold">등록된 공고</h2>
-          <div className="grid grid-cols-3 gap-6">
-            {jobPostings.map((job) => (
-              <CompanyJobPostingCard
-                key={job.id}
-                job={job}
-                onDetailClick={handleJobDetailClick}
-              />
-            ))}
-          </div>
+          
+          {loading ? (
+            <div className="py-12 text-center text-gray-500">
+              로딩 중...
+            </div>
+          ) : error ? (
+            <div className="py-12 text-center text-red-500">
+              {error}
+            </div>
+          ) : jobPostings.length === 0 ? (
+            <div className="py-12 text-center text-gray-500">
+              등록된 공고가 없습니다.
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-6">
+              {jobPostings.map((job) => (
+                <CompanyJobPostingCard
+                  key={job.jobId}
+                  job={job}
+                  onDetailClick={handleJobDetailClick}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

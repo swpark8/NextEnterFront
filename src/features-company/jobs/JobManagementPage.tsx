@@ -4,7 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
 import {
-  getCompanyJobPostings,
+  getJobPostings, //  존재하지 않는 getCompanyJobPostings 삭제 후 이것만 남김
   updateJobPostingStatus,
   type JobPostingListResponse,
 } from "../../api/job";
@@ -39,7 +39,16 @@ export default function JobManagementPage() {
         setError(null);
 
         // 기업의 모든 공고 조회 (상태 무관)
-        const myJobs = await getCompanyJobPostings(user.companyId);
+        // 하단의 handleClose 함수에서 사용하신 것과 동일하게 객체 형태로 인자를 전달해야 합니다.
+        const response = await getJobPostings({ page: 0, size: 1000 });
+
+        // API 응답 구조에 따라 response 자체가 배열이면 response.filter,
+        // 객체 내 content가 배열이면 response.content.filter를 사용하세요.
+        const myJobs = Array.isArray(response)
+          ? response.filter((job) => job.companyId === user.companyId)
+          : response.content?.filter(
+              (job: JobPostingListResponse) => job.companyId === user.companyId,
+            ) || [];
 
         setJobs(myJobs);
       } catch (err: any) {

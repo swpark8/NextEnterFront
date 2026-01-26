@@ -19,7 +19,7 @@ const LOGIN_REQUIRED_MENUS = [
 ];
 
 export default function Header() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isLoading, logout } = useAuth(); // ✅ isLoading 추가
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams(); // ✅ URL 파라미터 가져오기
@@ -34,6 +34,12 @@ export default function Header() {
 
   // 알림 개수 가져오기 및 웹소켓 연결
   useEffect(() => {
+    // ✅ 인증 상태 로딩 중이면 대기
+    if (isLoading) {
+      console.log('⏳ AuthContext 로딩 중...');
+      return;
+    }
+    
     console.log('Header useEffect 실행 - isAuthenticated:', isAuthenticated, 'user:', user);
     console.log('user.userId:', user?.userId); // ✅ 디버깅용
     
@@ -79,7 +85,7 @@ export default function Header() {
       console.log('Header 언마운트 - 웹소켓 연결 해제');
       websocketService.disconnect();
     };
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, isLoading]); // ✅ isLoading 의존성 추가
 
   // 새 알림 수신 시 처리
   const handleNewNotification = (notification: NotificationMessage) => {
