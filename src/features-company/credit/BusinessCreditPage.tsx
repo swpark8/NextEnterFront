@@ -161,7 +161,7 @@ export default function BusinessCreditPage() {
             <div className="flex items-center justify-between">
               <div className="text-white">
                 <div className="mb-2 text-xl font-semibold">
-                  기업회원님의 현재 사용 가능 크레딧
+                {user?.name || "admin"}님의 현재 사용 가능 크레딧
                 </div>
               </div>
               <div className="flex items-center px-10 py-5 space-x-3 bg-white rounded-full shadow-lg">

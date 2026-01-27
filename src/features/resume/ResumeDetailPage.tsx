@@ -4,6 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import ResumeSidebar from "./components/ResumeSidebar";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 import { getResumeDetail, deleteResume, type ResumeResponse } from "../../api/resume";
+import api from "../../api/axios";
 
 export default function ResumeDetailPage() {
   const navigate = useNavigate();
@@ -35,9 +36,22 @@ export default function ResumeDetailPage() {
         setLoading(true);
         const data = await getResumeDetail(parseInt(resumeId), user.userId);
         setResume(data);
+
+        // ✅ 디버깅: 새로운 구조 확인
+        console.log("📥 받은 이력서 데이터:", data);
+        console.log("📥 userName:", data.userName);
+        console.log("📥 experiences:", data.experiences);
+        console.log("📥 certificates:", data.certificates);
+        console.log("📥 educations:", data.educations);
+        console.log("📥 careers:", data.careers);
+        console.log("📥 skills:", data.skills);
+        console.log("📥 structuredData (하위호환):", data.structuredData);
       } catch (error: any) {
         console.error("이력서 상세 조회 실패:", error);
-        alert(error.response?.data?.message || "이력서 정보를 불러오는데 실패했습니다.");
+        alert(
+          error.response?.data?.message ||
+            "이력서 정보를 불러오는데 실패했습니다."
+        );
         navigate("/user/resume");
       } finally {
         setLoading(false);
@@ -53,6 +67,114 @@ export default function ResumeDetailPage() {
 
   const handleEditClick = () => {
     navigate(`/user/resume/edit/${resumeId}`);
+  };
+
+  // 이력서 파일 다운로드 핸들러
+  const handleFileDownload = async () => {
+    if (!resumeId || !user?.userId || !resume) return;
+
+    try {
+      const response = await api.get(`/api/resume/${resumeId}/download`, {
+        headers: {
+          userId: user.userId.toString(),
+        },
+        responseType: "blob",
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      const fileName = `${resume.title}.${resume.fileType || "docx"}`;
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      console.error("파일 다운로드 오류:", error);
+      alert(
+        error.response?.data?.message ||
+          "파일 다운로드 중 오류가 발생했습니다."
+      );
+    }
+  };
+
+  // 포트폴리오 다운로드 핸들러
+  const handlePortfolioDownload = async (portfolio: any) => {
+    if (!resumeId || !user?.userId) return;
+
+    if (portfolio.portfolioId) {
+      try {
+        const response = await api.get(
+          `/api/resume/${resumeId}/portfolios/${portfolio.portfolioId}/download`,
+          {
+            headers: {
+              userId: user.userId.toString(),
+            },
+            responseType: "blob",
+          }
+        );
+
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", portfolio.filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      } catch (error: any) {
+        console.error("포트폴리오 다운로드 오류:", error);
+        alert(
+          "포트폴리오를 다운로드할 수 없습니다. 파일이 서버에 저장되지 않았을 수 있습니다."
+        );
+      }
+    } else {
+      alert(
+        "이 이력서의 포트폴리오는 파일명만 저장되어 있습니다.\n실제 파일을 다운로드하려면 이력서를 다시 작성하거나 포트폴리오를 별도로 업로드해주세요."
+      );
+    }
+  };
+
+  // 자기소개서 파일 다운로드 핸들러
+  const handleCoverLetterDownload = async (file: any) => {
+    if (!user?.userId) return;
+
+    const coverLetterId =
+      typeof file === "object" ? file.coverLetterId : null;
+    const filename = typeof file === "string" ? file : file.filename;
+
+    if (coverLetterId) {
+      try {
+        const response = await api.get(
+          `/api/coverletters/${coverLetterId}/file`,
+          {
+            params: {
+              userId: user.userId,
+            },
+            responseType: "blob",
+          }
+        );
+
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      } catch (error: any) {
+        console.error("자기소개서 다운로드 오류:", error);
+        alert(
+          "자기소개서를 다운로드할 수 없습니다. 파일이 서버에 저장되지 않았을 수 있습니다."
+        );
+      }
+    } else {
+      alert(
+        "이 이력서의 자기소개서는 파일명만 저장되어 있습니다.\n실제 파일을 다운로드하려면 이력서를 다시 작성하거나 자기소개서를 별도로 업로드해주세요."
+      );
+    }
   };
 
   const handleDeleteClick = () => {
@@ -80,24 +202,58 @@ export default function ResumeDetailPage() {
     setShowDeleteConfirm(false);
   };
 
+  // ✅ 각 섹션 파싱 함수들
+  const parseExperiences = (experiences: string | undefined) => {
+    if (!experiences) return [];
+    try {
+      return JSON.parse(experiences);
+    } catch {
+      return [];
+    }
+  };
+
+  const parseCertificates = (certificates: string | undefined) => {
+    if (!certificates) return [];
+    try {
+      return JSON.parse(certificates);
+    } catch {
+      return [];
+    }
+  };
+
+  const parseEducations = (educations: string | undefined) => {
+    if (!educations) return [];
+    try {
+      return JSON.parse(educations);
+    } catch {
+      return [];
+    }
+  };
+
+  const parseCareers = (careers: string | undefined) => {
+    if (!careers) return [];
+    try {
+      return JSON.parse(careers);
+    } catch {
+      return [];
+    }
+  };
+
+  const parseSkills = (skills: string | undefined) => {
+    if (!skills) return [];
+    // 쉼표로 구분된 문자열 파싱
+    return skills
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s);
+  };
+
   const parseStructuredData = (structuredData: string | undefined) => {
     if (!structuredData) return null;
     try {
       return JSON.parse(structuredData);
     } catch {
       return null;
-    }
-  };
-
-  const parseSkills = (skills: string | undefined) => {
-    if (!skills) return [];
-    try {
-      if (skills.trim().startsWith("[")) {
-        return JSON.parse(skills);
-      }
-      return skills.split(",").map((s) => s.trim()).filter((s) => s);
-    } catch {
-      return [];
     }
   };
 
@@ -112,13 +268,30 @@ export default function ResumeDetailPage() {
   if (!resume) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-xl font-semibold text-gray-600">이력서 정보를 찾을 수 없습니다.</div>
+        <div className="text-xl font-semibold text-gray-600">
+          이력서 정보를 찾을 수 없습니다.
+        </div>
       </div>
     );
   }
 
-  const structuredData = parseStructuredData(resume.structuredData);
+  // ✅ 새로운 구조에서 데이터 파싱
+  const experiences = parseExperiences(resume.experiences);
+  const certificates = parseCertificates(resume.certificates);
+  const educations = parseEducations(resume.educations);
+  const careers = parseCareers(resume.careers);
   const skills = parseSkills(resume.skills);
+
+  // ✅ 하위 호환성: structuredData (포트폴리오, 자기소개서 파일 등)
+  const structuredData = parseStructuredData(resume.structuredData);
+
+  // ✅ 직접 작성한 이력서인지 확인
+  const isFormBasedResume =
+    experiences.length > 0 ||
+    certificates.length > 0 ||
+    educations.length > 0 ||
+    careers.length > 0 ||
+    (resume.structuredData && resume.structuredData.trim() !== "");
 
   return (
     <>
@@ -127,8 +300,12 @@ export default function ResumeDetailPage() {
           <div className="w-full max-w-md p-8 mx-4 bg-white shadow-2xl rounded-2xl">
             <div className="mb-6 text-center">
               <div className="mb-4 text-5xl">⚠️</div>
-              <h3 className="mb-4 text-2xl font-bold">이력서를 삭제하시겠습니까?</h3>
-              <p className="mt-2 text-gray-500">삭제된 이력서는 복구할 수 없습니다.</p>
+              <h3 className="mb-4 text-2xl font-bold">
+                이력서를 삭제하시겠습니까?
+              </h3>
+              <p className="mt-2 text-gray-500">
+                삭제된 이력서는 복구할 수 없습니다.
+              </p>
             </div>
             <div className="flex gap-3">
               <button
@@ -154,7 +331,10 @@ export default function ResumeDetailPage() {
         <div className="px-4 py-8 mx-auto max-w-7xl">
           <h2 className="mb-6 text-2xl font-bold">이력서 상세</h2>
           <div className="flex gap-6">
-            <ResumeSidebar activeMenu={activeMenu} onMenuClick={handleMenuClick} />
+            <ResumeSidebar
+              activeMenu={activeMenu}
+              onMenuClick={handleMenuClick}
+            />
 
             <div className="flex-1 min-w-0">
               <div className="p-8 bg-white shadow-lg rounded-2xl">
@@ -180,14 +360,27 @@ export default function ResumeDetailPage() {
                     <span className="px-4 py-1.5 text-sm font-semibold text-blue-700 bg-blue-100 rounded-full">
                       {resume.status === "COMPLETED" ? "완료" : "작성중"}
                     </span>
-                    
-                    {/* 수정/삭제 버튼 */}
-                    <button
-                      onClick={handleEditClick}
-                      className="px-4 py-2 font-semibold text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
-                    >
-                      ✏️ 수정
-                    </button>
+
+                    {/* 직접 작성한 이력서면 수정 버튼 표시 */}
+                    {isFormBasedResume && (
+                      <button
+                        onClick={handleEditClick}
+                        className="px-4 py-2 font-semibold text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
+                      >
+                        ✏️ 수정
+                      </button>
+                    )}
+
+                    {/* 파일이 있으면 다운로드 버튼 */}
+                    {resume.filePath && (
+                      <button
+                        onClick={handleFileDownload}
+                        className="px-4 py-2 font-semibold text-white transition bg-green-600 rounded-lg hover:bg-green-700"
+                      >
+                        📥 다운로드
+                      </button>
+                    )}
+
                     <button
                       onClick={handleDeleteClick}
                       className="px-4 py-2 font-semibold text-white transition bg-red-600 rounded-lg hover:bg-red-700"
@@ -198,15 +391,21 @@ export default function ResumeDetailPage() {
                 </div>
 
                 <div className="mb-8">
-                  <h1 className="mb-4 text-3xl font-bold text-gray-900">{resume.title}</h1>
+                  <h1 className="mb-4 text-3xl font-bold text-gray-900">
+                    {resume.title}
+                  </h1>
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
                       <span className="text-gray-600">직무:</span>
-                      <span className="ml-2 font-medium">{resume.jobCategory || "미지정"}</span>
+                      <span className="ml-2 font-medium">
+                        {resume.jobCategory || "미지정"}
+                      </span>
                     </div>
                     <div>
                       <span className="text-gray-600">조회수:</span>
-                      <span className="ml-2 font-medium">{resume.viewCount}회</span>
+                      <span className="ml-2 font-medium">
+                        {resume.viewCount}회
+                      </span>
                     </div>
                     <div>
                       <span className="text-gray-600">작성일:</span>
@@ -217,45 +416,72 @@ export default function ResumeDetailPage() {
                   </div>
                 </div>
 
-                {structuredData?.personalInfo && (
+                {/* ✅ 인적사항 - User 테이블에서 가져온 정보 + structuredData */}
+                {(resume.userName ||
+                  resume.userEmail ||
+                  resume.userGender ||
+                  resume.userPhone ||
+                  structuredData?.personalInfo) && (
                   <div className="p-6 mb-8 border-2 border-indigo-200 rounded-lg bg-indigo-50">
-                    <h2 className="mb-4 text-lg font-bold text-gray-900">📋 인적사항</h2>
+                    <h2 className="mb-4 text-lg font-bold text-gray-900">
+                      📋 인적사항
+                    </h2>
                     <div className="grid grid-cols-2 gap-4">
-                      {structuredData.personalInfo.name && (
+                      {resume.userName && (
                         <div className="p-3 bg-white border border-indigo-200 rounded-lg">
-                          <div className="mb-1 text-xs font-medium text-gray-500">이름</div>
+                          <div className="mb-1 text-xs font-medium text-gray-500">
+                            이름
+                          </div>
                           <div className="font-semibold text-gray-900">
-                            {structuredData.personalInfo.name}
+                            {resume.userName}
                           </div>
                         </div>
                       )}
-                      {structuredData.personalInfo.gender && (
+                      {resume.userGender && (
                         <div className="p-3 bg-white border border-indigo-200 rounded-lg">
-                          <div className="mb-1 text-xs font-medium text-gray-500">성별</div>
+                          <div className="mb-1 text-xs font-medium text-gray-500">
+                            성별
+                          </div>
                           <div className="font-semibold text-gray-900">
-                            {structuredData.personalInfo.gender}
+                            {resume.userGender === "MALE" ? "남성" : "여성"}
                           </div>
                         </div>
                       )}
-                      {structuredData.personalInfo.birthDate && (
+                      {structuredData?.personalInfo?.birthDate && (
                         <div className="p-3 bg-white border border-indigo-200 rounded-lg">
-                          <div className="mb-1 text-xs font-medium text-gray-500">생년월일</div>
+                          <div className="mb-1 text-xs font-medium text-gray-500">
+                            생년월일
+                          </div>
                           <div className="font-semibold text-gray-900">
                             {structuredData.personalInfo.birthDate}
                           </div>
                         </div>
                       )}
-                      {structuredData.personalInfo.email && (
+                      {resume.userEmail && (
                         <div className="p-3 bg-white border border-indigo-200 rounded-lg">
-                          <div className="mb-1 text-xs font-medium text-gray-500">이메일</div>
+                          <div className="mb-1 text-xs font-medium text-gray-500">
+                            이메일
+                          </div>
                           <div className="font-semibold text-gray-900">
-                            {structuredData.personalInfo.email}
+                            {resume.userEmail}
                           </div>
                         </div>
                       )}
-                      {structuredData.personalInfo.address && (
+                      {resume.userPhone && (
+                        <div className="p-3 bg-white border border-indigo-200 rounded-lg">
+                          <div className="mb-1 text-xs font-medium text-gray-500">
+                            연락처
+                          </div>
+                          <div className="font-semibold text-gray-900">
+                            {resume.userPhone}
+                          </div>
+                        </div>
+                      )}
+                      {structuredData?.personalInfo?.address && (
                         <div className="col-span-2 p-3 bg-white border border-indigo-200 rounded-lg">
-                          <div className="mb-1 text-xs font-medium text-gray-500">주소</div>
+                          <div className="mb-1 text-xs font-medium text-gray-500">
+                            주소
+                          </div>
                           <div className="font-semibold text-gray-900">
                             {structuredData.personalInfo.address}
                           </div>
@@ -265,9 +491,12 @@ export default function ResumeDetailPage() {
                   </div>
                 )}
 
+                {/* ✅ 주요 스킬 */}
                 {skills.length > 0 && (
                   <div className="p-6 mb-8 border-2 border-purple-200 rounded-lg bg-purple-50">
-                    <h2 className="mb-4 text-lg font-bold text-gray-900">💻 주요 스킬</h2>
+                    <h2 className="mb-4 text-lg font-bold text-gray-900">
+                      💻 주요 스킬
+                    </h2>
                     <div className="flex flex-wrap gap-2">
                       {skills.map((skill: string, idx: number) => (
                         <span
@@ -281,131 +510,338 @@ export default function ResumeDetailPage() {
                   </div>
                 )}
 
-                {structuredData?.experiences && structuredData.experiences.length > 0 && (
+                {/* ✅ 경험/활동/교육 */}
+                {experiences.length > 0 && (
                   <div className="p-6 mb-8 border-2 border-orange-200 rounded-lg bg-orange-50">
-                    <h2 className="mb-4 text-lg font-bold text-gray-900">🌟 경험/활동/교육</h2>
+                    <h2 className="mb-4 text-lg font-bold text-gray-900">
+                      🌟 경험/활동/교육
+                    </h2>
                     <div className="space-y-3">
-                      {structuredData.experiences.map((exp: any, idx: number) => (
-                        <div key={idx} className="p-4 bg-white border border-orange-200 rounded-lg">
-                          <div className="font-semibold text-gray-900">{exp.title}</div>
-                          <div className="text-sm text-gray-600">{exp.period}</div>
+                      {experiences.map((exp: any, idx: number) => (
+                        <div
+                          key={idx}
+                          className="p-4 bg-white border border-orange-200 rounded-lg"
+                        >
+                          <div className="font-semibold text-gray-900">
+                            {exp.title}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {exp.period}
+                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {structuredData?.certificates && structuredData.certificates.length > 0 && (
+                {/* ✅ 자격증/어학/수상 */}
+                {certificates.length > 0 && (
                   <div className="p-6 mb-8 border-2 border-yellow-200 rounded-lg bg-yellow-50">
-                    <h2 className="mb-4 text-lg font-bold text-gray-900">🏆 자격증/어학/수상</h2>
+                    <h2 className="mb-4 text-lg font-bold text-gray-900">
+                      🏆 자격증/어학/수상
+                    </h2>
                     <div className="space-y-3">
-                      {structuredData.certificates.map((cert: any, idx: number) => (
-                        <div key={idx} className="p-4 bg-white border border-yellow-200 rounded-lg">
-                          <div className="font-semibold text-gray-900">{cert.title}</div>
-                          <div className="text-sm text-gray-600">{cert.date}</div>
+                      {certificates.map((cert: any, idx: number) => (
+                        <div
+                          key={idx}
+                          className="p-4 bg-white border border-yellow-200 rounded-lg"
+                        >
+                          <div className="font-semibold text-gray-900">
+                            {cert.title}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {cert.date}
+                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {structuredData?.educations && structuredData.educations.length > 0 && (
+                {/* ✅ 학력 */}
+                {educations.length > 0 && (
                   <div className="p-6 mb-8 border-2 border-blue-200 rounded-lg bg-blue-50">
-                    <h2 className="mb-4 text-lg font-bold text-gray-900">🎓 학력</h2>
+                    <h2 className="mb-4 text-lg font-bold text-gray-900">
+                      🎓 학력
+                    </h2>
                     <div className="space-y-3">
-                      {structuredData.educations.map((edu: any, idx: number) => (
-                        <div key={idx} className="p-4 bg-white border border-blue-200 rounded-lg">
-                          <div className="font-semibold text-gray-900">{edu.school}</div>
-                          <div className="text-sm text-gray-600">{edu.period}</div>
+                      {educations.map((edu: any, idx: number) => (
+                        <div
+                          key={idx}
+                          className="p-4 bg-white border border-blue-200 rounded-lg"
+                        >
+                          <div className="font-semibold text-gray-900">
+                            {edu.school}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {edu.period}
+                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {structuredData?.careers && structuredData.careers.length > 0 && (
+                {/* ✅ 경력 */}
+                {careers.length > 0 && (
                   <div className="p-6 mb-8 border-2 border-teal-200 rounded-lg bg-teal-50">
-                    <h2 className="mb-4 text-lg font-bold text-gray-900">💼 경력</h2>
+                    <h2 className="mb-4 text-lg font-bold text-gray-900">
+                      💼 경력
+                    </h2>
                     <div className="space-y-3">
-                      {structuredData.careers.map((career: any, idx: number) => (
-                        <div key={idx} className="p-4 bg-white border border-teal-200 rounded-lg">
-                          <div className="font-semibold text-gray-900">{career.company}</div>
-                          <div className="text-sm text-gray-600">{career.period}</div>
+                      {careers.map((career: any, idx: number) => (
+                        <div
+                          key={idx}
+                          className="p-4 bg-white border border-teal-200 rounded-lg"
+                        >
+                          <div className="font-semibold text-gray-900">
+                            {career.company}
+                          </div>
+                          {career.position && (
+                            <div className="text-sm text-gray-600">
+                              {career.position}
+                            </div>
+                          )}
+                          {career.role && (
+                            <div className="mt-2 text-sm text-gray-700">
+                              {career.role}
+                            </div>
+                          )}
+                          <div className="text-sm text-gray-600">
+                            {career.period}
+                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {structuredData?.portfolios && structuredData.portfolios.length > 0 && (
+                {/* ✅ 포트폴리오 (백엔드에서 직접) */}
+                {resume.portfolios && resume.portfolios.length > 0 && (
                   <div className="p-6 mb-8 border-2 border-pink-200 rounded-lg bg-pink-50">
-                    <h2 className="mb-4 text-lg font-bold text-gray-900">📁 포트폴리오</h2>
+                    <h2 className="mb-4 text-lg font-bold text-gray-900">
+                      📁 포트폴리오
+                    </h2>
                     <div className="space-y-3">
-                      {structuredData.portfolios.map((portfolio: any, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between p-4 bg-white border border-pink-200 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <span className="text-2xl">
-                              {portfolio.filename.endsWith('.pdf') ? '📄' : '📃'}
-                            </span>
-                            <div>
-                              <p className="font-semibold text-gray-900">{portfolio.filename}</p>
-                              <p className="text-sm text-gray-600">포트폴리오 파일</p>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => alert('파일 다운로드 기능은 백엔드 API 구현 후 사용 가능합니다.')}
-                            className="px-4 py-2 text-sm font-semibold text-pink-700 transition bg-white border-2 border-pink-300 rounded-lg hover:bg-pink-100"
+                      {resume.portfolios.map(
+                        (portfolio: any, idx: number) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between p-4 bg-white border border-pink-200 rounded-lg"
                           >
-                            다운로드
-                          </button>
-                        </div>
-                      ))}
+                            <div className="flex items-center gap-3">
+                              <span className="text-2xl">
+                                {portfolio.fileType === "pdf"
+                                  ? "📄"
+                                  : "📃"}
+                              </span>
+                              <div>
+                                <p className="font-semibold text-gray-900">
+                                  {portfolio.filename}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  {portfolio.description || "설명 없음"}
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() =>
+                                handlePortfolioDownload(portfolio)
+                              }
+                              className="px-4 py-2 text-sm font-semibold text-pink-700 transition bg-white border-2 border-pink-300 rounded-lg hover:bg-pink-100"
+                            >
+                              다운로드
+                            </button>
+                          </div>
+                        )
+                      )}
                     </div>
                   </div>
                 )}
 
-                {structuredData?.coverLetter?.files && structuredData.coverLetter.files.length > 0 && (
-                  <div className="p-6 mb-8 border-2 border-green-200 rounded-lg bg-green-50">
-                    <h2 className="mb-4 text-lg font-bold text-gray-900">📄 자기소개서 파일</h2>
-                    <div className="space-y-3">
-                      {structuredData.coverLetter.files.map((filename: string, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between p-4 bg-white border border-green-200 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <span className="text-2xl">
-                              {filename.endsWith('.pdf') ? '📄' : '📃'}
-                            </span>
-                            <div>
-                              <p className="font-semibold text-gray-900">{filename}</p>
-                              <p className="text-sm text-gray-600">자기소개서 파일</p>
+                {/* ✅ 포트폴리오 (structuredData에서 - 하위호환) */}
+                {(!resume.portfolios || resume.portfolios.length === 0) &&
+                  structuredData?.portfolios &&
+                  structuredData.portfolios.length > 0 && (
+                    <div className="p-6 mb-8 border-2 border-pink-200 rounded-lg bg-pink-50">
+                      <h2 className="mb-4 text-lg font-bold text-gray-900">
+                        📁 포트폴리오
+                      </h2>
+                      <div className="space-y-3">
+                        {structuredData.portfolios.map(
+                          (portfolio: any, idx: number) => (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between p-4 bg-white border border-pink-200 rounded-lg"
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="text-2xl">
+                                  {portfolio.filename?.endsWith(".pdf")
+                                    ? "📄"
+                                    : "📃"}
+                                </span>
+                                <div>
+                                  <p className="font-semibold text-gray-900">
+                                    {portfolio.filename}
+                                  </p>
+                                  <p className="text-sm text-gray-600">
+                                    {portfolio.portfolioId
+                                      ? "다운로드 가능"
+                                      : "파일명만 저장됨"}
+                                  </p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() =>
+                                  handlePortfolioDownload(portfolio)
+                                }
+                                className="px-4 py-2 text-sm font-semibold text-pink-700 transition bg-white border-2 border-pink-300 rounded-lg hover:bg-pink-100"
+                              >
+                                다운로드
+                              </button>
                             </div>
-                          </div>
-                          <button
-                            onClick={() => alert('파일 다운로드 기능은 백엔드 API 구현 후 사용 가능합니다.')}
-                            className="px-4 py-2 text-sm font-semibold text-green-700 transition bg-white border-2 border-green-300 rounded-lg hover:bg-green-100"
-                          >
-                            다운로드
-                          </button>
-                        </div>
-                      ))}
+                          )
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {structuredData?.coverLetter && structuredData.coverLetter.content && (
+                {/* ✅ 자기소개서 (백엔드에서 직접) */}
+                {resume.coverLetters && resume.coverLetters.length > 0 && (
                   <div className="p-6 mb-8 border-2 border-green-200 rounded-lg bg-green-50">
                     <h2 className="mb-4 text-lg font-bold text-gray-900">
-                      ✍️ 자기소개서 (텍스트)
-                      {structuredData.coverLetter.title && ` - ${structuredData.coverLetter.title}`}
+                      ✍️ 자기소개서
                     </h2>
-                    <div className="p-4 bg-white border border-green-200 rounded-lg">
-                      <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">
-                        {structuredData.coverLetter.content}
-                      </p>
+                    <div className="space-y-4">
+                      {resume.coverLetters.map(
+                        (coverLetter: any, idx: number) => (
+                          <div
+                            key={idx}
+                            className="p-4 bg-white border border-green-200 rounded-lg"
+                          >
+                            {/* 파일이 있으면 파일 다운로드 */}
+                            {coverLetter.filePath && (
+                              <div className="flex items-center justify-between pb-4 mb-4 border-b border-green-200">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-2xl">
+                                    {coverLetter.fileType === "pdf" ? "📄" : "📃"}
+                                  </span>
+                                  <div>
+                                    <p className="font-semibold text-gray-900">
+                                      {coverLetter.title}
+                                    </p>
+                                    <p className="text-sm text-gray-600">
+                                      파일 다운로드 가능
+                                    </p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() =>
+                                    handleCoverLetterDownload(coverLetter)
+                                  }
+                                  className="px-4 py-2 text-sm font-semibold text-green-700 transition bg-white border-2 border-green-300 rounded-lg hover:bg-green-100"
+                                >
+                                  다운로드
+                                </button>
+                              </div>
+                            )}
+                            
+                            {/* 텍스트 내용 */}
+                            {coverLetter.content && (
+                              <div>
+                                {coverLetter.title && !coverLetter.filePath && (
+                                  <h3 className="mb-3 text-lg font-bold text-gray-900">
+                                    {coverLetter.title}
+                                  </h3>
+                                )}
+                                <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                                  {coverLetter.content}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      )}
                     </div>
                   </div>
                 )}
 
-                {/* 하단 버튼 - 목록으로만 */}
+                {/* ✅ 자기소개서 (하위호환 - structuredData에서) */}
+                {(!resume.coverLetters || resume.coverLetters.length === 0) && (
+                  <>
+                    {/* 자기소개서 파일 (structuredData에서) */}
+                    {structuredData?.coverLetter?.files &&
+                      structuredData.coverLetter.files.length > 0 && (
+                        <div className="p-6 mb-8 border-2 border-green-200 rounded-lg bg-green-50">
+                          <h2 className="mb-4 text-lg font-bold text-gray-900">
+                            📄 자기소개서 파일
+                          </h2>
+                          <div className="space-y-3">
+                            {structuredData.coverLetter.files.map(
+                              (file: any, idx: number) => {
+                                const filename =
+                                  typeof file === "string" ? file : file.filename;
+                                const coverLetterId =
+                                  typeof file === "object"
+                                    ? file.coverLetterId
+                                    : null;
+
+                                return (
+                                  <div
+                                    key={idx}
+                                    className="flex items-center justify-between p-4 bg-white border border-green-200 rounded-lg"
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-2xl">
+                                        {filename?.endsWith(".pdf") ? "📄" : "📃"}
+                                      </span>
+                                      <div>
+                                        <p className="font-semibold text-gray-900">
+                                          {filename}
+                                        </p>
+                                        <p className="text-sm text-gray-600">
+                                          {coverLetterId
+                                            ? "다운로드 가능"
+                                            : "파일명만 저장됨"}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <button
+                                      onClick={() =>
+                                        handleCoverLetterDownload(file)
+                                      }
+                                      className="px-4 py-2 text-sm font-semibold text-green-700 transition bg-white border-2 border-green-300 rounded-lg hover:bg-green-100"
+                                    >
+                                      다운로드
+                                    </button>
+                                  </div>
+                                );
+                              }
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                    {/* 자기소개서 텍스트 (structuredData에서) */}
+                    {structuredData?.coverLetter &&
+                      structuredData.coverLetter.content && (
+                        <div className="p-6 mb-8 border-2 border-green-200 rounded-lg bg-green-50">
+                          <h2 className="mb-4 text-lg font-bold text-gray-900">
+                            ✍️ 자기소개서 (텍스트)
+                            {structuredData.coverLetter.title &&
+                              ` - ${structuredData.coverLetter.title}`}
+                          </h2>
+                          <div className="p-4 bg-white border border-green-200 rounded-lg">
+                            <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">
+                              {structuredData.coverLetter.content}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                  </>
+                )}
+
+                {/* 하단 버튼 */}
                 <div className="flex justify-end">
                   <button
                     onClick={handleBackClick}

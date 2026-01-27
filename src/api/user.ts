@@ -103,3 +103,32 @@ export const changePassword = async (
   );
   return response.data;
 };
+
+/**
+ * 회원 탈퇴 인증 코드 발송
+ */
+export const sendWithdrawalCode = async (userId: number): Promise<void> => {
+  await api.post('/api/auth/withdrawal/send-code', null, {
+    headers: {
+      userId: userId.toString(),
+    },
+  });
+};
+
+/**
+ * 회원 탈퇴
+ */
+export const withdrawUser = async (
+  userId: number,
+  verificationCode: string
+): Promise<{ creditBalance: number; hasCredit: boolean }> => {
+  const response = await api.delete('/api/auth/withdrawal', {
+    headers: {
+      userId: userId.toString(),
+    },
+    data: {
+      verificationCode,
+    },
+  });
+  return response.data.data;
+};
