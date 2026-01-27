@@ -162,3 +162,39 @@ export const updateApplyStatus = async (
   );
   return response.data;
 };
+
+// 면접 상태 변경
+export const updateInterviewStatus = async (
+  applyId: number,
+  companyId: number,
+  interviewStatus: string
+): Promise<ApplyDetailResponse> => {
+  const response = await api.put(
+    `/api/applies/${applyId}/interview-status`,
+    interviewStatus,
+    { 
+      headers: { 
+        companyId,
+        'Content-Type': 'text/plain'
+      } 
+    }
+  );
+  return response.data;
+};
+
+// 인재검색에서 면접 요청
+export const createInterviewRequest = async (
+  companyId: number,
+  userId: number,
+  jobId: number
+): Promise<ApplyDetailResponse> => {
+  const response = await api.post(
+    `/api/applies/interview-request`,
+    null,
+    {
+      params: { userId, jobId },
+      headers: { companyId }
+    }
+  );
+  return response.data;
+};

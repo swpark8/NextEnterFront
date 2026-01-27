@@ -6,6 +6,7 @@ import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
 import {
   getApplies,
   updateApplyStatus,
+  updateInterviewStatus,
   type ApplyListResponse,
 } from "../../api/apply";
 import { getJobPostings, type JobPostingListResponse } from "../../api/job";
@@ -155,6 +156,35 @@ export default function ApplicantManagementPage() {
         alert(error.response?.data?.message || "상태 변경에 실패했습니다.");
       }
     }
+  };
+
+  // 면접 상태 가져오기
+  const getInterviewStatus = (interviewStatus: string | null) => {
+    if (interviewStatus === "REQUESTED") return "요청";
+    if (interviewStatus === "ACCEPTED") return "수락";
+    if (interviewStatus === "REJECTED") return "거절";
+    if (interviewStatus === "CANCELED") return "취소";
+    return null;
+  };
+
+  const getInterviewStatusStyle = (interviewStatus: string | null) => {
+    if (interviewStatus === "요청") {
+      // 테두리만 보라색, 배경 하얀색
+      return "border-2 border-purple-500 text-purple-700 bg-white";
+    }
+    if (interviewStatus === "수락") {
+      // 배경 보라색, 텍스트 하얀색 (기존 스타일)
+      return "bg-purple-500 text-white";
+    }
+    if (interviewStatus === "거절") {
+      // 빨간색
+      return "border-2 border-red-400 text-red-600 bg-red-50";
+    }
+    if (interviewStatus === "취소") {
+      // 회색
+      return "bg-gray-200 text-gray-600";
+    }
+    return "bg-gray-100 text-gray-500"; // 기본
   };
 
   const getInitials = (name: string) => {
@@ -339,7 +369,7 @@ export default function ApplicantManagementPage() {
                       주요 스킬
                     </th>
                     <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700 whitespace-nowrap">
-                      경력
+                      면접 여부
                     </th>
                     <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700 whitespace-nowrap">
                       지원일
@@ -412,9 +442,21 @@ export default function ApplicantManagementPage() {
                       </td>
 
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-3 py-1 text-sm font-semibold text-white bg-purple-500 rounded-full">
-                          {applicant.experience}
-                        </span>
+                        {(() => {
+                          const interviewStatus = getInterviewStatus(applicant.interviewStatus);
+                          if (!interviewStatus) {
+                            return <span className="text-sm text-gray-400">-</span>;
+                          }
+                          return (
+                            <span
+                              className={`inline-block px-3 py-1 text-sm font-semibold rounded-full ${getInterviewStatusStyle(
+                                interviewStatus
+                              )}`}
+                            >
+                              {interviewStatus}
+                            </span>
+                          );
+                        })()}
                       </td>
 
                       <td className="px-6 py-4 whitespace-nowrap">

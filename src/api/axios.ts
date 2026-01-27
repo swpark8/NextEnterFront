@@ -14,9 +14,7 @@ api.interceptors.request.use(
     const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log("🔑 토큰 포함하여 요청:", config.url);
     }
-    
     return config;
   },
   (error) => {

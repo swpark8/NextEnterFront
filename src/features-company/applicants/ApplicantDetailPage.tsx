@@ -8,6 +8,7 @@ import type { InterviewOffer } from "../../context/AppContext";
 import {
   getApplyDetail,
   updateApplyStatus,
+  updateInterviewStatus,
   type ApplyDetailResponse,
 } from "../../api/apply";
 
@@ -19,6 +20,7 @@ export default function ApplicantDetailPage() {
 
   const [loading, setLoading] = useState(true);
   const [applicant, setApplicant] = useState<ApplyDetailResponse | null>(null);
+  const [interviewStatus, setInterviewStatus] = useState<string | null>(null);
 
   // 사이드바 훅 사용
   const { activeMenu, handleMenuClick } = useCompanyPageNavigation(
@@ -44,6 +46,7 @@ export default function ApplicantDetailPage() {
         setLoading(true);
         const data = await getApplyDetail(parseInt(applicantId), user.companyId);
         setApplicant(data);
+        setInterviewStatus(data.interviewStatus || null);
       } catch (error: any) {
         console.error("지원자 상세 조회 실패:", error);
         alert(
@@ -113,7 +116,37 @@ export default function ApplicantDetailPage() {
     }
   };
 
-  const handleInterviewRequest = () => {
+  const handleInterviewRequest = async () => {
+    if (!applicant || !user?.companyId) return;
+
+    if (window.confirm(`${applicant.userName}님에게 면접을 요청하시검습니까?`)) {
+      try {
+        await updateInterviewStatus(applicant.applyId, user.companyId, "REQUESTED");
+        setInterviewStatus("REQUESTED");
+        alert("면접 요청이 전송되었습니다.");
+      } catch (error: any) {
+        console.error("면접 요청 실패:", error);
+        alert(error.response?.data?.message || "면접 요청에 실패했습니다.");
+      }
+    }
+  };
+
+  const handleInterviewCancel = async () => {
+    if (!applicant || !user?.companyId) return;
+
+    if (window.confirm(`${applicant.userName}님의 면접 요청을 취소하시걨습니까?`)) {
+      try {
+        await updateInterviewStatus(applicant.applyId, user.companyId, "CANCELED");
+        setInterviewStatus("CANCELED");
+        alert("면접 요청이 취소되었습니다.");
+      } catch (error: any) {
+        console.error("면접 취소 실패:", error);
+        alert(error.response?.data?.message || "면접 취소에 실패했습니다.");
+      }
+    }
+  };
+
+  const handleInterviewRequestOld = () => {
     if (!applicant) return;
 
     if (window.confirm(`${applicant.userName}님에게 면접 요청을 하시겠습니까?`)) {
@@ -419,6 +452,81 @@ export default function ApplicantDetailPage() {
               </div>
             )}
 
+            {/* 면접 상태 */}
+            <div className="p-6 mb-8 border-2 border-blue-200 rounded-lg bg-blue-50">
+              <h2 className="mb-4 text-lg font-bold text-gray-900">
+                📅 면접 상태
+              </h2>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-medium text-gray-700">현재 상태:</span>
+                  {(() => {
+                    if (interviewStatus === "REQUESTED") {
+                      return (
+                        <span className="inline-block px-4 py-2 text-sm font-semibold text-purple-700 bg-white border-2 border-purple-500 rounded-full">
+                          요청 중 (대기)
+                        </span>
+                      );
+                    }
+                    if (interviewStatus === "ACCEPTED") {
+                      return (
+                        <span className="inline-block px-4 py-2 text-sm font-semibold text-white bg-purple-500 rounded-full">
+                          수락됨 (지원자가 수락)
+                        </span>
+                      );
+                    }
+                    if (interviewStatus === "REJECTED") {
+                      return (
+                        <span className="inline-block px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 border-2 border-red-300 rounded-full">
+                          거절됨 (지원자가 거절)
+                        </span>
+                      );
+                    }
+                    if (interviewStatus === "CANCELED") {
+                      return (
+                        <span className="inline-block px-4 py-2 text-sm font-semibold text-gray-600 bg-gray-200 rounded-full">
+                          취소됨 (기업이 취소)
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className="text-sm text-gray-400">면접 요청 전</span>
+                    );
+                  })()}
+                </div>
+                
+                {/* 면접 요청/취소 버튼 */}
+                <div className="flex gap-3">
+                  {!interviewStatus && (
+                    <button
+                      onClick={handleInterviewRequest}
+                      className="px-4 py-2 text-sm font-semibold text-white transition bg-purple-600 rounded-lg hover:bg-purple-700"
+                    >
+                      면접 요청
+                    </button>
+                  )}
+                  {interviewStatus === "REQUESTED" && (
+                    <button
+                      onClick={handleInterviewCancel}
+                      className="px-4 py-2 text-sm font-semibold text-white transition bg-gray-600 rounded-lg hover:bg-gray-700"
+                    >
+                      요청 취소
+                    </button>
+                  )}
+                </div>
+              </div>
+              
+              {/* 안내 문구 */}
+              <div className="p-3 mt-4 text-sm text-gray-600 bg-white border border-blue-200 rounded-lg">
+                <p>💡 <strong>안내:</strong></p>
+                <ul className="pl-5 mt-2 space-y-1 list-disc">
+                  <li>면접 요청 후 지원자가 수락/거절을 결정합니다.</li>
+                  <li>요청 중일 때만 취소가 가능합니다.</li>
+                  <li>지원자가 수락/거절한 후에는 변경할 수 없습니다.</li>
+                </ul>
+              </div>
+            </div>
+
             {/* 메모 */}
             {applicant.notes && (
               <div className="p-6 mb-8 rounded-lg bg-blue-50">
@@ -446,19 +554,19 @@ export default function ApplicantDetailPage() {
                     >
                       불합격 처리
                     </button>
-                  </>
-                )}
-              <button
-                onClick={handleInterviewRequest}
-                disabled={applicant.status === "REJECTED"}
-                className={`flex-1 px-6 py-3 font-semibold transition rounded-lg ${
+                  </>  
+                  )}
+                  <button
+                  onClick={handleInterviewRequestOld}
+                  disabled={applicant.status === "REJECTED"}
+                  className={`flex-1 px-6 py-3 font-semibold transition rounded-lg ${
                   applicant.status === "REJECTED"
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-purple-600 text-white hover:bg-purple-700"
-                }`}
-              >
-                면접 요청
-              </button>
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-blue-600 text-white hover:bg-blue-700"
+                  }`}
+                  >
+                  면접 제안 (로컬 저장)
+                  </button>
               <button
                 onClick={handleCompatibilityClick}
                 className="flex-1 px-6 py-3 font-semibold text-gray-700 transition bg-gray-100 rounded-lg hover:bg-gray-200"

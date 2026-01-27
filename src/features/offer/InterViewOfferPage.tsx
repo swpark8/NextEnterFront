@@ -5,6 +5,7 @@ import { usePageNavigation } from "../../hooks/usePageNavigation";
 import { useApp } from "../../context/AppContext";
 import { useAuth } from "../../context/AuthContext";
 import { getReceivedContacts, ContactMessage, updateContactStatus } from "../../api/contact";
+import { getMyApplies, updateInterviewStatus, type ApplyListResponse } from "../../api/apply";
 
 interface InterviewOfferPageProps {
   initialMenu?: string;
@@ -29,12 +30,14 @@ export default function InterviewOfferPage({
   const { user } = useAuth();
   const { interviewOffers, deleteInterviewOffer } = useApp();
   const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
+  const [interviewRequests, setInterviewRequests] = useState<ApplyListResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 3. 연락 메시지 로드
+  // 3. 연락 메시지 및 면접 요청 로드
   useEffect(() => {
     if (user?.userId) {
       loadContactMessages();
+      loadInterviewRequests();
     }
   }, [user?.userId]);
 
@@ -50,6 +53,19 @@ export default function InterviewOfferPage({
       console.error("연락 메시지 로드 실패:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadInterviewRequests = async () => {
+    if (!user?.userId) return;
+
+    try {
+      const applies = await getMyApplies(user.userId);
+      const requests = applies.filter(apply => apply.interviewStatus === "REQUESTED");
+      setInterviewRequests(requests);
+      console.log("면접 요청 로드 성공:", requests);
+    } catch (error) {
+      console.error("면접 요청 로드 실패:", error);
     }
   };
 
@@ -112,6 +128,38 @@ export default function InterviewOfferPage({
     }
   };
 
+  const handleAcceptInterview = async (applyId: number) => {
+    if (!user?.userId) return;
+
+    if (window.confirm("면접 요청을 수락하시겠습니까?")) {
+      try {
+        await updateInterviewStatus(applyId, user.userId, "ACCEPTED");
+        alert("면접 요청을 수락했습니다.");
+        loadInterviewRequests();
+        handleBackToList();
+      } catch (error) {
+        console.error("면접 수락 실패:", error);
+        alert("면접 수락에 실패했습니다.");
+      }
+    }
+  };
+
+  const handleRejectInterview = async (applyId: number) => {
+    if (!user?.userId) return;
+
+    if (window.confirm("면접 요청을 거절하시겠습니까?")) {
+      try {
+        await updateInterviewStatus(applyId, user.userId, "REJECTED");
+        alert("면접 요청을 거절했습니다.");
+        loadInterviewRequests();
+        handleBackToList();
+      } catch (error) {
+        console.error("면접 거절 실패:", error);
+        alert("면접 거절에 실패했습니다.");
+      }
+    }
+  };
+
   const handleDelete = (id: number, event: React.MouseEvent) => {
     event.stopPropagation(); // 카드 클릭 방지
     if (window.confirm("제안을 삭제하시겠습니까?")) {
@@ -125,6 +173,7 @@ export default function InterviewOfferPage({
 
   const selectedOffer = interviewOffers.find((o) => o.id === selectedOfferId);
   const selectedContact = contactMessages.find((c) => c.contactId === selectedOfferId);
+  const selectedInterview = interviewRequests.find((r) => r.applyId === selectedOfferId);
 
   // 상태 한글 변환
   const getStatusText = (status: string) => {
@@ -164,7 +213,7 @@ export default function InterviewOfferPage({
               면접 제안
             </h3>
 
-            {selectedOfferId && (selectedOffer || selectedContact) ? (
+            {selectedOfferId && (selectedOffer || selectedContact || selectedInterview) ? (
               // 🟦 상세 화면
               selectedContact ? (
                 // 연락 메시지 상세
@@ -242,6 +291,81 @@ export default function InterviewOfferPage({
                     )}
                   </div>
                 </section>
+              ) : selectedInterview ? (
+                // 면접 요청 상세
+                <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
+                  <div className="flex items-center justify-between pb-6 mb-8 border-b border-gray-100">
+                    <div>
+                      <div className="flex items-center gap-3 mb-2">
+                        <h2 className="text-2xl font-bold">
+                          {selectedInterview.companyName} - {selectedInterview.jobTitle}
+                        </h2>
+                        <span className="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded-full">
+                          면접 요청
+                        </span>
+                      </div>
+                      <p className="text-gray-500">
+                        {selectedInterview.jobCategory}
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleBackToList}
+                      className="px-6 py-2 text-gray-700 transition bg-gray-100 rounded-lg hover:bg-gray-200"
+                    >
+                      목록으로
+                    </button>
+                  </div>
+
+                  <div className="mb-8 space-y-6">
+                    <div className="p-6 border border-blue-200 bg-blue-50 rounded-xl">
+                      <h3 className="mb-2 font-bold text-gray-900">
+                        💼 면접 제안
+                      </h3>
+                      <p className="leading-relaxed text-gray-700">
+                        {selectedInterview.companyName}에서 귀하에게 면접 기회를 제안합니다. 지원하신 {selectedInterview.jobTitle} 포지션에 대한 면접을 진행하고자 합니다.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-4 border rounded-lg">
+                        <span className="block mb-1 text-sm text-gray-500">
+                          지원일
+                        </span>
+                        <span className="font-medium">{formatDate(selectedInterview.appliedAt)}</span>
+                      </div>
+                      <div className="p-4 border rounded-lg">
+                        <span className="block mb-1 text-sm text-gray-500">
+                          직무
+                        </span>
+                        <span className="font-medium">
+                          {selectedInterview.jobCategory}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-3 mb-6 text-sm text-gray-600 bg-white border border-blue-200 rounded-lg">
+                    <p>💡 <strong>안내:</strong></p>
+                    <ul className="pl-5 mt-2 space-y-1 list-disc">
+                      <li>기업이 면접을 요청한 공고에 대해 수락/거절을 결정할 수 있습니다.</li>
+                      <li>수락하면 기업에게 통보되며, 면접 일정이 지정됩니다.</li>
+                    </ul>
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
+                    <button
+                      onClick={() => handleRejectInterview(selectedInterview.applyId)}
+                      className="px-6 py-3 font-semibold text-red-600 transition rounded-lg bg-red-50 hover:bg-red-100"
+                    >
+                      거절하기
+                    </button>
+                    <button
+                      onClick={() => handleAcceptInterview(selectedInterview.applyId)}
+                      className="px-6 py-3 font-semibold text-white transition bg-blue-600 rounded-lg shadow-md hover:bg-blue-700"
+                    >
+                      수락하기
+                    </button>
+                  </div>
+                </section>
               ) : selectedOffer ? (
                 // 기존 면접 제안 상세
                 <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
@@ -316,7 +440,7 @@ export default function InterviewOfferPage({
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {contactMessages.length === 0 && interviewOffers.length === 0 ? (
+                    {contactMessages.length === 0 && interviewOffers.length === 0 && interviewRequests.length === 0 ? (
                       <div className="py-12 text-center text-gray-500 border-2 border-dashed rounded-xl">
                         받은 면접 제안이 없습니다.
                       </div>
@@ -352,6 +476,41 @@ export default function InterviewOfferPage({
                               </div>
                               <p className="text-sm text-gray-600">
                                 {formatDate(contact.createdAt)}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+
+                        {/* 면접 요청 목록 */}
+                        {interviewRequests.map((request) => (
+                          <div
+                            key={`interview-${request.applyId}`}
+                            onClick={() => handleOfferClick(request.applyId)}
+                            onMouseEnter={() => setHoveredId(request.applyId)}
+                            onMouseLeave={() => setHoveredId(null)}
+                            className={`p-4 bg-white border-2 rounded-lg cursor-pointer transition-all flex items-center justify-between ${
+                              hoveredId === request.applyId
+                                ? "border-blue-500 shadow-md transform scale-[1.01]"
+                                : "border-gray-200 hover:border-gray-300"
+                            }`}
+                          >
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4
+                                  className={`transition-all ${
+                                    hoveredId === request.applyId
+                                      ? "text-xl font-bold text-gray-900"
+                                      : "text-lg font-semibold text-gray-800"
+                                  }`}
+                                >
+                                  {request.companyName} - {request.jobTitle}
+                                </h4>
+                                <span className="px-2 py-0.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-md border border-blue-100">
+                                  면접 요청
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-600">
+                                {request.jobCategory} | {formatDate(request.appliedAt)}
                               </p>
                             </div>
                           </div>

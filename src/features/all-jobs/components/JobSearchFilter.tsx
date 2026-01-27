@@ -337,15 +337,11 @@ export default function JobSearchFilter({
                         key={region.name}
                         onClick={() => {
                           if (hasDistricts) {
-                            // 하위지역 있으면 펼치기/접기
+                            // 하위지역 있으면 펼치기/접기만
                             if (expandedRegion === region.name) {
                               setExpandedRegion(null);
                             } else {
                               setExpandedRegion(region.name);
-                              // 전체 선택 추가
-                              if (!selectedRegions.includes(`${region.name} 전체`)) {
-                                setSelectedRegions((prev) => [...prev, `${region.name} 전체`]);
-                              }
                             }
                           } else {
                             // 하위지역 없으면 (세종) 그냥 선택
