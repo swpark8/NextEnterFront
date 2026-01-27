@@ -230,6 +230,107 @@ export const updateResume = async (
   return response.data;
 };
 
+// ✅ 파일 포함 이력서 생성
+export const createResumeWithFiles = async (
+  data: CreateResumeRequest,
+  userId: number,
+  portfolioFiles: File[],
+  coverLetterFiles: File[]
+): Promise<ResumeResponse> => {
+  const formData = new FormData();
+  
+  // JSON 데이터를 Blob으로 추가
+  const jsonBlob = new Blob([JSON.stringify({
+    title: data.title,
+    jobCategory: data.jobCategory,
+    skills: JSON.stringify(data.skills || []),
+    visibility: data.visibility || "PUBLIC",
+    sections: JSON.stringify(data.sections),
+    status: data.status || "COMPLETED"
+  })], { type: 'application/json' });
+  
+  formData.append('request', jsonBlob);
+  
+  // 포트폴리오 파일 추가
+  portfolioFiles.forEach((file) => {
+    formData.append('portfolioFiles', file);
+  });
+  
+  // 자기소개서 파일 추가
+  coverLetterFiles.forEach((file) => {
+    formData.append('coverLetterFiles', file);
+  });
+  
+  console.log("🚀 [API] 파일 포함 이력서 생성 요청");
+  console.log("📤 포트폴리오 파일 개수:", portfolioFiles.length);
+  console.log("📤 자기소개서 파일 개수:", coverLetterFiles.length);
+  
+  const response = await api.post<ResumeResponse>(
+    '/api/resume/create-with-files',
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        userId: userId.toString(),
+      },
+    }
+  );
+  
+  console.log("✅ [API] 파일 포함 이력서 생성 응답:", response.data);
+  return response.data;
+};
+
+// ✅ 파일 포함 이력서 수정
+export const updateResumeWithFiles = async (
+  resumeId: number,
+  data: CreateResumeRequest,
+  userId: number,
+  portfolioFiles: File[],
+  coverLetterFiles: File[]
+): Promise<ResumeResponse> => {
+  const formData = new FormData();
+  
+  // JSON 데이터를 Blob으로 추가
+  const jsonBlob = new Blob([JSON.stringify({
+    title: data.title,
+    jobCategory: data.jobCategory,
+    skills: JSON.stringify(data.skills || []),
+    visibility: data.visibility || "PUBLIC",
+    sections: JSON.stringify(data.sections),
+    status: data.status || "COMPLETED"
+  })], { type: 'application/json' });
+  
+  formData.append('request', jsonBlob);
+  
+  // 포트폴리오 파일 추가
+  portfolioFiles.forEach((file) => {
+    formData.append('portfolioFiles', file);
+  });
+  
+  // 자기소개서 파일 추가
+  coverLetterFiles.forEach((file) => {
+    formData.append('coverLetterFiles', file);
+  });
+  
+  console.log("🔄 [API] 파일 포함 이력서 수정 요청 (ID:", resumeId, ")");
+  console.log("📤 포트폴리오 파일 개수:", portfolioFiles.length);
+  console.log("📤 자기소개서 파일 개수:", coverLetterFiles.length);
+  
+  const response = await api.put<ResumeResponse>(
+    `/api/resume/${resumeId}/update-with-files`,
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        userId: userId.toString(),
+      },
+    }
+  );
+  
+  console.log("✅ [API] 파일 포함 이력서 수정 응답:", response.data);
+  return response.data;
+};
+
 // ✅ 이력서 삭제 (백엔드 응답: {message: string})
 export const deleteResume = async (
   resumeId: number,
@@ -276,4 +377,69 @@ export const getAIRecommendation = async (
     request
   );
   return response.data;
+};
+
+/**
+ * 포트폴리오 목록 조회
+ */
+export interface PortfolioDto {
+  portfolioId: number;
+  resumeId: number;
+  fileName: string;
+  filePath: string;
+  fileType: string;
+  fileSize: number;
+  description?: string;
+  displayOrder: number;
+  uploadedAt: string;
+}
+
+export interface PortfolioListResponse {
+  portfolios: PortfolioDto[];
+  total: number;
+}
+
+export const getPortfolioList = async (
+  userId: number,
+  resumeId: number
+): Promise<PortfolioListResponse> => {
+  const response = await api.get<PortfolioListResponse>(
+    `/api/resume/${resumeId}/portfolios`,
+    {
+      headers: {
+        userId: userId.toString(),
+      },
+    }
+  );
+  return response.data;
+};
+
+/**
+ * 포트폴리오 파일 다운로드
+ */
+export const downloadPortfolio = async (
+  userId: number,
+  resumeId: number,
+  portfolioId: number,
+  fileName: string
+): Promise<void> => {
+  const response = await api.get(
+    `/api/resume/${resumeId}/portfolios/${portfolioId}/download`,
+    {
+      headers: {
+        userId: userId.toString(),
+      },
+      responseType: "blob",
+    }
+  );
+
+  // Blob을 다운로드
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", fileName);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
 };

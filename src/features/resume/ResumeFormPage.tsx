@@ -5,11 +5,14 @@ import {
   createResume,
   updateResume,
   getResumeDetail,
+  createResumeWithFiles,  // ✅ 추가
+  updateResumeWithFiles,  // ✅ 추가
   CreateResumeRequest,
   ResumeSections,
 } from "../../api/resume";
 import ResumeSidebar from "./components/ResumeSidebar";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
+import { useKakaoAddress } from "../../hooks/useKakaoAddress";
 
 interface ResumeFormPageProps {
   onBack?: () => void; // 옵션널로 변경
@@ -87,11 +90,17 @@ export default function ResumeFormPage({
   const [birthDate, setBirthDate] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
+  const [detailAddress, setDetailAddress] = useState(""); // ✅ 상세 주소 추가
   const [coverLetterTitle, setCoverLetterTitle] = useState("");
   const [coverLetterContent, setCoverLetterContent] = useState("");
   const [visibility, setVisibility] = useState("PUBLIC"); // 공개 설정 추가
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // ✅ 카카오 주소 API 훅 사용
+  const { openPostcode } = useKakaoAddress((data) => {
+    setAddress(data.address);
+  });
 
   // 수정 모드일 때 데이터 로드
   useEffect(() => {
@@ -101,137 +110,132 @@ export default function ResumeFormPage({
   }, [resumeId, user?.userId]);
 
   // 이력서 데이터 로드 함수
-  const loadResumeData = async (id: number, userId: number) => {
-    setIsLoading(true);
-    setError("");
+const loadResumeData = async (id: number, userId: number) => {
+  setIsLoading(true);
+  setError("");
 
-    try {
-      const resume = await getResumeDetail(id, userId);
-      console.log("🔍 [디버그] 불러온 이력서 데이터:", resume);
-      console.log("🔍 [디버그] visibility:", resume.visibility);
+  try {
+    const resume = await getResumeDetail(id, userId);
+    console.log("🔍 [디버그] 불러온 이력서 데이터:", resume);
+    console.log("🔍 [디버그] visibility:", resume.visibility);
 
-      // 기본 정보
-      setResumeTitle(resume.title);
-      setSelectedJob(resume.jobCategory);
-      
-      // visibility 로드 - 기본값은 PUBLIC
-      const loadedVisibility = resume.visibility || "PUBLIC";
-      setVisibility(loadedVisibility);
-      console.log("🔍 [디버그] 설정된 visibility:", loadedVisibility);
+    // 기본 정보
+    setResumeTitle(resume.title);
+    setSelectedJob(resume.jobCategory);
+    
+    // visibility 로드 - 기본값은 PUBLIC
+    const loadedVisibility = resume.visibility || "PUBLIC";
+    setVisibility(loadedVisibility);
+    console.log("🔍 [디버그] 설정된 visibility:", loadedVisibility);
 
-      // structuredData 파싱
-      if (resume.structuredData) {
-        try {
-          const sections: ResumeSections = JSON.parse(resume.structuredData);
-          console.log("파싱된 섹션 데이터:", sections);
+    // structuredData 파싱
+    if (resume.structuredData) {
+      try {
+        const sections: ResumeSections = JSON.parse(resume.structuredData);
+        console.log("파싱된 섹션 데이터:", sections);
 
-          // 인적사항
-          if (sections.personalInfo) {
-            setName(sections.personalInfo.name || "");
-            setSelectedGender(sections.personalInfo.gender || "");
-            setBirthDate(sections.personalInfo.birthDate || "");
-            setEmail(sections.personalInfo.email || "");
-            setAddress(sections.personalInfo.address || "");
-            setSelectedImage(sections.personalInfo.profileImage || null);
-          }
-
-          // 경험/활동/교육
-          if (sections.experiences && sections.experiences.length > 0) {
-            setExperiences(
-              sections.experiences.map((exp) => ({
-                title: exp.title || "",
-                startDate: exp.period?.split(" - ")[0] || "",
-                endDate: exp.period?.split(" - ")[1] || "",
-              }))
-            );
-          }
-
-          // 자격증/어학/수상
-          if (sections.certificates && sections.certificates.length > 0) {
-            setCertificates(
-              sections.certificates.map((cert) => ({
-                title: cert.title || "",
-                date: cert.date || "",
-              }))
-            );
-          }
-
-          // 학력
-          if (sections.educations && sections.educations.length > 0) {
-            setEducations(
-              sections.educations.map((edu) => {
-                // 기존 데이터가 문자열 형식일 경우 파싱
-                const periodParts = edu.period?.split(" ~ ") || ["", ""];
-                return {
-                  school: edu.school || "",
-                  type: "",
-                  subType: "",
-                  major: "",
-                  startDate: periodParts[0] || "",
-                  endDate: periodParts[1] || "",
-                };
-              })
-            );
-          }
-
-          // 경력
-          if (sections.careers && sections.careers.length > 0) {
-            setCareers(
-              sections.careers.map((career) => {
-                // 기존 데이터가 문자열 형식일 경우 파싱
-                const periodParts = career.period?.split(" ~ ") || ["", ""];
-                return {
-                  company: career.company || "",
-                  position: "",
-                  role: "",
-                  startDate: periodParts[0] || "",
-                  endDate: periodParts[1] || "",
-                };
-              })
-            );
-          }
-
-          // 포트폴리오 - 파일명만 저장되어 있으므로 표시만 하고 실제 파일은 다시 업로드 필요
-          // if (sections.portfolios && sections.portfolios.length > 0) {
-          //   기존 파일명은 표시만 할 수 있음
-          // }
-
-          // 자기소개서
-          if (sections.coverLetter) {
-            setCoverLetterTitle(sections.coverLetter.title || "");
-            setCoverLetterContent(sections.coverLetter.content || "");
-            if (sections.coverLetter.files) {
-              setCoverLetterFiles(sections.coverLetter.files);
-            }
-          }
-        } catch (parseError) {
-          console.error("섹션 데이터 파싱 오류:", parseError);
+        // 인적사항
+        if (sections.personalInfo) {
+          setName(sections.personalInfo.name || "");
+          setSelectedGender(sections.personalInfo.gender || "");
+          setBirthDate(sections.personalInfo.birthDate || "");
+          setEmail(sections.personalInfo.email || "");
+          setAddress(sections.personalInfo.address || "");
+          setSelectedImage(sections.personalInfo.profileImage || null);
         }
-      }
 
-      // 스킬
-      if (resume.skills) {
-        try {
-          console.log("🔍 [디버그] resume.skills 원본:", resume.skills);
-          const skillsArray = JSON.parse(resume.skills);
-          console.log("🔍 [디버그] 파싱된 skillsArray:", skillsArray);
-          if (Array.isArray(skillsArray)) {
-            setSelectedSkills(skillsArray);
-            console.log("✅ [디버그] 스킬 설정 성공:", skillsArray);
-          }
-        } catch (error) {
-          console.error("❌ [디버그] 스킬 파싱 오류:", error);
+        // 경험/활동/교육
+        if (sections.experiences && sections.experiences.length > 0) {
+          setExperiences(
+            sections.experiences.map((exp) => ({
+              title: exp.title || "",
+              startDate: exp.period?.split(" - ")[0] || "",
+              endDate: exp.period?.split(" - ")[1] || "",
+            }))
+          );
         }
-      } else {
-        console.log("⚠️ [디버그] resume.skills가 비어있음");
+
+        // 자격증/어학/수상
+        if (sections.certificates && sections.certificates.length > 0) {
+          setCertificates(
+            sections.certificates.map((cert) => ({
+              title: cert.title || "",
+              date: cert.date || "",
+            }))
+          );
+        }
+
+        // 학력
+        if (sections.educations && sections.educations.length > 0) {
+          setEducations(
+            sections.educations.map((edu) => {
+              const periodParts = edu.period?.split(" ~ ") || ["", ""];
+              return {
+                school: edu.school || "",
+                type: "",
+                subType: "",
+                major: "",
+                startDate: periodParts[0] || "",
+                endDate: periodParts[1] || "",
+              };
+            })
+          );
+        }
+
+        // 경력
+        if (sections.careers && sections.careers.length > 0) {
+          setCareers(
+            sections.careers.map((career) => {
+              const periodParts = career.period?.split(" ~ ") || ["", ""];
+              return {
+                company: career.company || "",
+                position: "",
+                role: "",
+                startDate: periodParts[0] || "",
+                endDate: periodParts[1] || "",
+              };
+            })
+          );
+        }
+
+        // ❌ 포트폴리오 - 수정 모드에서는 기존 파일을 불러올 수 없음 (파일명만 있음)
+        // 사용자가 다시 업로드해야 함
+
+        // 자기소개서
+        if (sections.coverLetter) {
+          setCoverLetterTitle(sections.coverLetter.title || "");
+          setCoverLetterContent(sections.coverLetter.content || "");
+          // ❌ 파일은 불러올 수 없음 - File 객체가 아닌 문자열 배열이므로
+          // 사용자가 다시 업로드해야 함
+        }
+      } catch (parseError) {
+        console.error("섹션 데이터 파싱 오류:", parseError);
       }
-    } catch (err: any) {
-      console.error("이력서 데이터 로드 오류:", err);
-      setError("이력서 데이터를 불러오는 중 오류가 발생했습니다.");
-    } finally {
-      setIsLoading(false);
     }
-  };
+
+    // 스킬
+    if (resume.skills) {
+      try {
+        console.log("🔍 [디버그] resume.skills 원본:", resume.skills);
+        const skillsArray = JSON.parse(resume.skills);
+        console.log("🔍 [디버그] 파싱된 skillsArray:", skillsArray);
+        if (Array.isArray(skillsArray)) {
+          setSelectedSkills(skillsArray);
+          console.log("✅ [디버그] 스킬 설정 성공:", skillsArray);
+        }
+      } catch (error) {
+        console.error("❌ [디버그] 스킬 파싱 오류:", error);
+      }
+    } else {
+      console.log("⚠️ [디버그] resume.skills가 비어있음");
+    }
+  } catch (err: any) {
+    console.error("이력서 데이터 로드 오류:", err);
+    setError("이력서 데이터를 불러오는 중 오류가 발생했습니다.");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -355,7 +359,7 @@ export default function ResumeFormPage({
     setCoverLetterFiles(coverLetterFiles.filter((_, i) => i !== index));
   };
 
-  // 등록/수정 처리
+  // ✅ 등록/수정 처리 - 파일 포함
   const handleSubmit = async () => {
     // 필수 필드 검증
     if (!resumeTitle) {
@@ -385,7 +389,7 @@ export default function ResumeFormPage({
         title: resumeTitle,
         jobCategory: selectedJob,
         skills: selectedSkills,
-        visibility: visibility, // 공개 설정 추가
+        visibility: visibility,
         sections: {
           personalInfo: {
             name,
@@ -409,10 +413,22 @@ export default function ResumeFormPage({
             })),
           educations: educations
             .filter((e) => e.school)
-            .map((e) => ({
-              school: `${e.school} (${e.type}${e.subType ? ` - ${e.subType}` : ""})${e.major ? ` ${e.major}` : ""}`,
-              period: `${e.startDate} ~ ${e.endDate}`,
-            })),
+            .map((e) => {
+              let schoolText = e.school;
+              if (e.type) {
+                schoolText += ` ${e.type}`;
+              }
+              if (e.subType) {
+                schoolText += ` - ${e.subType}`;
+              }
+              if (e.major) {
+                schoolText += ` ${e.major}`;
+              }
+              return {
+                school: schoolText,
+                period: `${e.startDate} ~ ${e.endDate}`,
+              };
+            }),
           careers: careers
             .filter((c) => c.company)
             .map((c) => ({
@@ -432,12 +448,19 @@ export default function ResumeFormPage({
       };
 
       console.log("📤 [디버그] 전송할 데이터:", resumeData);
-      console.log("📤 [디버그] visibility 값:", visibility);
+      console.log("📤 [디버그] 포트폴리오 파일:", portfolioFiles);
+      console.log("📤 [디버그] 자기소개서 파일:", coverLetterFiles);
 
       let response;
       if (resumeId) {
-        // 수정 모드
-        response = await updateResume(resumeId, resumeData, user.userId);
+        // ✅ 수정 모드 - 파일 포함
+        response = await updateResumeWithFiles(
+          resumeId,
+          resumeData,
+          user.userId,
+          portfolioFiles,
+          coverLetterFiles
+        );
         if (response.resumeId) {
           alert("이력서가 수정되었습니다!");
           navigate("/user/resume");
@@ -445,8 +468,13 @@ export default function ResumeFormPage({
           setError("이력서 수정에 실패했습니다.");
         }
       } else {
-        // 등록 모드
-        response = await createResume(resumeData, user.userId);
+        // ✅ 등록 모드 - 파일 포함
+        response = await createResumeWithFiles(
+          resumeData,
+          user.userId,
+          portfolioFiles,
+          coverLetterFiles
+        );
         if (response.resumeId) {
           alert("이력서가 등록되었습니다!");
           navigate("/user/resume");
@@ -690,18 +718,36 @@ export default function ResumeFormPage({
                       />
                     </div>
 
-                    {/* 주소 */}
+                    {/* 주소 - ✅ 카카오 도로명 주소 API 적용 + UI 개선 */}
                     <div className="grid grid-cols-4 gap-0 overflow-hidden border-2 border-gray-300 rounded-lg">
-                      <div className="p-3 font-medium text-center border-r border-gray-300 bg-gray-50">
+                      <div className="flex items-center justify-center p-3 font-medium text-center border-r border-gray-300 bg-gray-50">
                         주소
                       </div>
-                      <input
-                        type="text"
-                        value={address}
-                        onChange={(e) => setAddress(e.target.value)}
-                        className="col-span-3 p-3 outline-none"
-                        placeholder=""
-                      />
+                      <div className="col-span-3 p-3">
+                        <div className="flex gap-2 mb-2">
+                          <input
+                            type="text"
+                            value={address}
+                            readOnly
+                            placeholder="주소 찾기 버튼을 클릭하세요"
+                            className="flex-1 outline-none cursor-not-allowed bg-gray-50"
+                          />
+                          <button
+                            type="button"
+                            onClick={openPostcode}
+                            className="px-4 py-1 text-sm text-white transition bg-blue-600 rounded hover:bg-blue-700"
+                          >
+                            주소 찾기
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          value={detailAddress}
+                          onChange={(e) => setDetailAddress(e.target.value)}
+                          placeholder="상세 주소를 입력하세요 (예: 3층)"
+                          className="w-full pt-2 mt-2 outline-none border-t border-gray-200"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -986,26 +1032,35 @@ export default function ResumeFormPage({
                       key={index}
                       className="p-4 border-2 border-gray-300 rounded-lg"
                     >
-                      {/* 학교 이름 */}
-                      <div className="mb-3">
-                        <label className="block mb-2 text-sm font-medium text-gray-700">
-                          학교 이름
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="예: 서울대학교"
-                          value={education.school}
-                          onChange={(e) => {
-                            const newEducations = [...educations];
-                            newEducations[index].school = e.target.value;
-                            setEducations(newEducations);
-                          }}
-                          className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
-                        />
-                      </div>
+                      {/* 학교 이름, 학교 종류, 세부 종류 - ✅ 한 줄로 배치 */}
+                      <div className="grid grid-cols-3 gap-4 mb-3">
+                       {/* 학교 이름 */}
+<div>
+  <label className="block mb-2 text-sm font-medium text-gray-700">
+    학교 이름
+  </label>
+  <input
+    type="text"
+    value={education.school}
+    onChange={(e) => {
+      const newEducations = [...educations];
+      newEducations[index].school = e.target.value;
+      setEducations(newEducations);
+    }}
+    placeholder={`예: ${
+      education.type === "고등학교"
+        ? "서울고등학교"
+        : education.type === "대학교"
+        ? "서울대학교"
+        : education.type === "대학원"
+        ? "서울대학교 대학원"
+        : "학교 이름을 입력하세요"
+    }`}
+    className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
+  />
+</div>
 
-                      {/* 학교 종류 & 세부 종류 */}
-                      <div className="grid grid-cols-2 gap-4 mb-3">
+                        {/* 학교 종류 */}
                         <div>
                           <label className="block mb-2 text-sm font-medium text-gray-700">
                             학교 종류
@@ -1027,6 +1082,7 @@ export default function ResumeFormPage({
                           </select>
                         </div>
                         
+                        {/* 세부 종류 */}
                         <div>
                           <label className="block mb-2 text-sm font-medium text-gray-700">
                             세부 종류
@@ -1186,40 +1242,43 @@ export default function ResumeFormPage({
                         </div>
                       </div>
 
-                      {/* 회사명 */}
-                      <div className="mb-3">
-                        <label className="block mb-2 text-sm font-medium text-gray-700">
-                          회사명
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="예: 네이버"
-                          value={career.company}
-                          onChange={(e) => {
-                            const newCareers = [...careers];
-                            newCareers[index].company = e.target.value;
-                            setCareers(newCareers);
-                          }}
-                          className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
-                        />
-                      </div>
+                      {/* 회사명, 직책 - ✅ 한 줄로 배치 */}
+                      <div className="grid grid-cols-2 gap-4 mb-3">
+                        {/* 회사명 */}
+                        <div>
+                          <label className="block mb-2 text-sm font-medium text-gray-700">
+                            회사명
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="예: 네이버"
+                            value={career.company}
+                            onChange={(e) => {
+                              const newCareers = [...careers];
+                              newCareers[index].company = e.target.value;
+                              setCareers(newCareers);
+                            }}
+                            className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
+                          />
+                        </div>
 
-                      {/* 직책 */}
-                      <div className="mb-3">
-                        <label className="block mb-2 text-sm font-medium text-gray-700">
-                          직책
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="예: 대리, 팀장"
-                          value={career.position}
-                          onChange={(e) => {
-                            const newCareers = [...careers];
-                            newCareers[index].position = e.target.value;
-                            setCareers(newCareers);
-                          }}
-                          className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
-                        />
+                        {/* 직책 */}
+                        <div>
+                          <label className="block mb-2 text-sm font-medium text-gray-700">
+                            직책
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="예: 대리, 팀장"
+                            value={career.position}
+                            onChange={(e) => {
+                              const newCareers = [...careers];
+                              newCareers[index].position = e.target.value;
+                              setCareers(newCareers);
+                            }}
+                            className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
+                          />
+                        </div>
                       </div>
 
                       {/* 직무 */}

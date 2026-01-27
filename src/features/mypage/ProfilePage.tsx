@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useApp } from "../../context/AppContext";
 import {
   getUserProfile,
   updateUserProfile,
   uploadProfileImage,
+  sendWithdrawalCode,
+  withdrawUser,
   UserProfile,
 } from "../../api/user";
 import LeftSidebar from "../../components/LeftSidebar";
@@ -13,9 +16,9 @@ import ChangePasswordModal from "../../components/ChangePasswordModal";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const { creditBalance } = useApp();
   
-  // 쿼리 파라미터에서 메뉴 상태 읽기 (기본값: mypage-sub-2)
   const { activeMenu, handleMenuClick } = usePageNavigation("mypage", "mypage-sub-2");
   
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -24,6 +27,15 @@ export default function ProfilePage() {
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  
+  // 회원 탈퇴 관련 상태
+  const [isWithdrawalModalOpen, setIsWithdrawalModalOpen] = useState(false);
+  const [withdrawalStep, setWithdrawalStep] = useState<1 | 2>(1);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [isCodeSent, setIsCodeSent] = useState(false);
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 수정 가능한 필드
@@ -66,7 +78,7 @@ export default function ProfilePage() {
     }
   };
 
-  // 프로필 이미지 업로드 (수정 모드에서만 가능)
+  // 프로필 이미지 업로드
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!isEditing) return;
 
@@ -140,6 +152,66 @@ export default function ProfilePage() {
       });
     }
     setIsEditing(false);
+    setError("");
+  };
+
+  // 회원 탈퇴 인증 코드 발송
+  const handleSendWithdrawalCode = async () => {
+    if (!user?.userId) return;
+
+    setIsSendingCode(true);
+    setError("");
+
+    try {
+      await sendWithdrawalCode(user.userId);
+      setIsCodeSent(true);
+      setWithdrawalStep(2);
+      setSuccessMessage("인증 코드가 이메일로 발송되었습니다.");
+      setTimeout(() => setSuccessMessage(""), 3000);
+    } catch (err: any) {
+      console.error("인증 코드 발송 오류:", err);
+      setError(err.response?.data?.message || "인증 코드 발송에 실패했습니다.");
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
+
+  // 회원 탈퇴 처리
+  const handleWithdrawal = async () => {
+    if (!user?.userId || !verificationCode) {
+      setError("인증 코드를 입력해주세요.");
+      return;
+    }
+
+    if (!confirm("정말로 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
+      return;
+    }
+
+    setIsWithdrawing(true);
+    setError("");
+
+    try {
+      const result = await withdrawUser(user.userId, verificationCode);
+      
+      alert("회원 탈퇴가 완료되었습니다. 그동안 이용해주셔서 감사합니다.");
+      
+      // 로그아웃 처리
+      logout();
+      navigate("/");
+    } catch (err: any) {
+      console.error("회원 탈퇴 오류:", err);
+      setError(err.response?.data?.message || "회원 탈퇴에 실패했습니다.");
+    } finally {
+      setIsWithdrawing(false);
+    }
+  };
+
+  // 회원 탈퇴 모달 닫기
+  const handleCloseWithdrawalModal = () => {
+    setIsWithdrawalModalOpen(false);
+    setWithdrawalStep(1);
+    setVerificationCode("");
+    setIsCodeSent(false);
     setError("");
   };
 
@@ -415,23 +487,159 @@ export default function ProfilePage() {
                     )}
                   </div>
 
-                  {/* 비밀번호 변경 버튼 - 일반 가입 사용자만 */}
-                  {!isSocialLogin && (
-                    <div className="mt-4">
+                  {/* 버튼 영역 */}
+                  <div className="flex gap-3 mt-4">
+                    {/* 비밀번호 변경 버튼 - 일반 가입 사용자만 */}
+                    {!isSocialLogin && (
                       <button
                         onClick={() => setIsPasswordModalOpen(true)}
                         className="px-6 py-2 text-white transition bg-orange-500 rounded-lg hover:bg-orange-600"
                       >
                         비밀번호 변경
                       </button>
-                    </div>
-                  )}
+                    )}
+
+                    {/* 회원 탈퇴 버튼 */}
+                    <button
+                      onClick={() => setIsWithdrawalModalOpen(true)}
+                      className="px-6 py-2 text-white transition bg-red-600 rounded-lg hover:bg-red-700"
+                    >
+                      회원 탈퇴
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* 회원 탈퇴 모달 */}
+      {isWithdrawalModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-md p-8 mx-4 bg-white shadow-2xl rounded-2xl">
+            <h2 className="mb-6 text-2xl font-bold text-center text-gray-900">
+              회원 탈퇴
+            </h2>
+
+            {withdrawalStep === 1 ? (
+              // Step 1: 경고 및 확인
+              <>
+                <div className="mb-6 space-y-4">
+                  <div className="p-4 border-2 border-red-200 rounded-lg bg-red-50">
+                    <p className="mb-2 font-semibold text-red-900">⚠️ 주의사항</p>
+                    <ul className="space-y-1 text-sm text-red-800 list-disc list-inside">
+                      <li>모든 개인정보가 삭제됩니다</li>
+                      <li>작성한 이력서가 모두 삭제됩니다</li>
+                      <li>지원 내역이 모두 삭제됩니다</li>
+                      <li>이 작업은 되돌릴 수 없습니다</li>
+                    </ul>
+                  </div>
+
+                  {/* 크레딧 경고 */}
+                  {creditBalance > 0 && (
+                    <div className="p-4 border-2 border-orange-200 rounded-lg bg-orange-50">
+                      <p className="mb-2 font-semibold text-orange-900">💳 크레딧 잔액</p>
+                      <p className="text-sm text-orange-800">
+                        현재 <span className="font-bold">{creditBalance} 크레딧</span>이 남아있습니다.
+                        <br />
+                        탈퇴 시 모든 크레딧이 소멸됩니다.
+                      </p>
+                    </div>
+                  )}
+
+                  <p className="text-sm text-center text-gray-600">
+                    정말로 탈퇴하시겠습니까?
+                  </p>
+                </div>
+
+                {error && (
+                  <div className="p-4 mb-4 border border-red-200 rounded-lg bg-red-50">
+                    <p className="text-sm text-red-600">{error}</p>
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleCloseWithdrawalModal}
+                    className="flex-1 px-6 py-3 font-semibold text-gray-700 transition bg-gray-200 rounded-lg hover:bg-gray-300"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={handleSendWithdrawalCode}
+                    disabled={isSendingCode}
+                    className="flex-1 px-6 py-3 font-semibold text-white transition bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {isSendingCode ? "발송 중..." : "탈퇴 진행"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              // Step 2: 인증 코드 입력
+              <>
+                <div className="mb-6">
+                  <p className="mb-4 text-sm text-center text-gray-600">
+                    {profile?.email}로 발송된
+                    <br />
+                    인증 코드를 입력해주세요.
+                  </p>
+
+                  <input
+                    type="text"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value)}
+                    placeholder="6자리 인증 코드"
+                    maxLength={6}
+                    className="w-full px-4 py-3 text-lg font-semibold tracking-widest text-center border-2 border-gray-300 rounded-lg focus:outline-none focus:border-red-500"
+                  />
+
+                  <p className="mt-2 text-xs text-center text-gray-500">
+                    인증 코드는 5분 동안 유효합니다
+                  </p>
+
+                  <button
+                    onClick={handleSendWithdrawalCode}
+                    disabled={isSendingCode}
+                    className="w-full mt-3 text-sm text-blue-600 hover:underline disabled:opacity-50"
+                  >
+                    {isSendingCode ? "발송 중..." : "인증 코드 재발송"}
+                  </button>
+                </div>
+
+                {successMessage && (
+                  <div className="p-4 mb-4 border border-green-200 rounded-lg bg-green-50">
+                    <p className="text-sm text-green-600">{successMessage}</p>
+                  </div>
+                )}
+
+                {error && (
+                  <div className="p-4 mb-4 border border-red-200 rounded-lg bg-red-50">
+                    <p className="text-sm text-red-600">{error}</p>
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleCloseWithdrawalModal}
+                    disabled={isWithdrawing}
+                    className="flex-1 px-6 py-3 font-semibold text-gray-700 transition bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={handleWithdrawal}
+                    disabled={isWithdrawing || !verificationCode}
+                    className="flex-1 px-6 py-3 font-semibold text-white transition bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {isWithdrawing ? "처리 중..." : "탈퇴하기"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* 비밀번호 변경 모달 */}
       <ChangePasswordModal

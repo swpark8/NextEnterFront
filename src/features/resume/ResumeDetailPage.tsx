@@ -4,6 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import ResumeSidebar from "./components/ResumeSidebar";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 import { getResumeDetail, deleteResume, type ResumeResponse } from "../../api/resume";
+import api from "../../api/axios";
 
 export default function ResumeDetailPage() {
   const navigate = useNavigate();
@@ -35,6 +36,22 @@ export default function ResumeDetailPage() {
         setLoading(true);
         const data = await getResumeDetail(parseInt(resumeId), user.userId);
         setResume(data);
+        
+        // ✅ 디버깅: structuredData 확인
+        console.log("📥 받은 이력서 데이터:", data);
+        console.log("📥 structuredData 원본:", data.structuredData);
+        
+        if (data.structuredData) {
+          try {
+            const parsed = JSON.parse(data.structuredData);
+            console.log("📥 파싱된 structuredData:", parsed);
+            console.log("📥 portfolios:", parsed.portfolios);
+            console.log("📥 coverLetter:", parsed.coverLetter);
+          } catch (e) {
+            console.error("❌ structuredData 파싱 실패:", e);
+          }
+        }
+        
       } catch (error: any) {
         console.error("이력서 상세 조회 실패:", error);
         alert(error.response?.data?.message || "이력서 정보를 불러오는데 실패했습니다.");
@@ -51,8 +68,112 @@ export default function ResumeDetailPage() {
     navigate("/user/resume");
   };
 
+  // ✅ 수정 버튼 핸들러 추가
   const handleEditClick = () => {
     navigate(`/user/resume/edit/${resumeId}`);
+  };
+
+  // 이력서 파일 다운로드 핸들러
+  const handleFileDownload = async () => {
+    if (!resumeId || !user?.userId || !resume) return;
+
+    try {
+      const response = await api.get(`/api/resume/${resumeId}/download`, {
+        headers: {
+          userId: user.userId.toString(),
+        },
+        responseType: 'blob',
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const fileName = `${resume.title}.${resume.fileType || 'docx'}`;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      console.error("파일 다운로드 오류:", error);
+      alert(
+        error.response?.data?.message ||
+          "파일 다운로드 중 오류가 발생했습니다."
+      );
+    }
+  };
+
+  // 포트폴리오 다운로드 핸들러 - ID가 없을 때 파일명으로 처리
+  const handlePortfolioDownload = async (portfolio: any) => {
+    if (!resumeId || !user?.userId) return;
+
+    // portfolioId가 있으면 기존 방식 사용
+    if (portfolio.portfolioId) {
+      try {
+        const response = await api.get(
+          `/api/resume/${resumeId}/portfolios/${portfolio.portfolioId}/download`,
+          {
+            headers: {
+              userId: user.userId.toString(),
+            },
+            responseType: 'blob',
+          }
+        );
+
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', portfolio.filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      } catch (error: any) {
+        console.error("포트폴리오 다운로드 오류:", error);
+        alert("포트폴리오를 다운로드할 수 없습니다. 파일이 서버에 저장되지 않았을 수 있습니다.");
+      }
+    } else {
+      // portfolioId가 없으면 안내
+      alert('이 이력서의 포트폴리오는 파일명만 저장되어 있습니다.\n실제 파일을 다운로드하려면 이력서를 다시 작성하거나 포트폴리오를 별도로 업로드해주세요.');
+    }
+  };
+
+  // 자기소개서 파일 다운로드 핸들러 - ID가 없을 때 파일명으로 처리
+  const handleCoverLetterDownload = async (file: any) => {
+    if (!user?.userId) return;
+
+    const coverLetterId = typeof file === 'object' ? file.coverLetterId : null;
+    const filename = typeof file === 'string' ? file : file.filename;
+
+    // coverLetterId가 있으면 기존 방식 사용
+    if (coverLetterId) {
+      try {
+        const response = await api.get(
+          `/api/coverletters/${coverLetterId}/file`,
+          {
+            params: {
+              userId: user.userId,
+            },
+            responseType: 'blob',
+          }
+        );
+
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      } catch (error: any) {
+        console.error("자기소개서 다운로드 오류:", error);
+        alert("자기소개서를 다운로드할 수 없습니다. 파일이 서버에 저장되지 않았을 수 있습니다.");
+      }
+    } else {
+      // coverLetterId가 없으면 안내
+      alert('이 이력서의 자기소개서는 파일명만 저장되어 있습니다.\n실제 파일을 다운로드하려면 이력서를 다시 작성하거나 자기소개서를 별도로 업로드해주세요.');
+    }
   };
 
   const handleDeleteClick = () => {
@@ -120,6 +241,9 @@ export default function ResumeDetailPage() {
   const structuredData = parseStructuredData(resume.structuredData);
   const skills = parseSkills(resume.skills);
 
+  // ✅ 직접 작성한 이력서인지 확인 (structuredData가 있으면 직접 작성)
+  const isFormBasedResume = resume.structuredData && resume.structuredData.trim() !== '';
+
   return (
     <>
       {showDeleteConfirm && (
@@ -181,13 +305,26 @@ export default function ResumeDetailPage() {
                       {resume.status === "COMPLETED" ? "완료" : "작성중"}
                     </span>
                     
-                    {/* 수정/삭제 버튼 */}
-                    <button
-                      onClick={handleEditClick}
-                      className="px-4 py-2 font-semibold text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
-                    >
-                      ✏️ 수정
-                    </button>
+                    {/* ✅ 직접 작성한 이력서면 수정 버튼 표시 */}
+                    {isFormBasedResume && (
+                      <button
+                        onClick={handleEditClick}
+                        className="px-4 py-2 font-semibold text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
+                      >
+                        ✏️ 수정
+                      </button>
+                    )}
+                    
+                    {/* 파일이 있으면 다운로드 버튼 */}
+                    {resume.filePath && (
+                      <button
+                        onClick={handleFileDownload}
+                        className="px-4 py-2 font-semibold text-white transition bg-green-600 rounded-lg hover:bg-green-700"
+                      >
+                        📥 다운로드
+                      </button>
+                    )}
+                    
                     <button
                       onClick={handleDeleteClick}
                       className="px-4 py-2 font-semibold text-white transition bg-red-600 rounded-lg hover:bg-red-700"
@@ -345,15 +482,17 @@ export default function ResumeDetailPage() {
                         <div key={idx} className="flex items-center justify-between p-4 bg-white border border-pink-200 rounded-lg">
                           <div className="flex items-center gap-3">
                             <span className="text-2xl">
-                              {portfolio.filename.endsWith('.pdf') ? '📄' : '📃'}
+                              {portfolio.filename?.endsWith('.pdf') ? '📄' : '📃'}
                             </span>
                             <div>
                               <p className="font-semibold text-gray-900">{portfolio.filename}</p>
-                              <p className="text-sm text-gray-600">포트폴리오 파일</p>
+                              <p className="text-sm text-gray-600">
+                                {portfolio.portfolioId ? '다운로드 가능' : '파일명만 저장됨'}
+                              </p>
                             </div>
                           </div>
                           <button
-                            onClick={() => alert('파일 다운로드 기능은 백엔드 API 구현 후 사용 가능합니다.')}
+                            onClick={() => handlePortfolioDownload(portfolio)}
                             className="px-4 py-2 text-sm font-semibold text-pink-700 transition bg-white border-2 border-pink-300 rounded-lg hover:bg-pink-100"
                           >
                             다운로드
@@ -368,25 +507,32 @@ export default function ResumeDetailPage() {
                   <div className="p-6 mb-8 border-2 border-green-200 rounded-lg bg-green-50">
                     <h2 className="mb-4 text-lg font-bold text-gray-900">📄 자기소개서 파일</h2>
                     <div className="space-y-3">
-                      {structuredData.coverLetter.files.map((filename: string, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between p-4 bg-white border border-green-200 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <span className="text-2xl">
-                              {filename.endsWith('.pdf') ? '📄' : '📃'}
-                            </span>
-                            <div>
-                              <p className="font-semibold text-gray-900">{filename}</p>
-                              <p className="text-sm text-gray-600">자기소개서 파일</p>
+                      {structuredData.coverLetter.files.map((file: any, idx: number) => {
+                        const filename = typeof file === 'string' ? file : file.filename;
+                        const coverLetterId = typeof file === 'object' ? file.coverLetterId : null;
+                        
+                        return (
+                          <div key={idx} className="flex items-center justify-between p-4 bg-white border border-green-200 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <span className="text-2xl">
+                                {filename?.endsWith('.pdf') ? '📄' : '📃'}
+                              </span>
+                              <div>
+                                <p className="font-semibold text-gray-900">{filename}</p>
+                                <p className="text-sm text-gray-600">
+                                  {coverLetterId ? '다운로드 가능' : '파일명만 저장됨'}
+                                </p>
+                              </div>
                             </div>
+                            <button
+                              onClick={() => handleCoverLetterDownload(file)}
+                              className="px-4 py-2 text-sm font-semibold text-green-700 transition bg-white border-2 border-green-300 rounded-lg hover:bg-green-100"
+                            >
+                              다운로드
+                            </button>
                           </div>
-                          <button
-                            onClick={() => alert('파일 다운로드 기능은 백엔드 API 구현 후 사용 가능합니다.')}
-                            className="px-4 py-2 text-sm font-semibold text-green-700 transition bg-white border-2 border-green-300 rounded-lg hover:bg-green-100"
-                          >
-                            다운로드
-                          </button>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
