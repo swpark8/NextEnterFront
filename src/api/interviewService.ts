@@ -1,8 +1,8 @@
 import api from "./axios";
 
 export interface InterviewReaction {
-  type: "clarify" | "paraphrase" | "reflect";
-  text: string;
+  type: string | null;
+  text: string | null;
 }
 
 export interface InterviewRealtime {
@@ -10,91 +10,94 @@ export interface InterviewRealtime {
   reaction: InterviewReaction;
   probe_goal: string;
   requested_evidence: string[];
-  report?: InterviewReport; // 매 턴마다 리포트가 올 수도 있음
+  report?: InterviewReport;
 }
 
 export interface InterviewReport {
   role: string;
   competency_scores: Record<string, number>;
-  starr_coverage: {
-    situation: boolean;
-    task: boolean;
-    action: boolean;
-    result: boolean;
-    reflection: boolean;
-  };
-  individual_contribution: "clear" | "mixed" | "unclear";
-  strengths: string[];
-  gaps: string[];
-  feedback_level: "High" | "Mid" | "Low";
+  // ... other fields are less critical for typing strictly if dynamic, but good to keep
   feedback_comment: string;
-  evidence_clips: string[];
 }
 
+// Backend InterviewQuestionResponse mapping
 export interface InterviewResponse {
-  status: string;
-  resume_id: string;
-  target_role: string;
-  realtime: InterviewRealtime;
+  interviewId: number;
+  currentTurn: number;
+  question: string;
+  isCompleted: boolean;
+  finalScore?: number;
+  finalFeedback?: string;
+
+  // Rich AI Metadata (Mapped from Backend DTO)
+  reactionType?: string;
+  reactionText?: string;
+  aiSystemReport?: any; // Map<String, Object>
+  aiEvaluation?: any;
+  requestedEvidence?: string[];
+  probeGoal?: string;
+
+  // Adapter helper (to keep UI compatible if needed, or we adapt UI)
+  realtime?: InterviewRealtime;
 }
 
-export interface InterviewRequest {
-  id?: string;
-  target_role?: string;
-  classification?: {
-    predicted_role?: string;
-  };
-  evaluation?: {
-    grade?: string;
-  };
-  resume_content?: {
-    skills?: {
-      essential?: string[];
-      additional?: string[];
-    };
-    professional_experience?: Array<{
-      role: string;
-      period: string;
-      key_tasks: string[];
-    }>;
-    project_experience?: Array<{
-      project_title: string;
-      description: string;
-    }>;
-    education?: Array<{
-      major: string;
-    }>;
-  };
-  portfolio?: {
-    links?: string[];
-    highlights?: string[];
-    projects?: Array<{
-      title: string;
-      stack: string[];
-      impact: string;
-      details: string;
-    }>;
-  };
-  last_answer?: string;
+export interface InterviewRequestPayload {
+  resumeId: number; // Changed to number
+  jobCategory: string;
+  difficulty: "JUNIOR" | "SENIOR";
+  totalTurns?: number;
+
+  // Proxy Fields
+  resumeContent?: any;
+  portfolio?: any;
+  portfolioFiles?: string[];
+
+  // For Answer
+  interviewId?: number;
+  answer?: string;
 }
 
 export const interviewService = {
-  /**
-   * 다음 면접 질문을 요청합니다.
-   * - 첫 요청 시: last_answer 없이 호출 (Seed Question 요청)
-   * - 이후 요청 시: last_answer 포함하여 호출 (답변 분석 및 꼬리질문 요청)
-   * 
-   * [변경] Python Direct -> Spring Proxy
-   * Spring Backend가 중간에서 인증 및 데이터 저장을 처리하고 Python으로 토스합니다.
-   */
-  getNextQuestion: async (
-    data: InterviewRequest,
-  ): Promise<InterviewResponse> => {
-    // Spring Backend Endpoint (Proxy)
-    const response = await api.post<InterviewResponse>(
-      "/api/interview/process",
-      data,
-    );
-    return response.data;
+
+  startInterview: async (payload: InterviewRequestPayload): Promise<InterviewResponse> => {
+    const response = await api.post<InterviewResponse>("/api/interview/start", {
+      resumeId: payload.resumeId,
+      jobCategory: payload.jobCategory,
+      difficulty: payload.difficulty,
+      totalTurns: payload.totalTurns,
+      // Proxy
+      resumeContent: payload.resumeContent,
+      portfolio: payload.portfolio,
+      portfolioFiles: payload.portfolioFiles
+    });
+    return adaptResponse(response.data);
   },
+
+  submitAnswer: async (payload: InterviewRequestPayload): Promise<InterviewResponse> => {
+    const response = await api.post<InterviewResponse>("/api/interview/answer", {
+      interviewId: payload.interviewId,
+      answer: payload.answer,
+      // Proxy - Send context again for persistence
+      resumeContent: payload.resumeContent,
+      portfolio: payload.portfolio,
+      portfolioFiles: payload.portfolioFiles
+    });
+    return adaptResponse(response.data);
+  }
 };
+
+// Adapter to match existing UI expectation if possible, or we update UI.
+// UI expects 'realtime' object. Let's synthesise it.
+function adaptResponse(serverData: InterviewResponse): InterviewResponse {
+  serverData.realtime = {
+    next_question: serverData.question,
+    reaction: {
+      type: serverData.reactionType || null,
+      text: serverData.reactionText || null
+    },
+    probe_goal: serverData.probeGoal || "",
+    requested_evidence: serverData.requestedEvidence || [],
+    report: serverData.aiSystemReport as InterviewReport
+  };
+  return serverData;
+}

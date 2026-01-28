@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, ReactNode } from "react";
-import { ResumeResponse, ResumeSections } from "../api/resume";
+import { ResumeResponse, ResumeSections, PortfolioInfo } from "../api/resume";
 
 // 이력서 타입 (기존 간단한 타입)
 export interface Resume {
@@ -17,6 +17,7 @@ export interface DetailedResume {
   skills: string[];
   visibility: "PUBLIC" | "PRIVATE";
   sections: ResumeSections;
+  portfolios?: PortfolioInfo[]; // ✅ 포트폴리오 정보 추가
   status: string;
   viewCount: number;
   createdAt: string;

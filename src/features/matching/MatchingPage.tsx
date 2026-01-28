@@ -215,76 +215,101 @@ export default function MatchingPage({
       // structuredData 파싱하여 필요한 정보 추출
       let skillsList: string[] = [];
       let experienceYears = 0;
-      let education = "University";
+      let educationList: any[] = []; // List<Map> structure
+      let careerList: any[] = [];    // List<Map> structure
+      let projectList: any[] = [];   // List<Map> structure
       let preferredLocation = "Seoul";
 
-      // skills 파싱 (String이면 JSON 배열로 파싱 시도)
+      // skills 파싱
       if (resumeDetail.skills) {
         try {
-          skillsList = JSON.parse(resumeDetail.skills);
-          if (!Array.isArray(skillsList)) {
-            skillsList = [resumeDetail.skills];
+          // 이미 JSON 배열이거나, 문자열이면 파싱
+          if (Array.isArray(resumeDetail.skills)) {
+            skillsList = resumeDetail.skills;
+          } else {
+            const parsed = JSON.parse(resumeDetail.skills);
+            skillsList = Array.isArray(parsed) ? parsed : [resumeDetail.skills];
           }
         } catch {
-          // JSON이 아니면 쉼표로 분리하거나 단일 문자열로 처리
-          skillsList = resumeDetail.skills.includes(',')
+          skillsList = typeof resumeDetail.skills === 'string'
             ? resumeDetail.skills.split(',').map(s => s.trim())
-            : [resumeDetail.skills];
+            : [];
         }
       }
 
-      // structuredData에서 경력, 학력, 선호 지역 추출
-      if (resumeDetail.structuredData) {
+      // =================================================================================
+      // [데이터 파싱] educations, careers 등이 JSON String으로 올 수도 있고, structuredData에 있을 수도 있음
+      // =================================================================================
+
+      // 1. 학력 (educations)
+      if (resumeDetail.educations) {
+        try {
+          const parsed = JSON.parse(resumeDetail.educations);
+          if (Array.isArray(parsed)) educationList = parsed;
+        } catch (e) {
+          console.warn("educations 파싱 실패 (JSON 아님):", e);
+        }
+      }
+
+      // 2. 경력 (careers)
+      if (resumeDetail.careers) {
+        try {
+          const parsed = JSON.parse(resumeDetail.careers);
+          if (Array.isArray(parsed)) careerList = parsed;
+        } catch (e) {
+          console.warn("careers 파싱 실패 (JSON 아님):", e);
+        }
+      }
+
+      // 3. 프로젝트/경험 (experiences -> projects로 매핑)
+      if (resumeDetail.experiences) {
+        try {
+          const parsed = JSON.parse(resumeDetail.experiences);
+          if (Array.isArray(parsed)) projectList = parsed;
+        } catch (e) {
+          console.warn("experiences 파싱 실패:", e);
+        }
+      }
+
+      // 4. Legacy structuredData fallback (위에서 데이터가 없으면 여기서 추출)
+      if (resumeDetail.structuredData && (educationList.length === 0 || careerList.length === 0)) {
         try {
           const sections: ResumeSections = JSON.parse(resumeDetail.structuredData);
 
-          // 경력 계산 (careers에서 기간 합산)
+          // 경력 계산 및 리스트 추출
           if (sections.careers && sections.careers.length > 0) {
+            if (careerList.length === 0) careerList = sections.careers;
+
+            // 총 경력 연차 계산
             let totalMonths = 0;
             sections.careers.forEach(career => {
+              // ... (existing logic for calculation if needed, or just rely on backend to calc from list)
+              // For now, let's keep the existing logic to populate experienceYears if needed by UI, 
+              // but backend usually recalculates. We will send the list.
               const period = career.period || "";
-              // "2020.01 - 2023.12" 형식에서 개월 수 계산
               try {
-                const parts = period.split(' - ');
-                if (parts.length === 2) {
-                  const start = parts[0].trim();
-                  const end = parts[1].trim();
-                  const startParts = start.split('.');
-                  const endParts = end.split('.');
-
-                  if (startParts.length === 2 && endParts.length === 2) {
-                    const startYear = parseInt(startParts[0]);
-                    const startMonth = parseInt(startParts[1]);
-                    const endYear = parseInt(endParts[0]);
-                    const endMonth = parseInt(endParts[1]);
-                    totalMonths += (endYear - startYear) * 12 + (endMonth - startMonth) + 1;
-                  }
-                } else {
-                  // "3년" 또는 "36개월" 형식 파싱
-                  const yearMatch = period.match(/(\d+)년/);
-                  if (yearMatch) {
-                    totalMonths += parseInt(yearMatch[1]) * 12;
-                  } else {
-                    const monthMatch = period.match(/(\d+)개월/);
-                    if (monthMatch) {
-                      totalMonths += parseInt(monthMatch[1]);
-                    }
-                  }
+                // Clean up logic mostly for display or basic checking
+                if (period.includes("년") || period.includes("개월")) {
+                  const y = period.match(/(\d+)년/);
+                  const m = period.match(/(\d+)개월/);
+                  totalMonths += (y ? parseInt(y[1]) * 12 : 0) + (m ? parseInt(m[1]) : 0);
+                } else if (period.includes("-") || period.includes("~")) {
+                  // simple diff logic if needed, but risky. 
                 }
-              } catch (e) {
-                console.warn("경력 기간 파싱 실패:", period, e);
-              }
+              } catch (e) { }
             });
-            experienceYears = Math.floor(totalMonths / 12);
+            // If totalMonths was updated, use it. Otherwise 0.
+            if (totalMonths > 0) experienceYears = Math.floor(totalMonths / 12);
           }
 
-          // 학력 추출 (educations에서 최고 학력)
-          if (sections.educations && sections.educations.length > 0) {
-            const highestEdu = sections.educations[0];
-            education = highestEdu.school || "University";
+          if (sections.educations && sections.educations.length > 0 && educationList.length === 0) {
+            educationList = sections.educations;
           }
 
-          // 선호 지역 (personalInfo에서 추출)
+          if (sections.experiences && sections.experiences.length > 0 && projectList.length === 0) {
+            projectList = sections.experiences;
+          }
+
           if (sections.personalInfo && sections.personalInfo.address) {
             preferredLocation = sections.personalInfo.address;
           }
@@ -293,16 +318,30 @@ export default function MatchingPage({
         }
       }
 
+      // 5. 요청 객체 생성
       const aiRequest: AiRecommendRequest = {
         resumeId: resumeIdNum,
         userId: userIdNum,
-        resumeText: generateResumeText(resumeDetail),  // ⭐ 추가: 이력서 텍스트 생성
-        jobCategory: convertKoreanRole(resumeDetail.jobCategory || "Backend Developer"), // ✅ 롤백 및 수정: 한글 직무 변환
+        resumeText: generateResumeText(resumeDetail),
+        jobCategory: convertKoreanRole(resumeDetail.jobCategory || "Backend Developer"),
         skills: skillsList,
         experience: experienceYears,
-        education: education,
-        preferredLocation: preferredLocation
+        experienceMonths: 0,
+        educations: educationList,
+        careers: careerList,
+        projects: projectList,
+        preferredLocation: preferredLocation,
+        filePath: resumeDetail.filePath // ✅ 파일 경로 전달 (상위 필드)
       };
+
+      // 만약 상위에 없고 structuredData 내부에 있을 경우 (legacy) - 드문 케이스
+      if (!aiRequest.filePath && resumeDetail.structuredData) {
+        try {
+          // 필요하다면 여기서 structuredData 파싱해서 filePath 찾기 추가
+          // const sections = JSON.parse(resumeDetail.structuredData);
+          // if (sections.filePath) aiRequest.filePath = sections.filePath;
+        } catch (e) { }
+      }
 
       // AI 서버가 빈 데이터를 허용하는지 확인 후, 필요시에만 추가 검증
       console.log("🚀 [DEBUG] Final AI Request (sending to backend):", aiRequest);

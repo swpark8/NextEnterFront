@@ -500,7 +500,7 @@ export default function ApplicantDetailPage() {
                     : "bg-blue-600 text-white hover:bg-blue-700"
                   }`}
               >
-                면접 제안
+                스카웃 제안
               </button>
               <button
                 onClick={handleCompatibilityClick}
