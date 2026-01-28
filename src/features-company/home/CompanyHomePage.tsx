@@ -70,25 +70,17 @@ export default function CompanyHomePage() {
   // 기업 공고 목록 조회
   useEffect(() => {
     const fetchCompanyJobs = async () => {
-      if (!user?.companyId) {
-        console.log("⚠️ companyId가 없습니다:", user);
-        return;
-      }
-
       try {
         setLoading(true);
         setError(null);
         
-        console.log("🔄 API 호출 시작: companyId =", user.companyId);
+        console.log("🔄 API 호출 시작: 전체 공고 조회");
         
-        // ✅ /api/jobs/list를 사용하고 클라이언트에서 필터링
-        const response = await getJobPostings({ size: 1000 }); // 전체 조회
-        const myJobs = response.content.filter(
-          (job: JobPostingListResponse) => job.companyId === user.companyId
-        );
+        // ✅ 모든 기업의 공고 조회 (필터링 제거)
+        const response = await getJobPostings({ size: 1000 });
         
-        console.log("✅ API 응답 받음:", myJobs);
-        setJobPostings(myJobs);
+        console.log("✅ API 응답 받음:", response.content);
+        setJobPostings(response.content);
       } catch (err: any) {
         console.error("❌ 공고 목록 조회 실패:", err);
         console.error("상태 코드:", err.response?.status);
@@ -100,7 +92,7 @@ export default function CompanyHomePage() {
     };
 
     fetchCompanyJobs();
-  }, [user?.companyId]);
+  }, []); // ✅ user.companyId 의존성 제거
 
   const handleJobDetailClick = (jobId: number) => {
     handleProtectedNavigation(`/company/jobs/${jobId}`);

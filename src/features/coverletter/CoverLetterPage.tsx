@@ -1,10 +1,19 @@
 // src/features/cover-letter/CoverLetterPage.tsx
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
 import ResumeSidebar from "../resume/components/ResumeSidebar";
 import CoverLetterFormPage from "./CoverLetterFormPage";
 import CoverLetterDetailPage from "./CoverLetterDetailPage";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
+import {
+  getCoverLetterList,
+  uploadCoverLetterFile,
+  deleteCoverLetter,
+  createCoverLetter,
+  updateCoverLetter,
+  type CoverLetter,
+} from "../../api/coverletter";
 
 // 데이터 타입 정의 (자소서 하나가 이렇게 생겼다)
 interface CoverLetterItem {
@@ -29,6 +38,8 @@ export default function CoverLetterPage({
   initialMenu,
   onNavigate,
 }: CoverLetterPageProps) {
+  const { user } = useAuth();
+  
   // 현재 화면 모드 (목록 / 작성 / 상세보기 / 수정)
   const [viewMode, setViewMode] = useState<ViewMode>("list");
 
@@ -37,6 +48,9 @@ export default function CoverLetterPage({
 
   // 자소서 목록
   const [coverLetterList, setCoverLetterList] = useState<CoverLetterItem[]>([]);
+  
+  // ✅ 로딩 상태
+  const [loading, setLoading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -46,47 +60,107 @@ export default function CoverLetterPage({
     onNavigate
   );
 
+  // ✅ 페이지 로드 시 자소서 목록 불러오기
+  useEffect(() => {
+    const loadCoverLetters = async () => {
+      if (!user?.userId) return;
+
+      try {
+        setLoading(true);
+        const response = await getCoverLetterList(user.userId, 0, 100);
+        
+        // API 응답을 CoverLetterItem 형식으로 변환
+        const items: CoverLetterItem[] = response.content.map((cl: CoverLetter) => ({
+          id: cl.coverLetterId,
+          title: cl.title,
+          content: cl.content || "",
+          date: new Date(cl.updatedAt).toLocaleDateString(),
+          fileCount: cl.filePath ? 1 : 0,
+          status: cl.filePath ? "불러온 파일" : "작성중",
+          files: cl.filePath ? [cl.title] : [],
+        }));
+        
+        setCoverLetterList(items);
+      } catch (error) {
+        console.error("자소서 목록 로드 실패:", error);
+        alert("자소서 목록을 불러오는데 실패했습니다.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCoverLetters();
+  }, [user?.userId]);
+
   // 파일 업로드 버튼 클릭
   const handleFileUpload = () => {
     fileInputRef.current?.click();
   };
 
-  // 파일 선택 시 처리
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // ✅ 파일 선택 시 처리 - API 호출
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file || !user?.userId) return;
+
+    try {
+      setLoading(true);
+      const response = await uploadCoverLetterFile(user.userId, file);
+      
       const newItem: CoverLetterItem = {
-        id: Date.now(),
-        title: file.name.replace(/\.[^/.]+$/, ""),
-        content: "", // 불러온 파일은 내용 비어있음
+        id: response.coverLetterId,
+        title: response.title,
+        content: "",
         date: new Date().toLocaleDateString(),
         fileCount: 1,
         status: "불러온 파일",
-        files: [file.name],
+        files: [response.title],
       };
+      
       setCoverLetterList((prev) => [newItem, ...prev]);
+      alert("파일이 성공적으로 업로드되었습니다.");
+    } catch (error: any) {
+      console.error("파일 업로드 실패:", error);
+      alert(error.response?.data?.message || "파일 업로드에 실패했습니다.");
+    } finally {
+      setLoading(false);
       e.target.value = "";
     }
   };
 
-  // 자소서 작성 완료 시 저장
-  const handleSaveData = (data: {
+  // ✅ 자소서 작성 완료 시 저장 - API 호출
+  const handleSaveData = async (data: {
     title: string;
     content: string;
     fileCount: number;
     files: string[];
   }) => {
-    const newItem: CoverLetterItem = {
-      id: Date.now(),
-      title: data.title || "제목 없는 자소서",
-      content: data.content,
-      date: new Date().toLocaleDateString(),
-      fileCount: data.fileCount,
-      status: "작성중",
-      files: data.files,
-    };
-    setCoverLetterList((prev) => [newItem, ...prev]);
-    setViewMode("list");
+    if (!user?.userId) return;
+
+    try {
+      setLoading(true);
+      const coverLetterId = await createCoverLetter(user.userId, {
+        title: data.title || "제목 없는 자소서",
+        content: data.content,
+      });
+
+      const newItem: CoverLetterItem = {
+        id: coverLetterId,
+        title: data.title || "제목 없는 자소서",
+        content: data.content,
+        date: new Date().toLocaleDateString(),
+        fileCount: data.fileCount,
+        status: "작성중",
+        files: data.files,
+      };
+      setCoverLetterList((prev) => [newItem, ...prev]);
+      setViewMode("list");
+      alert("자소서가 등록되었습니다.");
+    } catch (error: any) {
+      console.error("자소서 저장 실패:", error);
+      alert(error.response?.data?.message || "자소서 저장에 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // 자소서 카드 클릭 → 상세보기로 이동
@@ -100,39 +174,70 @@ export default function CoverLetterPage({
     setViewMode("edit");
   };
 
-  // 자소서 삭제
-  const handleDelete = () => {
-    if (selectedId) {
+  // ✅ 자소서 삭제 - API 호출
+  const handleDelete = async () => {
+    if (!selectedId || !user?.userId) return;
+
+    if (!confirm("정말로 이 자소서를 삭제하시겠습니까?")) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await deleteCoverLetter(user.userId, selectedId);
+      
       setCoverLetterList((prev) =>
         prev.filter((item) => item.id !== selectedId)
       );
       setSelectedId(null);
       setViewMode("list");
+      alert("자소서가 삭제되었습니다.");
+    } catch (error: any) {
+      console.error("자소서 삭제 실패:", error);
+      alert(error.response?.data?.message || "자소서 삭제에 실패했습니다.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // 자소서 수정 완료 시 업데이트
-  const handleUpdateData = (data: {
+  // ✅ 자소서 수정 완료 시 업데이트 - API 호출
+  const handleUpdateData = async (data: {
     title: string;
     content: string;
     fileCount: number;
     files: string[];
   }) => {
-    setCoverLetterList((prev) =>
-      prev.map((item) =>
-        item.id === selectedId
-          ? {
-              ...item,
-              title: data.title || "제목 없는 자소서",
-              content: data.content,
-              date: new Date().toLocaleDateString(),
-              fileCount: data.fileCount,
-              files: data.files,
-            }
-          : item
-      )
-    );
-    setViewMode("detail");
+    if (!selectedId || !user?.userId) return;
+
+    try {
+      setLoading(true);
+      await updateCoverLetter(user.userId, selectedId, {
+        title: data.title || "제목 없는 자소서",
+        content: data.content,
+      });
+
+      setCoverLetterList((prev) =>
+        prev.map((item) =>
+          item.id === selectedId
+            ? {
+                ...item,
+                title: data.title || "제목 없는 자소서",
+                content: data.content,
+                date: new Date().toLocaleDateString(),
+                fileCount: data.fileCount,
+                files: data.files,
+              }
+            : item
+        )
+      );
+      setViewMode("detail");
+      alert("자소서가 수정되었습니다.");
+    } catch (error: any) {
+      console.error("자소서 수정 실패:", error);
+      alert(error.response?.data?.message || "자소서 수정에 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // 선택된 자소서 데이터 가져오기
@@ -197,13 +302,15 @@ export default function CoverLetterPage({
               <div className="flex gap-4">
                 <button
                   onClick={handleFileUpload}
-                  className="text-blue-600 hover:text-blue-700"
+                  disabled={loading}
+                  className="text-blue-600 hover:text-blue-700 disabled:opacity-50"
                 >
                   + 불러오기
                 </button>
                 <button
                   onClick={() => setViewMode("create")}
-                  className="px-6 py-2 text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
+                  disabled={loading}
+                  className="px-6 py-2 text-white transition bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 >
                   자소서 작성
                 </button>
@@ -218,7 +325,12 @@ export default function CoverLetterPage({
               className="hidden"
             />
 
-            {coverLetterList.length === 0 ? (
+            {loading ? (
+              <div className="py-12 text-center text-gray-500">
+                <div className="mb-2 text-4xl">⏳</div>
+                <p>로딩 중...</p>
+              </div>
+            ) : coverLetterList.length === 0 ? (
               <div className="mb-6">
                 <div className="py-12 text-center text-gray-500 border-2 border-gray-200 border-dashed rounded-xl">
                   <div className="mb-2 text-4xl">📝</div>

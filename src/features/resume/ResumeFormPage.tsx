@@ -43,7 +43,7 @@ export default function ResumeFormPage({
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedGender, setSelectedGender] = useState<string>("");
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
-  const [selectedJob, setSelectedJob] = useState<string>("");
+  const [selectedJobs, setSelectedJobs] = useState<string[]>([]);
 
   // ✅ 학력: 객체 배열로 변경
   const [educations, setEducations] = useState<
@@ -100,6 +100,7 @@ export default function ResumeFormPage({
   const [name, setName] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [detailAddress, setDetailAddress] = useState(""); // ✅ 상세 주소 추가
   const [coverLetterTitle, setCoverLetterTitle] = useState("");
@@ -143,12 +144,27 @@ export default function ResumeFormPage({
 
       // 기본 정보
       setResumeTitle(resume.title);
-      setSelectedJob(resume.jobCategory);
+      
+      // 직무를 배열로 파싱
+      if (resume.jobCategory) {
+        const jobs = resume.jobCategory.split(',').map(j => j.trim());
+        setSelectedJobs(jobs);
+      }
 
       // visibility 로드 - 기본값은 PUBLIC
       const loadedVisibility = resume.visibility || "PUBLIC";
       setVisibility(loadedVisibility);
       console.log("🔍 [디버그] 설정된 visibility:", loadedVisibility);
+
+      // Resume 테이블의 개인정보 우선 로드
+      if (resume.resumeName) setName(resume.resumeName);
+      if (resume.resumeGender) setSelectedGender(resume.resumeGender);
+      if (resume.resumeBirthDate) setBirthDate(resume.resumeBirthDate);
+      if (resume.resumeEmail) setEmail(resume.resumeEmail);
+      if (resume.resumePhone) setPhone(resume.resumePhone);
+      if (resume.resumeAddress) setAddress(resume.resumeAddress);
+      if (resume.resumeDetailAddress) setDetailAddress(resume.resumeDetailAddress);
+      if (resume.profileImage) setSelectedImage(resume.profileImage);
 
       // structuredData 파싱
       if (resume.structuredData) {
@@ -283,10 +299,13 @@ export default function ResumeFormPage({
     console.log(`성별 선택: ${gender}`);
   };
 
-  // 직무 선택
-  const handleJobSelect = (job: string) => {
-    setSelectedJob(job);
-    console.log(`직무 선택: ${job}`);
+  // 직무 선택 (다중)
+  const toggleJobSelect = (job: string) => {
+    if (selectedJobs.includes(job)) {
+      setSelectedJobs(selectedJobs.filter((j) => j !== job));
+    } else {
+      setSelectedJobs([...selectedJobs, job]);
+    }
   };
 
   // 학력 추가/삭제
@@ -408,8 +427,8 @@ export default function ResumeFormPage({
       return;
     }
 
-    if (!selectedJob) {
-      alert("직무를 선택해주세요.");
+    if (selectedJobs.length === 0) {
+      alert("직무를 하나 이상 선택해주세요.");
       return;
     }
 
@@ -483,9 +502,18 @@ export default function ResumeFormPage({
       // ✅ 5. 요청 데이터 생성 (빈 배열이라도 "[]"로 전송)
       const resumeData: CreateResumeRequest = {
         title: resumeTitle,
-        jobCategory: selectedJob,
+        jobCategory: selectedJobs.join(', '),
         skills: selectedSkills.join(", "),
         visibility: visibility,
+        // 개인정보 필드
+        resumeName: name,
+        resumeGender: selectedGender,
+        resumeBirthDate: birthDate,
+        resumeEmail: email,
+        resumePhone: phone,
+        resumeAddress: address,
+        resumeDetailAddress: detailAddress,
+        profileImage: selectedImage || undefined,
         // ⚠️ 중요: 빈 배열이어도 "[]"로 전송 (undefined 대신)
         experiences:
           experiencesData.length > 0 ? JSON.stringify(experiencesData) : "[]",
@@ -777,6 +805,20 @@ export default function ResumeFormPage({
                       />
                     </div>
 
+                    {/* ✅ 연락처 추가 */}
+                    <div className="grid grid-cols-4 gap-0 mb-4 overflow-hidden border-2 border-gray-300 rounded-lg">
+                      <div className="p-3 font-medium text-center border-r border-gray-300 bg-gray-50">
+                        연락처
+                      </div>
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="col-span-3 p-3 outline-none"
+                        placeholder="010-0000-0000"
+                      />
+                    </div>
+
                     {/* 주소 - ✅ 카카오 도로명 주소 API 적용 + UI 개선 */}
                     <div className="grid grid-cols-4 gap-0 overflow-hidden border-2 border-gray-300 rounded-lg">
                       <div className="flex items-center justify-center p-3 font-medium text-center border-r border-gray-300 bg-gray-50">
@@ -818,67 +860,42 @@ export default function ResumeFormPage({
                   <h3 className="text-lg font-bold">직무</h3>
                 </div>
                 <div className="grid grid-cols-6 gap-4 mb-6">
-                  <button
-                    onClick={() => handleJobSelect("프론트엔드")}
-                    className={`p-3 text-center border-2 rounded-lg cursor-pointer transition ${
-                      selectedJob === "프론트엔드"
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    프론트
-                  </button>
-                  <button
-                    onClick={() => handleJobSelect("백엔드")}
-                    className={`p-3 text-center border-2 rounded-lg cursor-pointer transition ${
-                      selectedJob === "백엔드"
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    백엔드
-                  </button>
-                  <button
-                    onClick={() => handleJobSelect("풀스택")}
-                    className={`p-3 text-center border-2 rounded-lg cursor-pointer transition ${
-                      selectedJob === "풀스택"
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    풀스택
-                  </button>
-                  <button
-                    onClick={() => handleJobSelect("PM")}
-                    className={`p-3 text-center border-2 rounded-lg cursor-pointer transition ${
-                      selectedJob === "PM"
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    PM
-                  </button>
-                  <button
-                    onClick={() => handleJobSelect("데이터 분석가")}
-                    className={`p-3 text-center border-2 rounded-lg cursor-pointer transition ${
-                      selectedJob === "데이터 분석가"
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    데이터 분석가
-                  </button>
-                  <button
-                    onClick={() => handleJobSelect("디자이너")}
-                    className={`p-3 text-center border-2 rounded-lg cursor-pointer transition ${
-                      selectedJob === "디자이너"
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    디자이너
-                  </button>
+                  {["프론트엔드", "백엔드", "풀스택", "PM", "데이터 분석가", "디자이너"].map((job) => (
+                    <button
+                      key={job}
+                      onClick={() => toggleJobSelect(job)}
+                      className={`p-3 text-center border-2 rounded-lg cursor-pointer transition ${
+                        selectedJobs.includes(job)
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-300 hover:bg-gray-50"
+                      }`}
+                    >
+                      {job === "프론트엔드" ? "프론트" : job}
+                    </button>
+                  ))}
                 </div>
+
+                {/* ✅ 선택된 직무 표시 추가 */}
+                {selectedJobs.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="mb-2 text-sm font-medium text-gray-700">선택된 직무</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedJobs.map((job) => (
+                        <button
+                          key={job}
+                          onClick={() => toggleJobSelect(job)}
+                          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 transition-colors bg-blue-100 rounded-full hover:bg-blue-200"
+                        >
+                          <span>{job}</span>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
 
                 {/* 스킬 선택 */}
                 <div className="mb-4">

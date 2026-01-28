@@ -158,22 +158,6 @@ export default function ApplicantManagementPage() {
     }
   };
 
-  const getInitials = (name: string) => {
-    return name.charAt(0);
-  };
-
-  const getAvatarColor = (id: number) => {
-    const colors = [
-      "bg-purple-500",
-      "bg-pink-500",
-      "bg-indigo-500",
-      "bg-cyan-500",
-      "bg-teal-500",
-      "bg-violet-500",
-    ];
-    return colors[id % colors.length];
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case "PENDING":
@@ -347,6 +331,7 @@ export default function ApplicantManagementPage() {
                     </th>
                   </tr>
                 </thead>
+
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredApplicants.map((applicant) => (
                     <tr
@@ -365,15 +350,9 @@ export default function ApplicantManagementPage() {
                         </button>
                       </td>
 
+                      {/* ✅ 지원자 이름 옆 동그라미(아바타) 제거 */}
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center space-x-3">
-                          <div
-                            className={`w-10 h-10 rounded-full ${getAvatarColor(
-                              applicant.applyId,
-                            )} flex items-center justify-center text-white font-bold shrink-0`}
-                          >
-                            {getInitials(applicant.userName)}
-                          </div>
+                        <div className="flex items-center">
                           <div>
                             <div className="font-medium text-gray-900">
                               {applicant.userName}
