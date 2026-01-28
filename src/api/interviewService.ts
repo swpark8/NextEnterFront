@@ -1,13 +1,4 @@
-import axios from "axios";
-
-// AI 엔진 전용 Axios 인스턴스 (Port 8000)
-const aiApi = axios.create({
-  baseURL: "http://localhost:8000",
-  timeout: 20000, // AI 응답 대기 시간 20초로 넉넉하게 설정
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+import api from "./axios";
 
 export interface InterviewReaction {
   type: "clarify" | "paraphrase" | "reflect";
@@ -92,12 +83,16 @@ export const interviewService = {
    * 다음 면접 질문을 요청합니다.
    * - 첫 요청 시: last_answer 없이 호출 (Seed Question 요청)
    * - 이후 요청 시: last_answer 포함하여 호출 (답변 분석 및 꼬리질문 요청)
+   * 
+   * [변경] Python Direct -> Spring Proxy
+   * Spring Backend가 중간에서 인증 및 데이터 저장을 처리하고 Python으로 토스합니다.
    */
   getNextQuestion: async (
     data: InterviewRequest,
   ): Promise<InterviewResponse> => {
-    const response = await aiApi.post<InterviewResponse>(
-      "/api/v1/interview/next",
+    // Spring Backend Endpoint (Proxy)
+    const response = await api.post<InterviewResponse>(
+      "/api/interview/process",
       data,
     );
     return response.data;
