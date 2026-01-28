@@ -142,7 +142,17 @@ export default function ResumeDetailPage() {
 
     const coverLetterId =
       typeof file === "object" ? file.coverLetterId : null;
-    const filename = typeof file === "string" ? file : file.filename;
+    
+    // ✅ title 필드에서 파일명 가져오기
+    let filename = typeof file === "string" ? file : file.title;
+    
+    // ✅ 확장자 추가 (파일명에 확장자가 없으면)
+    if (typeof file === "object" && file.fileType) {
+      const fileType = file.fileType.toLowerCase();
+      if (!filename.toLowerCase().endsWith(`.${fileType}`)) {
+        filename = `${filename}.${fileType}`;
+      }
+    }
 
     if (coverLetterId) {
       try {
@@ -285,8 +295,8 @@ export default function ResumeDetailPage() {
   // ✅ 하위 호환성: structuredData (포트폴리오, 자기소개서 파일 등)
   const structuredData = parseStructuredData(resume.structuredData);
 
-  // ✅ 직접 작성한 이력서인지 확인
-  const isFormBasedResume =
+  // ✅ 파일만 업로드한 이력서가 아니면 모두 수정 가능
+  const isFormBasedResume = !resume.filePath || 
     experiences.length > 0 ||
     certificates.length > 0 ||
     educations.length > 0 ||
