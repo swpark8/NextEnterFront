@@ -66,9 +66,10 @@ export interface JobPostingListResponse {
   status: string;
   viewCount: number;
   applicantCount: number;
+  bookmarkCount: number; // 북마크 수
   createdAt: string;
-  thumbnailUrl?: string; // 수정!!!!!!!!!!!!!!!!!!!!!!!!
-  logoUrl?: string; // 수정!!!!!!!!!!!!!!!!!!!!!!!!
+  thumbnailUrl?: string;
+  logoUrl?: string;
 }
 
 // 페이징 응답 타입

@@ -5,6 +5,7 @@ import { useApp } from "../../context/AppContext";
 import { useAuth } from "../../context/AuthContext";
 import JobsSidebar from "./components/JobsSidebar";
 import { getJobPostings, JobPostingListResponse } from "../../api/job";
+import { getResumeList } from "../../api/resume";
 import {
   createApply,
   getMyApplies,
@@ -31,7 +32,7 @@ type JobListing = {
   deadline: string;
   daysLeft: number;
   thumbnailUrl?: string;
-  logoUrl?: string; // 회사 로고 URL 추가
+  logoUrl?: string;
 };
 
 export default function AllJobsPage() {
@@ -39,7 +40,6 @@ export default function AllJobsPage() {
   const { activeMenu, handleMenuClick } = usePageNavigation("job", "job-sub-1");
   const { user } = useAuth();
 
-  // ✅ [수정됨] status 제거함. SearchFilters 인터페이스와 완벽 일치.
   const [filters, setFilters] = useState<SearchFilters>({
     keyword: "",
     regions: [],
@@ -62,13 +62,39 @@ export default function AllJobsPage() {
   const [error, setError] = useState<string | null>(null);
   const [appliedJobIds, setAppliedJobIds] = useState<Set<number>>(new Set());
 
-  // ✅ AppContext 데이터
-  const { resumes, addJobApplication } = useApp();
+  // ✅ AppContext 데이터 (setResumes 추가)
+  const { resumes, addJobApplication, setResumes } = useApp();
 
   const handleFilterChange = (newFilters: SearchFilters) => {
     setFilters(newFilters);
     setCurrentPage(1);
   };
+
+  useEffect(() => {
+    const fetchResumesIfNeeded = async () => {
+      if (user?.userId && resumes.length === 0) {
+        try {
+          // 1. API에서 데이터 가져오기 (ResumeListItem 타입)
+          const data = await getResumeList(user.userId);
+
+          // 2. AppContext가 원하는 모양(Resume 타입)으로 변환
+          const mappedResumes = data.map((item) => ({
+            id: item.resumeId, // resumeId -> id 로 연결
+            title: item.title, // title -> title 그대로
+            industry: item.jobCategory, // jobCategory -> industry 로 연결
+            applications: 0, // (임시) 지원수는 API에 없으므로 0으로 설정
+          }));
+
+          // 3. 변환된 데이터를 저장
+          setResumes(mappedResumes);
+        } catch (error) {
+          console.error("이력서 목록 로드 실패:", error);
+        }
+      }
+    };
+
+    fetchResumesIfNeeded();
+  }, [user?.userId, resumes.length, setResumes]);
 
   // ✅ 1. 사용자의 지원 내역 조회
   useEffect(() => {
@@ -94,33 +120,21 @@ export default function AllJobsPage() {
         setLoading(true);
         setError(null);
 
-        // API 파라미터 구성
         const params: any = {
           page: 0,
           size: 1000,
         };
 
-        // 필터 적용 (변수명 일치)
-        if (filters.keyword) {
-          params.keyword = filters.keyword;
-        }
-
-        if (filters.regions.length > 0) {
+        if (filters.keyword) params.keyword = filters.keyword;
+        if (filters.regions.length > 0)
           params.regions = filters.regions.join(",");
-        }
-
-        if (filters.jobCategories.length > 0) {
+        if (filters.jobCategories.length > 0)
           params.jobCategories = filters.jobCategories.join(",");
-        }
-
-        if (filters.status && filters.status !== "전체") {
+        if (filters.status && filters.status !== "전체")
           params.status = filters.status;
-        }
 
-        // API 호출
         const response = await getJobPostings(params);
 
-        // 데이터 변환
         const convertedJobs: JobListing[] = response.content.map(
           (job: JobPostingListResponse) => {
             const deadline = new Date(job.deadline);
@@ -138,7 +152,7 @@ export default function AllJobsPage() {
               deadline: job.deadline,
               daysLeft: daysLeft > 0 ? daysLeft : 0,
               thumbnailUrl: job.thumbnailUrl,
-              logoUrl: job.logoUrl, // 로고 URL 추가
+              logoUrl: job.logoUrl,
             };
           },
         );
@@ -154,6 +168,8 @@ export default function AllJobsPage() {
 
     fetchJobPostings();
   }, [filters]);
+
+  // ... (이하 나머지 코드는 기존과 동일하게 유지)
 
   // ✅ 검색 필터링 + 페이징 처리
   const allJobListings = apiJobListings.filter((job) => {
@@ -175,7 +191,6 @@ export default function AllJobsPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // ✅ 지원하기 관련 핸들러들
   const handleApply = (jobId: number) => {
     if (confirm("입사지원 하시겠습니까?")) {
       setSelectedJobId(jobId);
@@ -226,7 +241,6 @@ export default function AllJobsPage() {
 
       await createApply(user.userId, applyRequest);
 
-      // 로컬 스토리지 업데이트 (UI용)
       const today = new Date();
       const applicationId = Date.now();
 
@@ -250,7 +264,6 @@ export default function AllJobsPage() {
       setSelectedJobId(null);
       setSelectedResumeId(null);
 
-      // 지원 내역 갱신
       if (user?.userId) {
         const applies = await getMyApplies(user.userId);
         const jobIds = new Set(applies.map((apply) => apply.jobId));
@@ -354,35 +367,29 @@ export default function AllJobsPage() {
         <div className="px-4 py-8 mx-auto max-w-7xl">
           <h1 className="mb-6 text-2xl font-bold">채용정보</h1>
           <div className="flex gap-6">
-            {/* 왼쪽 사이드바 */}
             <JobsSidebar
               activeMenu={activeMenu}
               onMenuClick={handleMenuClick}
             />
 
-            {/* 메인 컨텐츠 */}
             <div className="flex-1 space-y-8">
-              {/* 필터 컴포넌트 */}
               <JobSearchFilter onFilterChange={handleFilterChange} />
 
               <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
-                {/* 검색 헤더 */}
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold">
                     전체 채용정보{" "}
                     <span className="text-blue-600">{totalJobs}</span>건
                   </h2>
 
-                  {/* 검색창 + 개수 선택 */}
                   <div className="flex items-center gap-3">
-                    {/* 검색창 */}
                     <div className="relative">
                       <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => {
                           setSearchQuery(e.target.value);
-                          setCurrentPage(1); // 검색 시 1페이지로 초기화
+                          setCurrentPage(1);
                         }}
                         placeholder="기업명, 공고제목 등 검색"
                         className="w-80 pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
@@ -402,12 +409,11 @@ export default function AllJobsPage() {
                       </svg>
                     </div>
 
-                    {/* 개수 선택 드롭다운 */}
                     <select
                       value={itemsPerPage}
                       onChange={(e) => {
                         setItemsPerPage(Number(e.target.value));
-                        setCurrentPage(1); // 개수 변경 시 1페이지로 초기화
+                        setCurrentPage(1);
                       }}
                       className="px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
                     >
@@ -445,7 +451,6 @@ export default function AllJobsPage() {
                           key={job.id}
                           className="flex flex-col overflow-hidden transition bg-white border border-gray-300 shadow-sm rounded-xl hover:shadow-xl hover:border-purple-400"
                         >
-                          {/* 로고 영역 */}
                           <div className="flex items-center justify-center h-12 bg-gradient-to-br from-gray-50 to-gray-100">
                             {job.logoUrl ? (
                               <img
@@ -464,9 +469,7 @@ export default function AllJobsPage() {
                             )}
                           </div>
 
-                          {/* 내용 영역 */}
                           <div className="flex flex-col flex-1 p-5">
-                            {/* 직무명 */}
                             <h3
                               onClick={() => navigate(`/user/jobs/${job.id}`)}
                               className="mb-2 text-lg font-bold text-gray-900 transition-colors cursor-pointer line-clamp-2 hover:text-blue-600"
@@ -474,12 +477,10 @@ export default function AllJobsPage() {
                               {job.title}
                             </h3>
 
-                            {/* 회사명 */}
                             <p className="mb-3 text-sm font-medium text-gray-600">
                               {job.company}
                             </p>
 
-                            {/* 썸네일 이미지 */}
                             <div className="mb-3 overflow-hidden rounded-lg">
                               {job.thumbnailUrl ? (
                                 <img
@@ -510,7 +511,6 @@ export default function AllJobsPage() {
                               )}
                             </div>
 
-                            {/* 정보 태그 */}
                             <div className="flex flex-wrap gap-2 mb-4">
                               <span className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded-full">
                                 {job.location}
@@ -525,7 +525,6 @@ export default function AllJobsPage() {
                               ))}
                             </div>
 
-                            {/* 하단 정보 */}
                             <div className="flex items-center justify-between pt-4 mt-auto border-t border-gray-100">
                               <div className="flex items-center gap-2">
                                 <span className="text-xs text-gray-600">
@@ -543,7 +542,6 @@ export default function AllJobsPage() {
                               </span>
                             </div>
 
-                            {/* 지원 버튼 */}
                             <button
                               onClick={() =>
                                 isApplied ? null : handleApply(job.id)

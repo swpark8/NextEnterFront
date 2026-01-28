@@ -3,29 +3,25 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
-import { useApp } from "../../context/AppContext";
-import type { InterviewOffer } from "../../context/AppContext";
 import {
   getApplyDetail,
   updateApplyStatus,
-  updateInterviewStatus,
   type ApplyDetailResponse,
 } from "../../api/apply";
+import { createInterviewOffer } from "../../api/interviewOffer";
 
 export default function ApplicantDetailPage() {
   const navigate = useNavigate();
   const { applicantId } = useParams();
   const { user } = useAuth();
-  const { addInterviewOffer } = useApp();
 
   const [loading, setLoading] = useState(true);
   const [applicant, setApplicant] = useState<ApplyDetailResponse | null>(null);
-  const [interviewStatus, setInterviewStatus] = useState<string | null>(null);
 
   // 사이드바 훅 사용
   const { activeMenu, handleMenuClick } = useCompanyPageNavigation(
     "applicants",
-    "applicants-sub-1"
+    "applicants-sub-1",
   );
 
   // 화면 맨 위로 올림
@@ -44,14 +40,16 @@ export default function ApplicantDetailPage() {
 
       try {
         setLoading(true);
-        const data = await getApplyDetail(parseInt(applicantId), user.companyId);
+        const data = await getApplyDetail(
+          parseInt(applicantId),
+          user.companyId,
+        );
         setApplicant(data);
-        setInterviewStatus(data.interviewStatus || null);
       } catch (error: any) {
         console.error("지원자 상세 조회 실패:", error);
         alert(
           error.response?.data?.message ||
-            "지원자 정보를 불러오는데 실패했습니다."
+            "지원자 정보를 불러오는데 실패했습니다.",
         );
         navigate("/company/applicants");
       } finally {
@@ -83,7 +81,7 @@ export default function ApplicantDetailPage() {
         // 상태 업데이트
         const updatedData = await getApplyDetail(
           applicant.applyId,
-          user.companyId
+          user.companyId,
         );
         setApplicant(updatedData);
       } catch (error: any) {
@@ -106,7 +104,7 @@ export default function ApplicantDetailPage() {
         // 상태 업데이트
         const updatedData = await getApplyDetail(
           applicant.applyId,
-          user.companyId
+          user.companyId,
         );
         setApplicant(updatedData);
       } catch (error: any) {
@@ -116,59 +114,27 @@ export default function ApplicantDetailPage() {
     }
   };
 
-  const handleInterviewRequest = async () => {
+  // ✅ 면접 제안 (새 API 사용)
+  const handleInterviewOffer = async () => {
     if (!applicant || !user?.companyId) return;
 
-    if (window.confirm(`${applicant.userName}님에게 면접을 요청하시검습니까?`)) {
+    if (
+      window.confirm(`${applicant.userName}님에게 면접 제안을 하시겠습니까?`)
+    ) {
       try {
-        await updateInterviewStatus(applicant.applyId, user.companyId, "REQUESTED");
-        setInterviewStatus("REQUESTED");
-        alert("면접 요청이 전송되었습니다.");
+        await createInterviewOffer(user.companyId, {
+          userId: applicant.userId,
+          jobId: applicant.jobId,
+          applyId: applicant.applyId, // 일반 지원과 연결
+        });
+
+        alert(
+          "면접 제안이 성공적으로 전송되었습니다.\n개인 회원은 '받은 제안' 페이지에서 확인할 수 있습니다.",
+        );
       } catch (error: any) {
-        console.error("면접 요청 실패:", error);
-        alert(error.response?.data?.message || "면접 요청에 실패했습니다.");
+        console.error("면접 제안 실패:", error);
+        alert(error.response?.data?.message || "면접 제안에 실패했습니다.");
       }
-    }
-  };
-
-  const handleInterviewCancel = async () => {
-    if (!applicant || !user?.companyId) return;
-
-    if (window.confirm(`${applicant.userName}님의 면접 요청을 취소하시걨습니까?`)) {
-      try {
-        await updateInterviewStatus(applicant.applyId, user.companyId, "CANCELED");
-        setInterviewStatus("CANCELED");
-        alert("면접 요청이 취소되었습니다.");
-      } catch (error: any) {
-        console.error("면접 취소 실패:", error);
-        alert(error.response?.data?.message || "면접 취소에 실패했습니다.");
-      }
-    }
-  };
-
-  const handleInterviewRequestOld = () => {
-    if (!applicant) return;
-
-    if (window.confirm(`${applicant.userName}님에게 면접 요청을 하시겠습니까?`)) {
-      const newInterviewOffer: InterviewOffer = {
-        id: Date.now(),
-        company: user?.companyName || "(주)등록기업",
-        position: applicant.jobTitle,
-        date: new Date().toISOString().split("T")[0],
-        status: "면접 대기",
-        content: `안녕하세요 ${applicant.userName}님, ${
-          user?.companyName || "(주)등록기업"
-        } 채용 담당자입니다.\n\n귀하의 이력서를 보고 큰 인상을 받아 면접 제안을 드립니다. 저희와 잘 맞을 분이라고 판단되며, 자세한 내용은 면접에서 말씀드리겠습니다.`,
-        location: "서울특별시 강남구 테헤란로 123",
-        jobId: applicant.jobId,
-      };
-
-      // AppContext에 면접 제안 추가
-      addInterviewOffer(newInterviewOffer);
-
-      alert(
-        "면접 요청이 성공적으로 전송되었습니다.\n개인 회원은 '받은 제안' 페이지에서 확인할 수 있습니다."
-      );
     }
   };
 
@@ -184,6 +150,8 @@ export default function ApplicantDetailPage() {
         return "bg-red-100 text-red-700";
       default:
         return "bg-gray-100 text-gray-700";
+      case "CANCELED":
+        return "bg-gray-100 text-gray-700";
     }
   };
 
@@ -197,6 +165,8 @@ export default function ApplicantDetailPage() {
         return "합격";
       case "REJECTED":
         return "불합격";
+      case "CANCELED":
+        return "면접거절";
       default:
         return status;
     }
@@ -245,7 +215,7 @@ export default function ApplicantDetailPage() {
               </button>
               <span
                 className={`px-4 py-1.5 text-sm font-semibold rounded-full ${getStatusColor(
-                  applicant.status
+                  applicant.status,
                 )}`}
               >
                 {getStatusText(applicant.status)}
@@ -315,7 +285,7 @@ export default function ApplicantDetailPage() {
                     <div className="mb-1 text-sm text-gray-500">검토일</div>
                     <div className="font-medium text-gray-900">
                       {new Date(applicant.reviewedAt).toLocaleDateString(
-                        "ko-KR"
+                        "ko-KR",
                       )}
                     </div>
                   </div>
@@ -331,20 +301,32 @@ export default function ApplicantDetailPage() {
               <div className="grid grid-cols-2 gap-4">
                 {applicant.gender && (
                   <div className="p-3 bg-white border border-indigo-200 rounded-lg">
-                    <div className="mb-1 text-xs font-medium text-gray-500">성별</div>
-                    <div className="font-semibold text-gray-900">{applicant.gender}</div>
+                    <div className="mb-1 text-xs font-medium text-gray-500">
+                      성별
+                    </div>
+                    <div className="font-semibold text-gray-900">
+                      {applicant.gender}
+                    </div>
                   </div>
                 )}
                 {applicant.birthDate && (
                   <div className="p-3 bg-white border border-indigo-200 rounded-lg">
-                    <div className="mb-1 text-xs font-medium text-gray-500">생년월일</div>
-                    <div className="font-semibold text-gray-900">{applicant.birthDate}</div>
+                    <div className="mb-1 text-xs font-medium text-gray-500">
+                      생년월일
+                    </div>
+                    <div className="font-semibold text-gray-900">
+                      {applicant.birthDate}
+                    </div>
                   </div>
                 )}
                 {applicant.address && (
                   <div className="col-span-2 p-3 bg-white border border-indigo-200 rounded-lg">
-                    <div className="mb-1 text-xs font-medium text-gray-500">주소</div>
-                    <div className="font-semibold text-gray-900">{applicant.address}</div>
+                    <div className="mb-1 text-xs font-medium text-gray-500">
+                      주소
+                    </div>
+                    <div className="font-semibold text-gray-900">
+                      {applicant.address}
+                    </div>
                   </div>
                 )}
               </div>
@@ -377,8 +359,13 @@ export default function ApplicantDetailPage() {
                 </h2>
                 <div className="space-y-3">
                   {applicant.experiences.map((exp, idx) => (
-                    <div key={idx} className="p-4 bg-white border border-orange-200 rounded-lg">
-                      <div className="font-semibold text-gray-900">{exp.title}</div>
+                    <div
+                      key={idx}
+                      className="p-4 bg-white border border-orange-200 rounded-lg"
+                    >
+                      <div className="font-semibold text-gray-900">
+                        {exp.title}
+                      </div>
                       <div className="text-sm text-gray-600">{exp.period}</div>
                     </div>
                   ))}
@@ -394,8 +381,13 @@ export default function ApplicantDetailPage() {
                 </h2>
                 <div className="space-y-3">
                   {applicant.certificates.map((cert, idx) => (
-                    <div key={idx} className="p-4 bg-white border border-yellow-200 rounded-lg">
-                      <div className="font-semibold text-gray-900">{cert.title}</div>
+                    <div
+                      key={idx}
+                      className="p-4 bg-white border border-yellow-200 rounded-lg"
+                    >
+                      <div className="font-semibold text-gray-900">
+                        {cert.title}
+                      </div>
                       <div className="text-sm text-gray-600">{cert.date}</div>
                     </div>
                   ))}
@@ -411,8 +403,13 @@ export default function ApplicantDetailPage() {
                 </h2>
                 <div className="space-y-3">
                   {applicant.educations.map((edu, idx) => (
-                    <div key={idx} className="p-4 bg-white border border-blue-200 rounded-lg">
-                      <div className="font-semibold text-gray-900">{edu.school}</div>
+                    <div
+                      key={idx}
+                      className="p-4 bg-white border border-blue-200 rounded-lg"
+                    >
+                      <div className="font-semibold text-gray-900">
+                        {edu.school}
+                      </div>
                       <div className="text-sm text-gray-600">{edu.period}</div>
                     </div>
                   ))}
@@ -428,9 +425,16 @@ export default function ApplicantDetailPage() {
                 </h2>
                 <div className="space-y-3">
                   {applicant.careers.map((career, idx) => (
-                    <div key={idx} className="p-4 bg-white border border-teal-200 rounded-lg">
-                      <div className="font-semibold text-gray-900">{career.company}</div>
-                      <div className="text-sm text-gray-600">{career.period}</div>
+                    <div
+                      key={idx}
+                      className="p-4 bg-white border border-teal-200 rounded-lg"
+                    >
+                      <div className="font-semibold text-gray-900">
+                        {career.company}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {career.period}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -442,90 +446,16 @@ export default function ApplicantDetailPage() {
               <div className="p-6 mb-8 border-2 border-green-200 rounded-lg bg-green-50">
                 <h2 className="mb-4 text-lg font-bold text-gray-900">
                   ✍️ 자기소개서
-                  {applicant.coverLetterTitle && ` - ${applicant.coverLetterTitle}`}
+                  {applicant.coverLetterTitle &&
+                    ` - ${applicant.coverLetterTitle}`}
                 </h2>
                 <div className="p-4 bg-white border border-green-200 rounded-lg">
-                  <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">
+                  <p className="leading-relaxed text-gray-900 whitespace-pre-wrap">
                     {applicant.coverLetterContent}
                   </p>
                 </div>
               </div>
             )}
-
-            {/* 면접 상태 */}
-            <div className="p-6 mb-8 border-2 border-blue-200 rounded-lg bg-blue-50">
-              <h2 className="mb-4 text-lg font-bold text-gray-900">
-                📅 면접 상태
-              </h2>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <span className="text-sm font-medium text-gray-700">현재 상태:</span>
-                  {(() => {
-                    if (interviewStatus === "REQUESTED") {
-                      return (
-                        <span className="inline-block px-4 py-2 text-sm font-semibold text-purple-700 bg-white border-2 border-purple-500 rounded-full">
-                          요청 중 (대기)
-                        </span>
-                      );
-                    }
-                    if (interviewStatus === "ACCEPTED") {
-                      return (
-                        <span className="inline-block px-4 py-2 text-sm font-semibold text-white bg-purple-500 rounded-full">
-                          수락됨 (지원자가 수락)
-                        </span>
-                      );
-                    }
-                    if (interviewStatus === "REJECTED") {
-                      return (
-                        <span className="inline-block px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 border-2 border-red-300 rounded-full">
-                          거절됨 (지원자가 거절)
-                        </span>
-                      );
-                    }
-                    if (interviewStatus === "CANCELED") {
-                      return (
-                        <span className="inline-block px-4 py-2 text-sm font-semibold text-gray-600 bg-gray-200 rounded-full">
-                          취소됨 (기업이 취소)
-                        </span>
-                      );
-                    }
-                    return (
-                      <span className="text-sm text-gray-400">면접 요청 전</span>
-                    );
-                  })()}
-                </div>
-                
-                {/* 면접 요청/취소 버튼 */}
-                <div className="flex gap-3">
-                  {!interviewStatus && (
-                    <button
-                      onClick={handleInterviewRequest}
-                      className="px-4 py-2 text-sm font-semibold text-white transition bg-purple-600 rounded-lg hover:bg-purple-700"
-                    >
-                      면접 요청
-                    </button>
-                  )}
-                  {interviewStatus === "REQUESTED" && (
-                    <button
-                      onClick={handleInterviewCancel}
-                      className="px-4 py-2 text-sm font-semibold text-white transition bg-gray-600 rounded-lg hover:bg-gray-700"
-                    >
-                      요청 취소
-                    </button>
-                  )}
-                </div>
-              </div>
-              
-              {/* 안내 문구 */}
-              <div className="p-3 mt-4 text-sm text-gray-600 bg-white border border-blue-200 rounded-lg">
-                <p>💡 <strong>안내:</strong></p>
-                <ul className="pl-5 mt-2 space-y-1 list-disc">
-                  <li>면접 요청 후 지원자가 수락/거절을 결정합니다.</li>
-                  <li>요청 중일 때만 취소가 가능합니다.</li>
-                  <li>지원자가 수락/거절한 후에는 변경할 수 없습니다.</li>
-                </ul>
-              </div>
-            </div>
 
             {/* 메모 */}
             {applicant.notes && (
@@ -554,19 +484,19 @@ export default function ApplicantDetailPage() {
                     >
                       불합격 처리
                     </button>
-                  </>  
-                  )}
-                  <button
-                  onClick={handleInterviewRequestOld}
-                  disabled={applicant.status === "REJECTED"}
-                  className={`flex-1 px-6 py-3 font-semibold transition rounded-lg ${
+                  </>
+                )}
+              <button
+                onClick={handleInterviewOffer}
+                disabled={applicant.status === "REJECTED"}
+                className={`flex-1 px-6 py-3 font-semibold transition rounded-lg ${
                   applicant.status === "REJECTED"
-                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  : "bg-blue-600 text-white hover:bg-blue-700"
-                  }`}
-                  >
-                  면접 제안 (로컬 저장)
-                  </button>
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-blue-600 text-white hover:bg-blue-700"
+                }`}
+              >
+                면접 제안
+              </button>
               <button
                 onClick={handleCompatibilityClick}
                 className="flex-1 px-6 py-3 font-semibold text-gray-700 transition bg-gray-100 rounded-lg hover:bg-gray-200"
