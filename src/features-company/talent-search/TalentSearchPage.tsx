@@ -387,19 +387,8 @@ export default function TalentSearchPage() {
                             <span className="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded">
                               면접 요청이 수락되었습니다
                             </span>
-                          ) : talent.contactStatus === "PENDING" ? (
-                            <span className="px-3 py-1 text-sm font-medium text-yellow-600 bg-yellow-100 rounded">
-                              연락 대기중
-                            </span>
-                          ) : talent.contactStatus === "REJECTED" ? (
-                            <span className="px-3 py-1 text-sm font-medium text-red-600 bg-red-100 rounded">
-                              연락 거절됨
-                            </span>
-                          ) : talent.isAvailable ? (
-                            <span className="px-3 py-1 text-sm font-medium text-green-600 bg-green-100 rounded">
-                              연락 가능
-                            </span>
                           ) : null}
+
                         </div>
 
                         <div className="grid grid-cols-3 gap-4 mb-4 text-sm">
