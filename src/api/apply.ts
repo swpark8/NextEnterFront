@@ -103,7 +103,7 @@ export interface PageResponse<T> {
 // 지원 등록 (개인회원용)
 export const createApply = async (
   userId: number,
-  request: ApplyCreateRequest
+  request: ApplyCreateRequest,
 ): Promise<ApplyDetailResponse> => {
   const response = await api.post("/api/applies", request, {
     headers: { userId },
@@ -113,14 +113,13 @@ export const createApply = async (
 
 // 내 지원 내역 조회 (개인회원용)
 export const getMyApplies = async (
-  userId: number
+  userId: number,
 ): Promise<ApplyListResponse[]> => {
   const response = await api.get("/api/applies/my", {
     headers: { userId },
   });
   return response.data;
 };
-
 
 // 지원자 목록 조회
 export const getApplies = async (
@@ -129,7 +128,7 @@ export const getApplies = async (
     jobId?: number;
     page?: number;
     size?: number;
-  }
+  },
 ): Promise<PageResponse<ApplyListResponse>> => {
   const response = await api.get("/api/applies", {
     params,
@@ -141,7 +140,7 @@ export const getApplies = async (
 // 지원자 상세 조회
 export const getApplyDetail = async (
   applyId: number,
-  companyId: number
+  companyId: number,
 ): Promise<ApplyDetailResponse> => {
   const response = await api.get(`/api/applies/${applyId}`, {
     headers: { companyId },
@@ -153,13 +152,11 @@ export const getApplyDetail = async (
 export const updateApplyStatus = async (
   applyId: number,
   companyId: number,
-  request: ApplyStatusUpdateRequest
+  request: ApplyStatusUpdateRequest,
 ): Promise<ApplyDetailResponse> => {
-  const response = await api.put(
-    `/api/applies/${applyId}/status`,
-    request,
-    { headers: { companyId } }
-  );
+  const response = await api.put(`/api/applies/${applyId}/status`, request, {
+    headers: { companyId },
+  });
   return response.data;
 };
 
@@ -167,17 +164,17 @@ export const updateApplyStatus = async (
 export const updateInterviewStatus = async (
   applyId: number,
   companyId: number,
-  interviewStatus: string
+  interviewStatus: string,
 ): Promise<ApplyDetailResponse> => {
   const response = await api.put(
     `/api/applies/${applyId}/interview-status`,
     interviewStatus,
-    { 
-      headers: { 
+    {
+      headers: {
         companyId,
-        'Content-Type': 'text/plain'
-      } 
-    }
+        "Content-Type": "text/plain",
+      },
+    },
   );
   return response.data;
 };
@@ -186,15 +183,24 @@ export const updateInterviewStatus = async (
 export const createInterviewRequest = async (
   companyId: number,
   userId: number,
-  jobId: number
+  jobId: number,
 ): Promise<ApplyDetailResponse> => {
-  const response = await api.post(
-    `/api/applies/interview-request`,
-    null,
-    {
-      params: { userId, jobId },
-      headers: { companyId }
-    }
-  );
+  const response = await api.post(`/api/applies/interview-request`, null, {
+    params: { userId, jobId },
+    headers: { companyId },
+  });
   return response.data;
+};
+
+export const cancelApply = async (
+  applyId: number,
+  userId: number,
+): Promise<void> => {
+  await api.patch(
+    `/api/applies/${applyId}/cancel`,
+    {},
+    {
+      headers: { userId },
+    },
+  );
 };

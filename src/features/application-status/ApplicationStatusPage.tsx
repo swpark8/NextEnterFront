@@ -2,8 +2,13 @@ import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 import { useAuth } from "../../context/AuthContext";
-import { getMyApplies, ApplyListResponse } from "../../api/apply";
+import {
+  getMyApplications,
+  ApplicationSummaryResponse,
+} from "../../api/application";
 import ApplicationStautsSidebar from "./components/ApplicationStatusPageSidebar";
+import { cancelApply } from "../../api/apply";
+import { rejectOffer } from "../../api/interviewOffer";
 
 interface ApplicationStatusPageProps {
   initialMenu?: string;
@@ -16,28 +21,30 @@ export default function ApplicationStatusPage({
 }: ApplicationStatusPageProps) {
   const [searchParams] = useSearchParams();
   const menuFromUrl = searchParams.get("menu") || "mypage-sub-3";
-  
+
   const { activeMenu, handleMenuClick } = usePageNavigation(
     "mypage",
     _initialMenu || menuFromUrl,
-    _onNavigate
+    _onNavigate,
   );
 
   const { user } = useAuth();
-  const [applies, setApplies] = useState<ApplyListResponse[]>([]);
+  const [applications, setApplications] = useState<
+    ApplicationSummaryResponse[]
+  >([]);
   const [loading, setLoading] = useState(true);
 
-  // 백엔드에서 데이터 로드
   useEffect(() => {
-    const loadApplies = async () => {
+    const loadApplications = async () => {
       if (!user?.userId) return;
 
       try {
         setLoading(true);
-        const data = await getMyApplies(user.userId);
-        // interviewStatus가 REJECTED인 것은 제외 (거절한 공고는 표시하지 않음)
-        const filtered = data.filter(apply => apply.interviewStatus !== "REJECTED");
-        setApplies(filtered);
+        const data = await getMyApplications(user.userId);
+        const filtered = data.filter(
+          (app) => app.interviewStatus !== "REJECTED",
+        );
+        setApplications(filtered);
       } catch (error) {
         console.error("지원 내역 로드 실패:", error);
       } finally {
@@ -45,33 +52,42 @@ export default function ApplicationStatusPage({
       }
     };
 
-    loadApplies();
+    loadApplications();
   }, [user?.userId]);
 
-  // 상태 변환 함수
-  const getApplicationStatus = (apply: ApplyListResponse): string => {
-    const { status, interviewStatus } = apply;
+  // ✅ [수정] 상태 표시 로직 변경
+  const getApplicationStatus = (app: ApplicationSummaryResponse): string => {
+    const { type, status, interviewStatus, documentStatus, finalStatus } = app;
 
-    // 서류심사 중
-    if (status === "PENDING" && !interviewStatus) {
-      return "서류심사 중";
+    if (finalStatus === "PASSED") return "합격";
+    if (finalStatus === "REJECTED") return "불합격";
+    if (finalStatus === "CANCELED") return "지원취소";
+
+    // 면접 제안인 경우
+    if (type === "INTERVIEW_OFFER") {
+      if (interviewStatus === "CANCELED" || interviewStatus === "REJECTED")
+        return "제안취소";
+
+      // 👉 [변경 포인트] 제안받은 상태(OFFERED)를 '서류합격'으로 표시
+      if (interviewStatus === "OFFERED") return "서류합격";
+
+      if (interviewStatus === "ACCEPTED") return "면접 수락";
+      if (interviewStatus === "SCHEDULED") return "면접 예정";
+      if (interviewStatus === "COMPLETED") return "면접 완료";
     }
-    // 서류합격
-    if (interviewStatus === "REQUESTED" || interviewStatus === "ACCEPTED") {
-      return "서류합격";
+
+    // 일반 지원인 경우
+    if (type === "APPLICATION") {
+      if (documentStatus === "PASSED") return "서류합격";
+      if (documentStatus === "REJECTED") return "서류불합격";
+      if (documentStatus === "REVIEWING") return "서류검토중";
+      if (documentStatus === "PENDING") return "서류심사 대기";
     }
-    // 면접 심사 중
-    if (interviewStatus === "ACCEPTED") {
-      return "면접 심사 중";
-    }
-    // 합격
-    if (status === "ACCEPTED") {
-      return "합격";
-    }
-    // 불합격
-    if (status === "REJECTED") {
-      return "불합격";
-    }
+
+    if (status === "ACCEPTED") return "합격";
+    if (status === "REJECTED") return "불합격";
+    if (status === "CANCELED") return "지원취소";
+
     return "서류심사 중";
   };
 
@@ -83,58 +99,125 @@ export default function ApplicationStatusPage({
   const [endDate, setEndDate] = useState("2026-01-07");
   const [searchKeyword, setSearchKeyword] = useState("");
 
-  // ✅ 통계 계산 (실제 데이터 기반)
   const stats = useMemo(() => {
-    const total = applies.length;
-    const documentPass = applies.filter(app => 
-      app.interviewStatus === "REQUESTED" || app.interviewStatus === "ACCEPTED"
+    const total = applications.length;
+    // 통계에서도 '서류합격'으로 집계되도록 조건 확인 (OFFERED 포함됨)
+    const documentPass = applications.filter(
+      (app) =>
+        app.documentStatus === "PASSED" ||
+        app.interviewStatus === "OFFERED" ||
+        app.interviewStatus === "ACCEPTED",
     ).length;
-    const pass = applies.filter(app => app.status === "ACCEPTED").length;
-    const fail = applies.filter(app => app.status === "REJECTED").length;
+    const pass = applications.filter(
+      (app) => app.finalStatus === "PASSED" || app.status === "ACCEPTED",
+    ).length;
+    const fail = applications.filter(
+      (app) =>
+        app.finalStatus === "REJECTED" ||
+        app.status === "REJECTED" ||
+        app.documentStatus === "REJECTED",
+    ).length;
 
     return { total, documentPass, pass, fail };
-  }, [applies]);
+  }, [applications]);
 
-  // ✅ 필터링된 지원 내역
   const filteredApplications = useMemo(() => {
-    return applies.filter(app => {
-      // 상태 필터
+    return applications.filter((app) => {
       if (status !== "전체") {
         const appStatus = getApplicationStatus(app);
         if (appStatus !== status) return false;
       }
-
-      // 키워드 검색 (회사명, 포지션)
       if (searchKeyword) {
         const keyword = searchKeyword.toLowerCase();
-        const matchCompany = app.companyName?.toLowerCase().includes(keyword) || false;
-        const matchPosition = app.jobTitle?.toLowerCase().includes(keyword) || false;
+        const matchCompany =
+          app.companyName?.toLowerCase().includes(keyword) || false;
+        const matchPosition =
+          app.jobTitle?.toLowerCase().includes(keyword) || false;
         if (!matchCompany && !matchPosition) return false;
       }
-
       return true;
     });
-  }, [applies, status, searchKeyword]);
+  }, [applications, status, searchKeyword]);
 
-  const handleSearch = () => {
-    console.log("검색 실행");
-  };
+  const handleSearch = () => console.log("검색 실행");
 
-  const handleViewResume = (resumeId: number) => {
-    console.log(`이력서 ${resumeId} 보기`);
-    // 이력서 페이지로 이동
-    handleMenuClick("resume-sub-1");
-  };
+  const handleCancel = async (id: number, type: string) => {
+    if (!user?.userId) return;
 
-  const handleViewProgress = (applyId: number) => {
-    console.log(`진행상태 ${applyId} 보기`);
-  };
+    if (!window.confirm("정말 취소하시겠습니까?")) return;
 
-  const handleCancel = (applyId: number) => {
-    if (window.confirm("정말 지원을 취소하시겠습니까?")) {
-      // TODO: 취소 API 호출
-      console.log(`지원 취소: ${applyId}`);
+    try {
+      if (type === "APPLICATION") {
+        console.log(`🚀 [Front] 일반 지원 취소 요청: applyId=${id}`);
+        await cancelApply(id, user.userId);
+
+        setApplications((prev) =>
+          prev.map((app) =>
+            app.id === id && app.type === "APPLICATION"
+              ? {
+                  ...app,
+                  status: "CANCELED",
+                  finalStatus: "CANCELED",
+                  documentStatus: "CANCELED",
+                }
+              : app,
+          ),
+        );
+      } else if (type === "INTERVIEW_OFFER") {
+        console.log(`🚀 [Front] 면접 제안 취소 요청: offerId=${id}`);
+        await rejectOffer(id, user.userId);
+
+        setApplications((prev) =>
+          prev.map((app) =>
+            app.id === id && app.type === "INTERVIEW_OFFER"
+              ? { ...app, interviewStatus: "CANCELED" }
+              : app,
+          ),
+        );
+      }
+      alert("취소되었습니다.");
+    } catch (error) {
+      console.error("취소 실패:", error);
+      alert("처리 중 오류가 발생했습니다.");
     }
+  };
+
+  // 버튼 렌더링 함수 (변경 없음)
+  const renderCancelButton = (app: ApplicationSummaryResponse) => {
+    if (app.type === "APPLICATION") {
+      if (app.status === "PENDING" || app.documentStatus === "PENDING") {
+        return (
+          <button
+            onClick={() => handleCancel(app.id, app.type)}
+            className="text-sm text-red-600 underline hover:text-red-700"
+          >
+            지원취소
+          </button>
+        );
+      }
+    } else if (app.type === "INTERVIEW_OFFER") {
+      if (app.interviewStatus === "OFFERED") {
+        return (
+          <button
+            onClick={() => handleCancel(app.id, app.type)}
+            className="text-sm text-gray-500 underline hover:text-gray-700"
+          >
+            제안거절
+          </button>
+        );
+      }
+      if (app.interviewStatus === "ACCEPTED") {
+        return (
+          <button
+            onClick={() => handleCancel(app.id, app.type)}
+            className="text-sm text-red-600 underline hover:text-red-700"
+          >
+            면접취소
+          </button>
+        );
+      }
+    }
+    return null;
   };
 
   return (
@@ -158,23 +241,22 @@ export default function ApplicationStatusPage({
                   지원완료
                 </div>
               </div>
-
               <div className="flex flex-col items-center justify-center bg-white border-2 border-white p-9 rounded-2xl">
-                <div className="flex items-center justify-center w-24 h-24 mb-3 text-4xl font-bold text-white bg-green-500 rounded-full">
+                <div className="flex items-center justify-center w-24 h-24 mb-3 text-4xl font-bold text-white bg-blue-500 rounded-full">
                   {stats.documentPass}
                 </div>
-                <div className="text-lg font-semibold text-gray-700">서류합격</div>
+                <div className="text-lg font-semibold text-gray-700">
+                  서류합격
+                </div>
               </div>
-
               <div className="flex flex-col items-center justify-center bg-white border-2 border-white p-9 rounded-2xl">
-                <div className="flex items-center justify-center w-24 h-24 mb-3 text-4xl font-bold text-white bg-purple-500 rounded-full">
+                <div className="flex items-center justify-center w-24 h-24 mb-3 text-4xl font-bold text-white bg-blue-500 rounded-full">
                   {stats.pass}
                 </div>
                 <div className="text-lg font-semibold text-gray-700">합격</div>
               </div>
-
               <div className="flex flex-col items-center justify-center bg-white border-2 border-white p-9 rounded-2xl">
-                <div className="flex items-center justify-center w-24 h-24 mb-3 text-4xl font-bold text-white bg-red-500 rounded-full">
+                <div className="flex items-center justify-center w-24 h-24 mb-3 text-4xl font-bold text-white bg-blue-500 rounded-full">
                   {stats.fail}
                 </div>
                 <div className="text-lg font-semibold text-gray-700">
@@ -192,11 +274,7 @@ export default function ApplicationStatusPage({
                     <button
                       key={p}
                       onClick={() => setPeriod(p)}
-                      className={`px-4 py-2 text-sm rounded-lg transition ${
-                        period === p
-                          ? "bg-blue-600 text-white font-semibold"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
+                      className={`px-4 py-2 text-sm rounded-lg transition ${period === p ? "bg-blue-600 text-white font-semibold" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
                     >
                       {p}
                     </button>
@@ -216,7 +294,6 @@ export default function ApplicationStatusPage({
                   className="px-3 py-2 border border-gray-300 rounded-lg"
                 />
               </div>
-
               <div className="grid grid-cols-3 gap-4 mb-4">
                 <div className="flex items-center gap-2">
                   <label className="w-20 text-sm font-medium text-gray-700">
@@ -228,14 +305,14 @@ export default function ApplicationStatusPage({
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg"
                   >
                     <option value="전체">전체</option>
-                    <option value="서류심사 중">서류심사 중</option>
+                    <option value="서류심사 대기">서류심사 대기</option>
                     <option value="서류합격">서류합격</option>
-                    <option value="면접 심사 중">면접 심사 중</option>
+                    <option value="면접 제안받음">면접 제안받음</option>
+                    <option value="면접 수락">면접 수락</option>
                     <option value="합격">합격</option>
                     <option value="불합격">불합격</option>
                   </select>
                 </div>
-
                 <div className="flex items-center gap-2">
                   <label className="w-20 text-sm font-medium text-gray-700">
                     영업여부
@@ -250,7 +327,6 @@ export default function ApplicationStatusPage({
                     <option value="영업종료">영업종료</option>
                   </select>
                 </div>
-
                 <div className="flex items-center gap-2">
                   <label className="w-20 text-sm font-medium text-gray-700">
                     지원산업
@@ -267,7 +343,6 @@ export default function ApplicationStatusPage({
                   </select>
                 </div>
               </div>
-
               <div className="flex items-center gap-2">
                 <input
                   type="text"
@@ -289,7 +364,7 @@ export default function ApplicationStatusPage({
             {loading ? (
               <div className="p-12 text-center bg-white border-2 border-gray-200 rounded-2xl">
                 <div className="flex items-center justify-center">
-                  <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-10 h-10 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
                 </div>
               </div>
             ) : filteredApplications.length === 0 ? (
@@ -309,6 +384,9 @@ export default function ApplicationStatusPage({
                   <thead className="bg-gray-50">
                     <tr className="border-b-2 border-gray-200">
                       <th className="px-4 py-3 text-sm font-semibold text-center text-gray-700">
+                        유형
+                      </th>
+                      <th className="px-4 py-3 text-sm font-semibold text-center text-gray-700">
                         지원일
                       </th>
                       <th className="px-4 py-3 text-sm font-semibold text-center text-gray-700">
@@ -321,21 +399,41 @@ export default function ApplicationStatusPage({
                         진행상태
                       </th>
                       <th className="px-4 py-3 text-sm font-semibold text-center text-gray-700">
-                        지원취소
+                        관리
                       </th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredApplications.map((app) => {
                       const appStatus = getApplicationStatus(app);
-                      const statusColor = 
-                        appStatus === "합격" ? "bg-purple-100 text-purple-700" :
-                        appStatus === "서류합격" ? "bg-green-100 text-green-700" :
-                        appStatus === "불합격" ? "bg-red-100 text-red-700" :
-                        "bg-gray-100 text-gray-700";
+                      const statusColor =
+                        appStatus === "합격"
+                          ? "bg-purple-100 text-purple-700"
+                          : appStatus === "서류합격"
+                            ? "bg-green-100 text-green-700" // 서류합격으로 바뀌면서 초록색 뱃지가 적용됩니다.
+                            : appStatus.includes("면접")
+                              ? "bg-blue-100 text-blue-700"
+                              : appStatus.includes("불합격") ||
+                                  appStatus.includes("취소")
+                                ? "bg-red-100 text-red-700"
+                                : "bg-gray-100 text-gray-700";
+
+                      const typeLabel =
+                        app.type === "APPLICATION" ? "일반" : "제안";
+                      const typeBadgeColor =
+                        app.type === "APPLICATION"
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-green-100 text-green-700";
 
                       return (
-                        <tr key={app.applyId} className="border-b border-gray-200">
+                        <tr key={app.id} className="border-b border-gray-200">
+                          <td className="px-4 py-4 text-center">
+                            <span
+                              className={`inline-block px-2 py-1 text-xs font-semibold rounded ${typeBadgeColor}`}
+                            >
+                              {typeLabel}
+                            </span>
+                          </td>
                           <td className="px-4 py-4 text-sm text-center text-gray-700">
                             {new Date(app.appliedAt).toLocaleDateString()}
                           </td>
@@ -352,19 +450,14 @@ export default function ApplicationStatusPage({
                             </div>
                           </td>
                           <td className="px-4 py-4 text-center">
-                            <span className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${statusColor}`}>
+                            <span
+                              className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${statusColor}`}
+                            >
                               {appStatus}
                             </span>
                           </td>
                           <td className="px-4 py-4 text-center">
-                            {app.status === "PENDING" && (
-                              <button
-                                onClick={() => handleCancel(app.applyId)}
-                                className="text-sm text-red-600 underline hover:text-red-700"
-                              >
-                                지원취소
-                              </button>
-                            )}
+                            {renderCancelButton(app)}
                           </td>
                         </tr>
                       );

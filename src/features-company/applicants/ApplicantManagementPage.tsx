@@ -6,7 +6,6 @@ import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
 import {
   getApplies,
   updateApplyStatus,
-  updateInterviewStatus,
   type ApplyListResponse,
 } from "../../api/apply";
 import { getJobPostings, type JobPostingListResponse } from "../../api/job";
@@ -15,18 +14,18 @@ export default function ApplicantManagementPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
-  
+
   // URL에서 jobId와 jobTitle 가져오기
   const urlJobId = searchParams.get("jobId");
   const urlJobTitle = searchParams.get("jobTitle");
-  
+
   const { activeMenu, handleMenuClick } = useCompanyPageNavigation(
     "applicants",
-    "applicants-sub-1"
+    "applicants-sub-1",
   );
 
   const [selectedJobPosting, setSelectedJobPosting] = useState<string>(
-    urlJobTitle ? decodeURIComponent(urlJobTitle) : "전체"
+    urlJobTitle ? decodeURIComponent(urlJobTitle) : "전체",
   );
   const [selectedJobCategory, setSelectedJobCategory] = useState("전체");
   const [experienceRange, setExperienceRange] = useState("전체");
@@ -55,7 +54,7 @@ export default function ApplicantManagementPage() {
 
         // 해당 기업의 공고만 필터링
         const myJobs = response.content.filter(
-          (job) => job.companyId === user.companyId
+          (job) => job.companyId === user.companyId,
         );
         setJobPostings(myJobs);
       } catch (error: any) {
@@ -86,7 +85,7 @@ export default function ApplicantManagementPage() {
         // 특정 공고가 선택된 경우
         if (selectedJobPosting !== "전체") {
           const selectedJob = jobPostings.find(
-            (job) => job.title === selectedJobPosting
+            (job) => job.title === selectedJobPosting,
           );
           if (selectedJob) {
             params.jobId = selectedJob.jobId;
@@ -100,7 +99,7 @@ export default function ApplicantManagementPage() {
         console.error("지원자 목록 조회 실패:", error);
         alert(
           error.response?.data?.message ||
-            "지원자 목록을 불러오는데 실패했습니다."
+            "지원자 목록을 불러오는데 실패했습니다.",
         );
       } finally {
         setLoading(false);
@@ -158,35 +157,6 @@ export default function ApplicantManagementPage() {
     }
   };
 
-  // 면접 상태 가져오기
-  const getInterviewStatus = (interviewStatus: string | null) => {
-    if (interviewStatus === "REQUESTED") return "요청";
-    if (interviewStatus === "ACCEPTED") return "수락";
-    if (interviewStatus === "REJECTED") return "거절";
-    if (interviewStatus === "CANCELED") return "취소";
-    return null;
-  };
-
-  const getInterviewStatusStyle = (interviewStatus: string | null) => {
-    if (interviewStatus === "요청") {
-      // 테두리만 보라색, 배경 하얀색
-      return "border-2 border-purple-500 text-purple-700 bg-white";
-    }
-    if (interviewStatus === "수락") {
-      // 배경 보라색, 텍스트 하얀색 (기존 스타일)
-      return "bg-purple-500 text-white";
-    }
-    if (interviewStatus === "거절") {
-      // 빨간색
-      return "border-2 border-red-400 text-red-600 bg-red-50";
-    }
-    if (interviewStatus === "취소") {
-      // 회색
-      return "bg-gray-200 text-gray-600";
-    }
-    return "bg-gray-100 text-gray-500"; // 기본
-  };
-
   const getInitials = (name: string) => {
     return name.charAt(0);
   };
@@ -213,6 +183,8 @@ export default function ApplicantManagementPage() {
         return "bg-green-100 text-green-700";
       case "REJECTED":
         return "bg-red-100 text-red-700";
+      case "CANCELED":
+        return "bg-gray-100 text-gray-700";
       default:
         return "bg-gray-100 text-gray-700";
     }
@@ -228,6 +200,8 @@ export default function ApplicantManagementPage() {
         return "합격";
       case "REJECTED":
         return "불합격";
+      case "CANCELED":
+        return "면접거절";
       default:
         return status;
     }
@@ -252,12 +226,8 @@ export default function ApplicantManagementPage() {
     const experienceMatch =
       experienceRange === "전체" ||
       (experienceRange === "신입" && expYears === 0) ||
-      (experienceRange === "1-3년" &&
-        expYears >= 1 &&
-        expYears <= 3) ||
-      (experienceRange === "3-5년" &&
-        expYears >= 3 &&
-        expYears <= 5) ||
+      (experienceRange === "1-3년" && expYears >= 1 && expYears <= 3) ||
+      (experienceRange === "3-5년" && expYears >= 3 && expYears <= 5) ||
       (experienceRange === "5년+" && expYears >= 5);
 
     return jobCategoryMatch && experienceMatch;
@@ -288,7 +258,7 @@ export default function ApplicantManagementPage() {
             <div className="flex items-center justify-between mb-8">
               <h1 className="text-2xl font-bold">지원자 관리</h1>
               {urlJobTitle && (
-                <div className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 rounded-lg">
+                <div className="px-4 py-2 text-sm font-medium text-blue-700 rounded-lg bg-blue-50">
                   필터: {decodeURIComponent(urlJobTitle)} 공고의 지원자
                 </div>
               )}
@@ -369,7 +339,7 @@ export default function ApplicantManagementPage() {
                       주요 스킬
                     </th>
                     <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700 whitespace-nowrap">
-                      면접 여부
+                      AI 점수
                     </th>
                     <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700 whitespace-nowrap">
                       지원일
@@ -398,7 +368,7 @@ export default function ApplicantManagementPage() {
                         <div className="flex items-center space-x-3">
                           <div
                             className={`w-10 h-10 rounded-full ${getAvatarColor(
-                              applicant.applyId
+                              applicant.applyId,
                             )} flex items-center justify-center text-white font-bold shrink-0`}
                           >
                             {getInitials(applicant.userName)}
@@ -409,7 +379,7 @@ export default function ApplicantManagementPage() {
                             </div>
                             <span
                               className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${getStatusColor(
-                                applicant.status
+                                applicant.status,
                               )}`}
                             >
                               {getStatusText(applicant.status)}
@@ -442,27 +412,17 @@ export default function ApplicantManagementPage() {
                       </td>
 
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {(() => {
-                          const interviewStatus = getInterviewStatus(applicant.interviewStatus);
-                          if (!interviewStatus) {
-                            return <span className="text-sm text-gray-400">-</span>;
-                          }
-                          return (
-                            <span
-                              className={`inline-block px-3 py-1 text-sm font-semibold rounded-full ${getInterviewStatusStyle(
-                                interviewStatus
-                              )}`}
-                            >
-                              {interviewStatus}
-                            </span>
-                          );
-                        })()}
+                        <div className="flex items-center justify-center">
+                          <span className="text-2xl font-bold text-purple-600">
+                            {applicant.aiScore}
+                          </span>
+                        </div>
                       </td>
 
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm text-gray-500">
                           {new Date(applicant.appliedAt).toLocaleDateString(
-                            "ko-KR"
+                            "ko-KR",
                           )}
                         </span>
                       </td>

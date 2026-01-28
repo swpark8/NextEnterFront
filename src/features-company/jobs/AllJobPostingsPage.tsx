@@ -4,8 +4,8 @@ import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
 import { getJobPostings, type JobPostingListResponse } from "../../api/job";
 
-import CompanyJobSearchFilter, {
-  CompanySearchFilters,
+import JobSearchFilter, {
+  SearchFilters,
 } from "./components/CompanySearchFilter";
 
 export default function AllJobPostingsPage() {
@@ -24,7 +24,7 @@ export default function AllJobPostingsPage() {
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // 필터 상태
-  const [filters, setFilters] = useState<CompanySearchFilters>({
+  const [filters, setFilters] = useState<SearchFilters>({
     keyword: "",
     regions: [],
     jobCategories: [],
@@ -36,7 +36,7 @@ export default function AllJobPostingsPage() {
   }, []);
 
   // 필터 변경 핸들러
-  const handleFilterChange = (newFilters: CompanySearchFilters) => {
+  const handleFilterChange = (newFilters: SearchFilters) => {
     setFilters(newFilters);
     setCurrentPage(0);
   };
@@ -151,7 +151,7 @@ export default function AllJobPostingsPage() {
         {/* 메인 컨텐츠 */}
         <main className="flex-1 space-y-8">
           {/* 필터 컴포넌트 */}
-          <CompanyJobSearchFilter onFilterChange={handleFilterChange} />
+          <JobSearchFilter onFilterChange={handleFilterChange} />
 
           {/* 공고 리스트 섹션 */}
           <div className="p-8 bg-white border border-gray-200 shadow-sm rounded-2xl">
@@ -210,13 +210,13 @@ export default function AllJobPostingsPage() {
             </div>
 
             {/* 공고 리스트 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {loading ? (
-                <div className="col-span-full py-20 text-center text-gray-500">
+                <div className="py-20 text-center text-gray-500 col-span-full">
                   로딩 중...
                 </div>
               ) : jobPostings.length === 0 ? (
-                <div className="col-span-full py-20 text-center text-gray-500">
+                <div className="py-20 text-center text-gray-500 col-span-full">
                   등록된 공고가 없습니다.
                 </div>
               ) : (
@@ -226,7 +226,7 @@ export default function AllJobPostingsPage() {
                     <div
                       key={job.jobId}
                       onClick={() => handleJobClick(job.jobId)}
-                      className="flex flex-col overflow-hidden transition bg-white border border-gray-300 shadow-sm rounded-xl hover:shadow-xl hover:border-purple-400 cursor-pointer"
+                      className="flex flex-col overflow-hidden transition bg-white border border-gray-300 shadow-sm cursor-pointer rounded-xl hover:shadow-xl hover:border-purple-400"
                     >
                       {/* 로고 영역 */}
                       <div className="flex items-center justify-center h-12 bg-gradient-to-br from-gray-50 to-gray-100">
@@ -265,7 +265,7 @@ export default function AllJobPostingsPage() {
                             <img
                               src={job.thumbnailUrl}
                               alt={`${job.title} 썸네일`}
-                              className="object-cover w-full h-40"
+                              className="object-cover w-full h-50"
                               onError={(e) => {
                                 e.currentTarget.src =
                                   "https://via.placeholder.com/400x200?text=No+Image";
@@ -328,7 +328,10 @@ export default function AllJobPostingsPage() {
                                 d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                               />
                             </svg>
-                            {formatExperience(job.experienceMin, job.experienceMax)}
+                            {formatExperience(
+                              job.experienceMin,
+                              job.experienceMax,
+                            )}
                           </span>
                           {getStatusBadge(job.status)}
                         </div>
