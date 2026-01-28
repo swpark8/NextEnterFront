@@ -7,7 +7,10 @@ import {
   saveTalent,
   unsaveTalent,
 } from "../../api/talent";
-import { createInterviewOffer } from "../../api/interviewOffer";
+import {
+  createInterviewOffer,
+  getOfferedJobIds,
+} from "../../api/interviewOffer";
 import { getCompanyJobPostings, JobPostingListResponse } from "../../api/job";
 import TalentResumeDetailPage from "./TalentResumeDetailPage";
 import JobSelectionModal from "./components/JobSelectionModal";
@@ -37,6 +40,7 @@ export default function TalentSearchPage() {
   const [showJobModal, setShowJobModal] = useState(false);
   const [pendingTalent, setPendingTalent] =
     useState<TalentSearchResponse | null>(null);
+  const [offeredJobIds, setOfferedJobIds] = useState<number[]>([]); // ✅ 제안한 공고 ID 목록
 
   // ✅ 상세보기 상태 추가
   const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
@@ -202,6 +206,15 @@ export default function TalentSearchPage() {
       return;
     }
 
+    // ✅ 해당 인재에게 제안한 공고 목록 조회
+    try {
+      const offeredJobs = await getOfferedJobIds(user.userId, talent.userId);
+      setOfferedJobIds(offeredJobs);
+    } catch (error) {
+      console.error("제안한 공고 조회 실패:", error);
+      setOfferedJobIds([]);
+    }
+
     // 모달 열기
     setPendingTalent(talent);
     setShowJobModal(true);
@@ -211,21 +224,27 @@ export default function TalentSearchPage() {
   const handleJobSelect = async (jobId: number) => {
     if (!user?.userId || !pendingTalent) return;
 
-    setShowJobModal(false);
-
     try {
-      // ✅ 새 API 사용
+      // ✅ 스카웃 제안 전송
       await createInterviewOffer(user.userId, {
         userId: pendingTalent.userId,
         jobId: jobId,
       });
+
+      // ✅ 제안한 공고 목록에 추가 (로컬 업데이트)
+      setOfferedJobIds((prev) => [...prev, jobId]);
+
       alert("면접 요청이 전송되었습니다!");
+
+      // ✅ 모달 닫기
+      setShowJobModal(false);
+      setPendingTalent(null);
+
+      // 목록 새로고침
       loadTalents();
     } catch (error: any) {
       console.error("면접 요청 오류:", error);
       alert(error.response?.data?.message || "면접 요청에 실패했습니다.");
-    } finally {
-      setPendingTalent(null);
     }
   };
 
@@ -551,6 +570,7 @@ export default function TalentSearchPage() {
         }))}
         onSelectJob={handleJobSelect}
         talentName={pendingTalent?.name || ""}
+        offeredJobIds={offeredJobIds}
       />
     </div>
   );

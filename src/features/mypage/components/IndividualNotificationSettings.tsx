@@ -1,5 +1,9 @@
-import { useState, useEffect } from 'react';
-import { getNotificationSettings, updateNotificationSettings, NotificationSettings as NotificationSettingsType } from '../../../api/notification';
+import { useState, useEffect } from "react";
+import {
+  getNotificationSettings,
+  updateNotificationSettings,
+  NotificationSettings as NotificationSettingsType,
+} from "../../../api/notification";
 
 interface IndividualNotificationSettingsProps {
   userId: number;
@@ -8,9 +12,11 @@ interface IndividualNotificationSettingsProps {
 
 export default function IndividualNotificationSettings({
   userId,
-  onSave
+  onSave,
 }: IndividualNotificationSettingsProps) {
-  const [settings, setSettings] = useState<NotificationSettingsType | null>(null);
+  const [settings, setSettings] = useState<NotificationSettingsType | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -21,15 +27,15 @@ export default function IndividualNotificationSettings({
   const loadSettings = async () => {
     try {
       setLoading(true);
-      const data = await getNotificationSettings('individual', userId);
+      const data = await getNotificationSettings("individual", userId);
       setSettings(data);
     } catch (error) {
-      console.error('알림 설정 로드 실패:', error);
+      console.error("알림 설정 로드 실패:", error);
       // 기본값 설정
       setSettings({
         id: 0,
         userId: userId,
-        userType: 'INDIVIDUAL',
+        userType: "INDIVIDUAL",
         newApplicationNotification: false,
         deadlineNotification: false,
         interviewResponseNotification: false,
@@ -47,14 +53,14 @@ export default function IndividualNotificationSettings({
 
     try {
       setSaving(true);
-      await updateNotificationSettings('individual', userId, settings);
-      alert('알림 설정이 저장되었습니다.');
+      await updateNotificationSettings("individual", userId, settings);
+      alert("알림 설정이 저장되었습니다.");
       if (onSave) {
         onSave();
       }
     } catch (error) {
-      console.error('알림 설정 저장 실패:', error);
-      alert('알림 설정 저장에 실패했습니다.');
+      console.error("알림 설정 저장 실패:", error);
+      alert("알림 설정 저장에 실패했습니다.");
     } finally {
       setSaving(false);
     }
@@ -100,7 +106,12 @@ export default function IndividualNotificationSettings({
               <input
                 type="checkbox"
                 checked={settings.positionOfferNotification}
-                onChange={(e) => setSettings({ ...settings, positionOfferNotification: e.target.checked })}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    positionOfferNotification: e.target.checked,
+                  })
+                }
                 className="sr-only peer"
               />
               <div className="w-14 h-8 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-purple-600"></div>
@@ -109,16 +120,21 @@ export default function IndividualNotificationSettings({
 
           <div className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg">
             <div>
-              <p className="font-medium text-gray-900">받은 면접 제안 알림</p>
+              <p className="font-medium text-gray-900">받은 스카웃 제안 알림</p>
               <p className="text-sm text-gray-500">
-                기업으로부터 면접 제안을 받을 때 알림을 받습니다
+                기업으로부터 스카웃 제안을 받을 때 알림을 받습니다
               </p>
             </div>
             <label className="relative inline-block h-8 w-14">
               <input
                 type="checkbox"
                 checked={settings.interviewOfferNotification}
-                onChange={(e) => setSettings({ ...settings, interviewOfferNotification: e.target.checked })}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    interviewOfferNotification: e.target.checked,
+                  })
+                }
                 className="sr-only peer"
               />
               <div className="w-14 h-8 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-purple-600"></div>
@@ -129,14 +145,20 @@ export default function IndividualNotificationSettings({
             <div>
               <p className="font-medium text-gray-900">지원 상태 변경 알림</p>
               <p className="text-sm text-gray-500">
-                지원한 공고의 상태가 변경될 때 알림을 받습니다 (서류합격, 면접요청 등)
+                지원한 공고의 상태가 변경될 때 알림을 받습니다 (서류합격,
+                면접요청 등)
               </p>
             </div>
             <label className="relative inline-block h-8 w-14">
               <input
                 type="checkbox"
                 checked={settings.applicationStatusNotification}
-                onChange={(e) => setSettings({ ...settings, applicationStatusNotification: e.target.checked })}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    applicationStatusNotification: e.target.checked,
+                  })
+                }
                 className="sr-only peer"
               />
               <div className="w-14 h-8 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-purple-600"></div>
@@ -152,7 +174,7 @@ export default function IndividualNotificationSettings({
           disabled={saving}
           className="px-8 py-3 text-lg font-bold text-white transition bg-purple-600 rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
-          {saving ? '저장 중...' : '설정 저장'}
+          {saving ? "저장 중..." : "설정 저장"}
         </button>
       </div>
     </div>

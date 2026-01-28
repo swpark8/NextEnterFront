@@ -26,7 +26,6 @@ import ResumeFormPage from "./features/resume/ResumeFormPage";
 import CoverLetterPage from "./features/coverletter/CoverLetterPage";
 import AIRecommendationPage from "./features/ai-recommendation/AIRecommendationPage";
 import MatchingPage from "./features/matching/MatchingPage";
-import OfferPage from "./features/offer/OfferPage";
 import InterviewOfferPage from "./features/offer/InterViewOfferPage";
 import ApplicationStatusPage from "./features/application-status/ApplicationStatusPage";
 import ScrapStatusPage from "./features/scrap-status/ScrapStatusPage";
@@ -192,14 +191,6 @@ function App() {
               element={
                 <ProtectedRoute allowedUserType="personal">
                   <MatchingPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="offers"
-              element={
-                <ProtectedRoute allowedUserType="personal">
-                  <OfferPage />
                 </ProtectedRoute>
               }
             />

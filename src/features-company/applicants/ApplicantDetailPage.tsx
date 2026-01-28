@@ -114,12 +114,12 @@ export default function ApplicantDetailPage() {
     }
   };
 
-  // ✅ 면접 제안 (새 API 사용)
+  // ✅ 스카웃 제안 (새 API 사용)
   const handleInterviewOffer = async () => {
     if (!applicant || !user?.companyId) return;
 
     if (
-      window.confirm(`${applicant.userName}님에게 면접 제안을 하시겠습니까?`)
+      window.confirm(`${applicant.userName}님에게 스카웃 제안을 하시겠습니까?`)
     ) {
       try {
         await createInterviewOffer(user.companyId, {
@@ -129,11 +129,11 @@ export default function ApplicantDetailPage() {
         });
 
         alert(
-          "면접 제안이 성공적으로 전송되었습니다.\n개인 회원은 '받은 제안' 페이지에서 확인할 수 있습니다.",
+          "스카웃 제안이 성공적으로 전송되었습니다.\n개인 회원은 '받은 제안' 페이지에서 확인할 수 있습니다.",
         );
       } catch (error: any) {
-        console.error("면접 제안 실패:", error);
-        alert(error.response?.data?.message || "면접 제안에 실패했습니다.");
+        console.error("스카웃 제안 실패:", error);
+        alert(error.response?.data?.message || "스카웃 제안에 실패했습니다.");
       }
     }
   };
@@ -495,7 +495,7 @@ export default function ApplicantDetailPage() {
                     : "bg-blue-600 text-white hover:bg-blue-700"
                 }`}
               >
-                면접 제안
+                스카웃 제안
               </button>
               <button
                 onClick={handleCompatibilityClick}

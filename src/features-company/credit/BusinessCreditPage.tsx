@@ -161,7 +161,7 @@ export default function BusinessCreditPage() {
             <div className="flex items-center justify-between">
               <div className="text-white">
                 <div className="mb-2 text-xl font-semibold">
-                {user?.name || "admin"}님의 현재 사용 가능 크레딧
+                  {user?.name || "admin"}님의 현재 사용 가능 크레딧
                 </div>
               </div>
               <div className="flex items-center px-10 py-5 space-x-3 bg-white rounded-full shadow-lg">
@@ -312,7 +312,7 @@ export default function BusinessCreditPage() {
               <ol className="space-y-3 text-base text-gray-700 list-decimal list-inside">
                 <li>인재 검색 및 이력서 열람</li>
                 <li>채용 공고 프리미엄 노출</li>
-                <li>지원자에게 면접 제안 발송</li>
+                <li>지원자에게 스카웃 제안 발송</li>
               </ol>
             </div>
 

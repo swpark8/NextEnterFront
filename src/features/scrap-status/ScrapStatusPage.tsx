@@ -13,7 +13,7 @@ export default function ScrapStatusPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const menuFromUrl = searchParams.get("menu") || "mypage-sub-4";
+  const menuFromUrl = searchParams.get("menu") || "mypage-sub-5";
 
   const { activeMenu, handleMenuClick } = usePageNavigation(
     "mypage",

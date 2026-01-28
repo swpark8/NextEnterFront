@@ -4,7 +4,11 @@ import { useAuth } from "../../context/AuthContext";
 import CompanyJobPostingCard, {
   JobPostingData,
 } from "../components/CompanyJobPostingCard";
-import { getCompanyJobPostings, getJobPostings, JobPostingListResponse } from "../../api/job";
+import {
+  getCompanyJobPostings,
+  getJobPostings,
+  JobPostingListResponse,
+} from "../../api/job";
 
 export default function CompanyHomePage() {
   const navigate = useNavigate();
@@ -46,7 +50,7 @@ export default function CompanyHomePage() {
       icon: "📂",
       title: "지원자 관리",
       description: "지원 현황 및 분석",
-      features: ["지원자 목록", "적합도 분석", "면접 제안"],
+      features: ["지원자 목록", "적합도 분석", "스카웃 제안"],
       path: "/company/applicants",
     },
     {
@@ -78,15 +82,15 @@ export default function CompanyHomePage() {
       try {
         setLoading(true);
         setError(null);
-        
+
         console.log("🔄 API 호출 시작: companyId =", user.companyId);
-        
+
         // ✅ /api/jobs/list를 사용하고 클라이언트에서 필터링
         const response = await getJobPostings({ size: 1000 }); // 전체 조회
         const myJobs = response.content.filter(
-          (job: JobPostingListResponse) => job.companyId === user.companyId
+          (job: JobPostingListResponse) => job.companyId === user.companyId,
         );
-        
+
         console.log("✅ API 응답 받음:", myJobs);
         setJobPostings(myJobs);
       } catch (err: any) {
@@ -154,15 +158,11 @@ export default function CompanyHomePage() {
         {/* 등록된 공고 섹션 */}
         <div>
           <h2 className="mb-6 text-xl font-bold">등록된 공고</h2>
-          
+
           {loading ? (
-            <div className="py-12 text-center text-gray-500">
-              로딩 중...
-            </div>
+            <div className="py-12 text-center text-gray-500">로딩 중...</div>
           ) : error ? (
-            <div className="py-12 text-center text-red-500">
-              {error}
-            </div>
+            <div className="py-12 text-center text-red-500">{error}</div>
           ) : jobPostings.length === 0 ? (
             <div className="py-12 text-center text-gray-500">
               등록된 공고가 없습니다.

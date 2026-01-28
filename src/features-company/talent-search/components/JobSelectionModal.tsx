@@ -10,6 +10,7 @@ interface JobSelectionModalProps {
   }>;
   onSelectJob: (jobId: number) => void;
   talentName: string;
+  offeredJobIds: number[]; // ✅ 이미 제안한 공고 ID 목록
 }
 
 export default function JobSelectionModal({
@@ -18,24 +19,26 @@ export default function JobSelectionModal({
   jobs,
   onSelectJob,
   talentName,
+  offeredJobIds,
 }: JobSelectionModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
       onClick={onClose}
     >
-      <div 
+      <div
         className="w-full max-w-2xl p-6 bg-white rounded-2xl shadow-2xl max-h-[80vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-900">
-            면접 제안할 공고 선택
+            스카웃 제안할 공고 선택
           </h2>
           <p className="mt-2 text-gray-600">
-            <span className="font-semibold text-purple-600">{talentName}</span>님에게 면접을 제안할 공고를 선택하세요
+            <span className="font-semibold text-purple-600">{talentName}</span>
+            님에게 면접을 제안할 공고를 선택하세요
           </p>
         </div>
 
@@ -49,32 +52,68 @@ export default function JobSelectionModal({
           </div>
         ) : (
           <div className="space-y-3">
-            {jobs.map((job) => (
-              <button
-                key={job.jobId}
-                onClick={() => onSelectJob(job.jobId)}
-                className="w-full p-4 text-left transition border-2 border-gray-200 rounded-xl hover:border-purple-500 hover:shadow-md"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="mb-2 text-lg font-bold text-gray-900">
-                      {job.title}
-                    </h3>
-                    <div className="flex items-center gap-3 text-sm text-gray-600">
-                      <span className="px-2 py-1 text-xs font-medium text-purple-600 bg-purple-100 rounded">
-                        {job.jobCategory}
-                      </span>
-                      <span>마감: {job.deadline}</span>
+            {jobs.map((job) => {
+              const isOffered = offeredJobIds.includes(job.jobId); // ✅ 이미 제안한 공고인지 확인
+
+              return (
+                <button
+                  key={job.jobId}
+                  onClick={() => !isOffered && onSelectJob(job.jobId)} // ✅ 제안한 공고는 클릭 불가
+                  disabled={isOffered} // ✅ disabled 속성 추가
+                  className={`w-full p-4 text-left transition border-2 rounded-xl ${
+                    isOffered
+                      ? "bg-gray-100 border-gray-300 cursor-not-allowed opacity-60" // ✅ 회색 비활성화 스타일
+                      : "border-gray-200 hover:border-purple-500 hover:shadow-md cursor-pointer" // 일반 스타일
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3
+                          className={`text-lg font-bold ${
+                            isOffered ? "text-gray-500" : "text-gray-900"
+                          }`}
+                        >
+                          {job.title}
+                        </h3>
+                        {isOffered && (
+                          <span className="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-200 rounded-full">
+                            이미 제안함
+                          </span>
+                        )}
+                      </div>
+                      <div
+                        className={`flex items-center gap-3 text-sm ${
+                          isOffered ? "text-gray-400" : "text-gray-600"
+                        }`}
+                      >
+                        <span
+                          className={`px-2 py-1 text-xs font-medium rounded ${
+                            isOffered
+                              ? "bg-gray-200 text-gray-500"
+                              : "bg-purple-100 text-purple-600"
+                          }`}
+                        >
+                          {job.jobCategory}
+                        </span>
+                        <span>마감: {job.deadline}</span>
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      {isOffered ? (
+                        <span className="px-3 py-1 text-sm font-medium text-gray-500 bg-gray-200 rounded-full">
+                          제안 완료
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1 text-sm font-medium text-green-600 bg-green-100 rounded-full">
+                          모집중
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <div className="ml-4">
-                    <span className="px-3 py-1 text-sm font-medium text-green-600 bg-green-100 rounded-full">
-                      모집중
-                    </span>
-                  </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         )}
 

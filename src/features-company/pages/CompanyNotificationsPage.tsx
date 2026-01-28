@@ -6,11 +6,11 @@ import {
   markAsRead,
   markAllAsRead,
   getUnreadNotifications,
-  getUnreadCount 
-} from '../../api/notification';
-import { formatDistanceToNow } from 'date-fns';
-import { ko } from 'date-fns/locale';
-import { useNotificationWebSocket } from '../../hooks/useNotificationWebSocket';
+  getUnreadCount,
+} from "../../api/notification";
+import { formatDistanceToNow } from "date-fns";
+import { ko } from "date-fns/locale";
+import { useNotificationWebSocket } from "../../hooks/useNotificationWebSocket";
 
 export default function CompanyNotificationsPage() {
   const { user, isAuthenticated } = useAuth();
@@ -22,20 +22,20 @@ export default function CompanyNotificationsPage() {
   // 웹소켓 연결하여 실시간 알림 수신
   useNotificationWebSocket({
     userId: user?.userId ?? null,
-    userType: 'company',
+    userType: "company",
     onNotificationReceived: (notification) => {
-      console.log('기업 새 알림 수신:', notification);
-      setNotifications(prev => [notification, ...prev]);
-      setUnreadCount(prev => prev + 1);
-      
-      if ('Notification' in window && Notification.permission === 'granted') {
+      console.log("기업 새 알림 수신:", notification);
+      setNotifications((prev) => [notification, ...prev]);
+      setUnreadCount((prev) => prev + 1);
+
+      if ("Notification" in window && Notification.permission === "granted") {
         new Notification(notification.title, {
           body: notification.content,
-          icon: '/favicon.ico',
-          tag: `notification-${notification.id}`
+          icon: "/favicon.ico",
+          tag: `notification-${notification.id}`,
         });
       }
-    }
+    },
   });
 
   useEffect(() => {
@@ -44,10 +44,10 @@ export default function CompanyNotificationsPage() {
       return;
     }
     loadNotifications();
-    
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission().then(permission => {
-        console.log('알림 권한:', permission);
+
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission().then((permission) => {
+        console.log("알림 권한:", permission);
       });
     }
   }, [isAuthenticated, navigate]);
@@ -60,13 +60,13 @@ export default function CompanyNotificationsPage() {
 
     setLoading(true);
     try {
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout')), 5000)
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Timeout")), 5000),
       );
 
       const dataPromise = Promise.all([
-        getUnreadNotifications('company', user.userId),
-        getUnreadCount('company', user.userId)
+        getUnreadNotifications("company", user.userId),
+        getUnreadCount("company", user.userId),
       ]);
 
       const [unreadList, count] = (await Promise.race([
@@ -78,7 +78,6 @@ export default function CompanyNotificationsPage() {
       setUnreadCount(count);
     } catch (error) {
       console.error("알림 로드 실패:", error);
-      // 에러 발생 시 빈 배열로 설정 (백엔드 서버가 없어도 UI는 보여줌)
       setNotifications([]);
       setUnreadCount(0);
     } finally {
@@ -98,7 +97,6 @@ export default function CompanyNotificationsPage() {
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
       console.error("알림 읽음 처리 실패:", error);
-      // 에러가 나도 UI에서는 제거 (사용자 경험 개선)
       setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
       setUnreadCount((prev) => Math.max(0, prev - 1));
     }
@@ -121,7 +119,6 @@ export default function CompanyNotificationsPage() {
       setUnreadCount(0);
     } catch (error) {
       console.error("모든 알림 읽음 처리 실패:", error);
-      // 에러가 나도 UI에서는 제거
       setNotifications([]);
       setUnreadCount(0);
     }
@@ -222,8 +219,7 @@ export default function CompanyNotificationsPage() {
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className="p-6 transition cursor-pointer hover:bg-gray-50 group"
-                  onClick={() => handleMarkAsRead(notification.id)}
+                  className="p-6 transition hover:bg-gray-50 group"
                 >
                   <div className="flex items-start space-x-4">
                     <span className="flex-shrink-0 text-3xl">
@@ -234,12 +230,12 @@ export default function CompanyNotificationsPage() {
                         <h3 className="text-base font-semibold text-gray-900">
                           {notification.title}
                         </h3>
-                        <button 
+                        <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleMarkAsRead(notification.id);
                           }}
-                          className="text-sm text-purple-600 hover:text-purple-800 opacity-0 group-hover:opacity-100 transition whitespace-nowrap ml-4"
+                          className="ml-4 text-sm text-purple-600 transition opacity-0 hover:text-purple-800 group-hover:opacity-100 whitespace-nowrap"
                         >
                           읽음 표시
                         </button>
