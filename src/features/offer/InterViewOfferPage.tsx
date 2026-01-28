@@ -23,8 +23,8 @@ export default function InterviewOfferPage({
   const [searchParams, setSearchParams] = useSearchParams();
 
   const { activeMenu, handleMenuClick } = usePageNavigation(
-    "offer",
-    initialMenu || "offer-sub-2",
+    "mypage",
+    initialMenu || "mypage-sub-4",
     onNavigate,
   );
 
@@ -35,7 +35,7 @@ export default function InterviewOfferPage({
   // ✅ [수정 2] 필터 상태 추가 (기본값: 전체)
   const [filterStatus, setFilterStatus] = useState("ALL");
 
-  // ✅ 면접 제안 로드 (전체 내역 가져오기)
+  // ✅ 스카웃 제안 로드 (전체 내역 가져오기)
   useEffect(() => {
     if (user?.userId) {
       loadOffers();
@@ -50,9 +50,9 @@ export default function InterviewOfferPage({
       // ✅ [수정 3] getMyOffers 사용하여 모든 상태(수락/거절 포함)의 제안을 가져옴
       const data = await getMyOffers(user.userId);
       setOffers(data);
-      console.log("면접 제안 로드 성공:", data);
+      console.log("스카웃 제안 로드 성공:", data);
     } catch (error) {
-      console.error("면접 제안 로드 실패:", error);
+      console.error("스카웃 제안 로드 실패:", error);
     } finally {
       setIsLoading(false);
     }
@@ -84,10 +84,10 @@ export default function InterviewOfferPage({
 
   const handleAccept = async (offerId: number) => {
     if (!user?.userId) return;
-    if (window.confirm("면접 제안을 수락하시겠습니까?")) {
+    if (window.confirm("스카웃 제안을 수락하시겠습니까?")) {
       try {
         await acceptOffer(offerId, user.userId);
-        alert("면접 제안을 수락했습니다.");
+        alert("스카웃 제안을 수락했습니다.");
         loadOffers();
         handleBackToList();
       } catch (error) {
@@ -99,10 +99,10 @@ export default function InterviewOfferPage({
 
   const handleReject = async (offerId: number) => {
     if (!user?.userId) return;
-    if (window.confirm("면접 제안을 거절하시겠습니까?")) {
+    if (window.confirm("스카웃 제안을 거절하시겠습니까?")) {
       try {
         await rejectOffer(offerId, user.userId);
-        alert("면접 제안을 거절했습니다.");
+        alert("스카웃 제안을 거절했습니다.");
         loadOffers();
         handleBackToList();
       } catch (error) {
@@ -157,9 +157,7 @@ export default function InterviewOfferPage({
           <div className="mb-6">
             {/* ✅ [수정 5] 헤더에 드롭다운 필터 추가 */}
             <div className="flex items-center justify-between pb-2 mb-4 border-b-2 border-blue-600">
-              <h3 className="text-lg font-bold text-blue-600">
-                받은 면접 제안
-              </h3>
+              <h3 className="text-lg font-bold text-blue-600">스카웃 제안</h3>
 
               {/* 목록 화면일 때만 필터 보여주기 */}
               {!selectedOfferId && (
@@ -202,7 +200,7 @@ export default function InterviewOfferPage({
                 <div className="mb-8 space-y-6">
                   <div className="p-6 border border-blue-200 bg-blue-50 rounded-xl">
                     <h3 className="mb-2 font-bold text-gray-900">
-                      💼 면접 제안
+                      💼 스카웃 제안
                     </h3>
                     <p className="leading-relaxed text-gray-700">
                       {selectedOffer.companyName}에서 귀하에게 면접 기회를
@@ -287,7 +285,7 @@ export default function InterviewOfferPage({
                     {/* ✅ [수정 6] filteredOffers 사용 */}
                     {filteredOffers.length === 0 ? (
                       <div className="py-12 text-center text-gray-500 border-2 border-dashed rounded-xl">
-                        해당하는 면접 제안이 없습니다.
+                        해당하는 스카웃 제안이 없습니다.
                       </div>
                     ) : (
                       filteredOffers.map((offer) => (

@@ -26,7 +26,6 @@ import ResumeFormPage from "./features/resume/ResumeFormPage";
 import CoverLetterPage from "./features/coverletter/CoverLetterPage";
 import AIRecommendationPage from "./features/ai-recommendation/AIRecommendationPage";
 import MatchingPage from "./features/matching/MatchingPage";
-import OfferPage from "./features/offer/OfferPage";
 import InterviewOfferPage from "./features/offer/InterViewOfferPage";
 import ApplicationStatusPage from "./features/application-status/ApplicationStatusPage";
 import ScrapStatusPage from "./features/scrap-status/ScrapStatusPage";
@@ -60,14 +59,14 @@ import ScrollToTop from "./components/ScrollToTop";
 function TalentResumeDetailPageWrapper() {
   const { resumeId } = useParams();
   const navigate = useNavigate();
-  
+
   if (!resumeId) {
     return <Navigate to="/company/talent-search" replace />;
   }
-  
+
   return (
-    <TalentResumeDetailPage 
-      resumeId={parseInt(resumeId)} 
+    <TalentResumeDetailPage
+      resumeId={parseInt(resumeId)}
       onBack={() => navigate("/company/talent-search")}
     />
   );
@@ -183,7 +182,7 @@ function App() {
               path="resume/edit/:resumeId"
               element={
                 <ProtectedRoute allowedUserType="personal">
-                  <ResumeFormPage onBack={() => {}} />
+                  <ResumeFormPage onBack={() => { }} />
                 </ProtectedRoute>
               }
             />
@@ -212,15 +211,7 @@ function App() {
               }
             />
             <Route
-              path="offers"
-              element={
-                <ProtectedRoute allowedUserType="personal">
-                  <OfferPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="interview-offers"
+              path="offers/interview"
               element={
                 <ProtectedRoute allowedUserType="personal">
                   <InterviewOfferPage />

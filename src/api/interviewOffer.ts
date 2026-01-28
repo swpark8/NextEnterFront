@@ -1,6 +1,6 @@
 import api from "./axios";
 
-// 면접 제안 응답 타입
+// 스카웃 제안 응답 타입
 export interface InterviewOfferResponse {
   offerId: number;
   userId: number;
@@ -26,7 +26,7 @@ export interface InterviewOfferResponse {
   updatedAt: string;
 }
 
-// 면접 제안 생성 요청 타입
+// 스카웃 제안 생성 요청 타입
 export interface InterviewOfferRequest {
   userId: number;
   jobId: number;
@@ -34,11 +34,11 @@ export interface InterviewOfferRequest {
 }
 
 /**
- * 기업이 면접 제안 생성
+ * 기업이 스카웃 제안 생성
  */
 export const createInterviewOffer = async (
   companyId: number,
-  request: InterviewOfferRequest
+  request: InterviewOfferRequest,
 ): Promise<InterviewOfferResponse> => {
   const response = await api.post("/api/interview-offers", request, {
     headers: { companyId },
@@ -47,10 +47,10 @@ export const createInterviewOffer = async (
 };
 
 /**
- * 사용자가 받은 면접 제안 목록 (OFFERED 상태만)
+ * 사용자가 받은 스카웃 제안 목록 (OFFERED 상태만)
  */
 export const getReceivedOffers = async (
-  userId: number
+  userId: number,
 ): Promise<InterviewOfferResponse[]> => {
   const response = await api.get("/api/interview-offers/received", {
     headers: { userId },
@@ -59,10 +59,10 @@ export const getReceivedOffers = async (
 };
 
 /**
- * 사용자의 모든 면접 제안 조회
+ * 사용자의 모든 스카웃 제안 조회
  */
 export const getMyOffers = async (
-  userId: number
+  userId: number,
 ): Promise<InterviewOfferResponse[]> => {
   const response = await api.get("/api/interview-offers/my", {
     headers: { userId },
@@ -71,11 +71,11 @@ export const getMyOffers = async (
 };
 
 /**
- * 기업의 면접 제안 목록
+ * 기업의 스카웃 제안 목록
  */
 export const getCompanyOffers = async (
   companyId: number,
-  jobId?: number
+  jobId?: number,
 ): Promise<InterviewOfferResponse[]> => {
   const response = await api.get("/api/interview-offers/company", {
     params: { jobId },
@@ -85,35 +85,49 @@ export const getCompanyOffers = async (
 };
 
 /**
- * 면접 제안 수락
+ * 스카웃 제안 수락
  */
 export const acceptOffer = async (
   offerId: number,
-  userId: number
+  userId: number,
 ): Promise<InterviewOfferResponse> => {
   const response = await api.post(
     `/api/interview-offers/${offerId}/accept`,
     null,
     {
       headers: { userId },
-    }
+    },
   );
   return response.data;
 };
 
 /**
- * 면접 제안 거절
+ * 스카웃 제안 거절
  */
 export const rejectOffer = async (
   offerId: number,
-  userId: number
+  userId: number,
 ): Promise<InterviewOfferResponse> => {
   const response = await api.post(
     `/api/interview-offers/${offerId}/reject`,
     null,
     {
       headers: { userId },
-    }
+    },
   );
+  return response.data;
+};
+
+/**
+ * 특정 인재에게 제안한 공고 ID 목록
+ */
+export const getOfferedJobIds = async (
+  companyId: number,
+  userId: number,
+): Promise<number[]> => {
+  const response = await api.get("/api/interview-offers/company/offered-jobs", {
+    params: { userId },
+    headers: { companyId },
+  });
   return response.data;
 };

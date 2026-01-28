@@ -36,21 +36,26 @@ export default function Header() {
   useEffect(() => {
     // ✅ 인증 상태 로딩 중이면 대기
     if (isLoading) {
-      console.log('⏳ AuthContext 로딩 중...');
+      console.log("⏳ AuthContext 로딩 중...");
       return;
     }
-    
-    console.log('Header useEffect 실행 - isAuthenticated:', isAuthenticated, 'user:', user);
-    console.log('user.userId:', user?.userId); // ✅ 디버깅용
-    
+
+    console.log(
+      "Header useEffect 실행 - isAuthenticated:",
+      isAuthenticated,
+      "user:",
+      user,
+    );
+    console.log("user.userId:", user?.userId); // ✅ 디버깅용
+
     const fetchUnreadCount = async () => {
       if (isAuthenticated && user?.userId) {
         try {
-          const count = await getUnreadCount('individual', user.userId);
-          console.log('알림 개수 로드 성공:', count);
+          const count = await getUnreadCount("individual", user.userId);
+          console.log("알림 개수 로드 성공:", count);
           setUnreadCount(count);
         } catch (error) {
-          console.error('알림 개수 로드 실패:', error);
+          console.error("알림 개수 로드 실패:", error);
           setUnreadCount(0);
         }
       } else {
@@ -59,46 +64,55 @@ export default function Header() {
     };
 
     fetchUnreadCount();
-    
+
     // 30초마다 알림 개수 업데이트 (백업용)
     const interval = setInterval(fetchUnreadCount, 30000);
-    
+
     // ✅ 알림 읽음 이벤트 리스너 추가
     const handleNotificationRead = () => {
-      console.log('🔔 알림 읽음 이벤트 감지 - 알림 개수 다시 로드');
+      console.log("🔔 알림 읽음 이벤트 감지 - 알림 개수 다시 로드");
       fetchUnreadCount();
     };
-    window.addEventListener('notification-read', handleNotificationRead);
-    
+    window.addEventListener("notification-read", handleNotificationRead);
+
     // 웹소켓 연결
     if (isAuthenticated && user?.userId) {
-      console.log('✅ 웹소켓 연결 조건 충족 - userId:', user.userId);
-      websocketService.connect(user.userId, 'individual', handleNewNotification);
+      console.log("✅ 웹소켓 연결 조건 충족 - userId:", user.userId);
+      websocketService.connect(
+        user.userId,
+        "individual",
+        handleNewNotification,
+      );
     } else {
-      console.log('❌ 웹소켓 연결 조건 미충족 - isAuthenticated:', isAuthenticated, 'userId:', user?.userId);
+      console.log(
+        "❌ 웹소켓 연결 조건 미충족 - isAuthenticated:",
+        isAuthenticated,
+        "userId:",
+        user?.userId,
+      );
     }
-    
+
     return () => {
       clearInterval(interval);
-      window.removeEventListener('notification-read', handleNotificationRead);
+      window.removeEventListener("notification-read", handleNotificationRead);
       // 컴포넌트 언마운트 시 웹소켓 연결 해제
-      console.log('Header 언마운트 - 웹소켓 연결 해제');
+      console.log("Header 언마운트 - 웹소켓 연결 해제");
       websocketService.disconnect();
     };
   }, [isAuthenticated, user, isLoading]); // ✅ isLoading 의존성 추가
 
   // 새 알림 수신 시 처리
   const handleNewNotification = (notification: NotificationMessage) => {
-    console.log('새 알림 도착!', notification);
+    console.log("새 알림 도착!", notification);
     // 알림 개수 증가
-    setUnreadCount(prev => prev + 1);
-    
+    setUnreadCount((prev) => prev + 1);
+
     // 브라우저 알림 표시 (권한이 있는 경우)
-    if ('Notification' in window && Notification.permission === 'granted') {
+    if ("Notification" in window && Notification.permission === "granted") {
       new Notification(notification.title, {
         body: notification.content,
-        icon: '/favicon.ico',
-        tag: `notification-${notification.id}`
+        icon: "/favicon.ico",
+        tag: `notification-${notification.id}`,
       });
     }
   };
@@ -198,10 +212,12 @@ export default function Header() {
       "offer-sub-2": "/user/offers/interview",
       "credit-sub-2": "/user/credit/charge",
       "mypage-sub-2": "/user/profile",
-      "mypage-sub-3": "/user/application-status", // 지원 현황
-      "mypage-sub-4": "/user/scrap-status", // 스크랩 현황
-    };
+      "mypage-sub-3": "/user/application-status",
 
+      // ✅ [수정] 여기도 똑같이 변경
+      "mypage-sub-4": "/user/offers/interview", // 스카웃 제안
+      "mypage-sub-5": "/user/scrap-status", // 스크랩 현황
+    };
     const targetMenuId = menuId || defaultSubMenus[tabId];
     const targetPath = separateRoutes[targetMenuId] || baseRoutes[tabId];
 
@@ -230,7 +246,6 @@ export default function Header() {
     { id: "resume", label: "이력서" },
     { id: "matching", label: "매칭분석" },
     { id: "interview", label: "모의면접" },
-    { id: "offer", label: "받은 제안" },
     { id: "mypage", label: "마이페이지" },
     { id: "credit", label: "크레딧" },
   ];
@@ -298,9 +313,9 @@ export default function Header() {
                   <button
                     onClick={() => {
                       if (checkNavigationBlocked()) return;
-                      navigate('/user/notifications');
+                      navigate("/user/notifications");
                     }}
-                    className="relative p-2 text-gray-700 transition hover:text-blue-600 hover:bg-gray-100 rounded-full"
+                    className="relative p-2 text-gray-700 transition rounded-full hover:text-blue-600 hover:bg-gray-100"
                   >
                     <svg
                       className="w-6 h-6"
@@ -321,71 +336,71 @@ export default function Header() {
                     )}
                   </button>
                   <div className="relative">
-                  <button
-                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center px-4 py-2 space-x-2 text-gray-700 transition hover:text-blue-600"
-                  >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                    <button
+                      onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                      className="flex items-center px-4 py-2 space-x-2 text-gray-700 transition hover:text-blue-600"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                      />
-                    </svg>
-                    <span className="font-medium">{user?.name}님</span>
-                    <svg
-                      className={`w-4 h-4 transition-transform ${
-                        isUserMenuOpen ? "rotate-180" : ""
-                      }`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </button>
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                        />
+                      </svg>
+                      <span className="font-medium">{user?.name}님</span>
+                      <svg
+                        className={`w-4 h-4 transition-transform ${
+                          isUserMenuOpen ? "rotate-180" : ""
+                        }`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </button>
 
-                  {isUserMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[9999]">
-                      <button
-                        onClick={() => {
-                          setIsUserMenuOpen(false);
-                          if (!checkNavigationBlocked())
-                            navigate("/user/profile");
-                        }}
-                        className="w-full px-4 py-2 text-left text-gray-700 transition hover:bg-gray-50"
-                      >
-                        내 정보
-                      </button>
-                      <button
-                        onClick={() => {
-                          setIsUserMenuOpen(false);
-                          if (!checkNavigationBlocked())
-                            navigate("/user/mypage?menu=mypage-home");
-                        }}
-                        className="w-full px-4 py-2 text-left text-gray-700 transition hover:bg-gray-50"
-                      >
-                        마이페이지
-                      </button>
-                      <button
-                        onClick={handleLogout}
-                        className="w-full px-4 py-2 text-left text-red-600 transition hover:bg-gray-50"
-                      >
-                        로그아웃
-                      </button>
-                    </div>
-                  )}
+                    {isUserMenuOpen && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[9999]">
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            if (!checkNavigationBlocked())
+                              navigate("/user/profile");
+                          }}
+                          className="w-full px-4 py-2 text-left text-gray-700 transition hover:bg-gray-50"
+                        >
+                          내 정보
+                        </button>
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            if (!checkNavigationBlocked())
+                              navigate("/user/mypage?menu=mypage-home");
+                          }}
+                          className="w-full px-4 py-2 text-left text-gray-700 transition hover:bg-gray-50"
+                        >
+                          마이페이지
+                        </button>
+                        <button
+                          onClick={handleLogout}
+                          className="w-full px-4 py-2 text-left text-red-600 transition hover:bg-gray-50"
+                        >
+                          로그아웃
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </>
               ) : (

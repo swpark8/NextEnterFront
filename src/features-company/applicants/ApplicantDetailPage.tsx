@@ -49,7 +49,7 @@ export default function ApplicantDetailPage() {
         console.error("지원자 상세 조회 실패:", error);
         alert(
           error.response?.data?.message ||
-            "지원자 정보를 불러오는데 실패했습니다.",
+          "지원자 정보를 불러오는데 실패했습니다.",
         );
         navigate("/company/applicants");
       } finally {
@@ -112,6 +112,7 @@ export default function ApplicantDetailPage() {
     }
   };
 
+  // ✅ 면접 제안 (새 API 사용)
   const handleInterviewOffer = async () => {
     if (!applicant || !user?.companyId) return;
 
@@ -122,7 +123,7 @@ export default function ApplicantDetailPage() {
     }
 
     if (
-      window.confirm(`${applicant.userName}님에게 면접 제안을 하시겠습니까?`)
+      window.confirm(`${applicant.userName}님에게 스카웃 제안을 하시겠습니까?`)
     ) {
       try {
         await createInterviewOffer(user.companyId, {
@@ -132,11 +133,11 @@ export default function ApplicantDetailPage() {
         });
 
         alert(
-          "면접 제안이 성공적으로 전송되었습니다.\n개인 회원은 '받은 제안' 페이지에서 확인할 수 있습니다.",
+          "스카웃 제안이 성공적으로 전송되었습니다.\n개인 회원은 '받은 제안' 페이지에서 확인할 수 있습니다.",
         );
       } catch (error: any) {
-        console.error("면접 제안 실패:", error);
-        alert(error.response?.data?.message || "면접 제안에 실패했습니다.");
+        console.error("스카웃 제안 실패:", error);
+        alert(error.response?.data?.message || "스카웃 제안에 실패했습니다.");
       }
     }
   };
@@ -492,20 +493,14 @@ export default function ApplicantDetailPage() {
               <button
                 onClick={handleInterviewOffer}
                 disabled={
-                  applicant.status === "REJECTED" || 
                   applicant.status === "ACCEPTED" // ✅ 합격 상태일 때도 비활성화
                 }
-                className={`flex-1 px-6 py-3 font-semibold transition rounded-lg ${
-                  applicant.status === "REJECTED" || applicant.status === "ACCEPTED"
+                className={`flex-1 px-6 py-3 font-semibold transition rounded-lg ${applicant.status === "ACCEPTED"
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                     : "bg-blue-600 text-white hover:bg-blue-700"
-                }`}
+                  }`}
               >
-                {applicant.status === "ACCEPTED" 
-                  ? "합격 처리됨" 
-                  : applicant.status === "REJECTED"
-                  ? "면접 제안"
-                  : "면접 제안"}
+                면접 제안
               </button>
               <button
                 onClick={handleCompatibilityClick}

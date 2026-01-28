@@ -9,7 +9,6 @@ const navItems = [
   { id: "ai-recommend", label: "AI 추천 공고" },
   { id: "matching", label: "매칭분석" },
   { id: "interview", label: "면접준비" },
-  { id: "offer", label: "받은제안" },
   { id: "mypage", label: "마이페이지" },
   { id: "credit", label: "크레딧" },
 ];
