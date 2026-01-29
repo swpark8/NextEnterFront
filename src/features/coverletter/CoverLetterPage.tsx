@@ -69,16 +69,26 @@ export default function CoverLetterPage({
         setLoading(true);
         const response = await getCoverLetterList(user.userId, 0, 100);
         
-        // API 응답을 CoverLetterItem 형식으로 변환
-        const items: CoverLetterItem[] = response.content.map((cl: CoverLetter) => ({
-          id: cl.coverLetterId,
-          title: cl.title,
-          content: cl.content || "",
-          date: new Date(cl.updatedAt).toLocaleDateString(),
-          fileCount: cl.filePath ? 1 : 0,
-          status: cl.filePath ? "불러온 파일" : "작성중",
-          files: cl.filePath ? [cl.title] : [],
-        }));
+        const items: CoverLetterItem[] = response.content.map((cl: CoverLetter) => {
+          const hasFile = !!cl.filePath;
+          const hasContent = !!(cl.content && cl.content.trim().length > 0);
+        
+          return {
+            id: cl.coverLetterId,
+            title: cl.title,
+            content: cl.content || "",
+            date: new Date(cl.updatedAt).toLocaleDateString(),
+            fileCount: hasFile ? 1 : 0,
+        
+            // ✅ 상태 표시 규칙
+            // 파일 있으면: 불러온 파일
+            // 파일 없고 내용 있으면: 작성완료
+            // 둘 다 없으면: 작성중
+            status: hasFile ? "불러온 파일" : hasContent ? "작성완료" : "작성중",
+        
+            files: hasFile ? [cl.title] : [],
+          };
+        });
         
         setCoverLetterList(items);
       } catch (error) {

@@ -8,6 +8,16 @@ export interface CreateResumeRequest {
   skills?: string; // 쉼표로 구분된 문자열
   visibility?: string;
 
+  // ✅ 개인정보 필드 추가
+  resumeName?: string;
+  resumeGender?: string;
+  resumeBirthDate?: string;
+  resumeEmail?: string;
+  resumePhone?: string;
+  resumeAddress?: string;
+  resumeDetailAddress?: string;
+  profileImage?: string;
+
   // ✅ 각 섹션별로 분리된 필드 (JSON 문자열로 전송)
   experiences?: string; // JSON 문자열: [{"title":"...", "period":"..."}]
   certificates?: string; // JSON 문자열: [{"title":"...", "date":"..."}]
@@ -86,6 +96,16 @@ export interface ResumeResponse {
   userPhone?: string;
   userAge?: number;
   userBio?: string;
+
+  // ===== Resume 테이블에 저장된 개인정보 =====
+  resumeName?: string;
+  resumeGender?: string;
+  resumeBirthDate?: string;
+  resumeEmail?: string;
+  resumePhone?: string;
+  resumeAddress?: string;
+  resumeDetailAddress?: string;
+  profileImage?: string;
 
   // ===== 분리된 섹션들 (JSON 문자열) =====
   experiences?: string;
@@ -196,6 +216,15 @@ export const createResume = async (
     jobCategory: request.jobCategory,
     skills: request.skills,
     visibility: request.visibility || "PUBLIC",
+    // ✅ 개인정보 필드 전송
+    resumeName: request.resumeName,
+    resumeGender: request.resumeGender,
+    resumeBirthDate: request.resumeBirthDate,
+    resumeEmail: request.resumeEmail,
+    resumePhone: request.resumePhone,
+    resumeAddress: request.resumeAddress,
+    resumeDetailAddress: request.resumeDetailAddress,
+    profileImage: request.profileImage,
     // ✅ 각 섹션별 필드 전송
     experiences: request.experiences,
     certificates: request.certificates,
@@ -231,6 +260,15 @@ export const updateResume = async (
     jobCategory: request.jobCategory,
     skills: request.skills,
     visibility: request.visibility || "PUBLIC",
+    // ✅ 개인정보 필드 전송
+    resumeName: request.resumeName,
+    resumeGender: request.resumeGender,
+    resumeBirthDate: request.resumeBirthDate,
+    resumeEmail: request.resumeEmail,
+    resumePhone: request.resumePhone,
+    resumeAddress: request.resumeAddress,
+    resumeDetailAddress: request.resumeDetailAddress,
+    profileImage: request.profileImage,
     // ✅ 각 섹션별 필드 전송
     experiences: request.experiences,
     certificates: request.certificates,
@@ -277,6 +315,15 @@ export const createResumeWithFiles = async (
         jobCategory: data.jobCategory,
         skills: skillsString, // ✅ 문자열로 전송
         visibility: data.visibility || "PUBLIC",
+        // ✅ 개인정보 필드
+        resumeName: data.resumeName,
+        resumeGender: data.resumeGender,
+        resumeBirthDate: data.resumeBirthDate,
+        resumeEmail: data.resumeEmail,
+        resumePhone: data.resumePhone,
+        resumeAddress: data.resumeAddress,
+        resumeDetailAddress: data.resumeDetailAddress,
+        profileImage: data.profileImage,
         experiences: data.experiences,
         certificates: data.certificates,
         educations: data.educations,
@@ -342,6 +389,15 @@ export const updateResumeWithFiles = async (
         jobCategory: data.jobCategory,
         skills: skillsString, // ✅ 문자열로 전송
         visibility: data.visibility || "PUBLIC",
+        // ✅ 개인정보 필드
+        resumeName: data.resumeName,
+        resumeGender: data.resumeGender,
+        resumeBirthDate: data.resumeBirthDate,
+        resumeEmail: data.resumeEmail,
+        resumePhone: data.resumePhone,
+        resumeAddress: data.resumeAddress,
+        resumeDetailAddress: data.resumeDetailAddress,
+        profileImage: data.profileImage,
         experiences: data.experiences,
         certificates: data.certificates,
         educations: data.educations,

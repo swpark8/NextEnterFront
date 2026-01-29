@@ -1,26 +1,23 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // ✅ useNavigate 추가
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
 import {
   searchTalents,
   TalentSearchResponse,
   saveTalent,
-  unsaveTalent,
 } from "../../api/talent";
 import {
   createInterviewOffer,
   getOfferedJobIds,
 } from "../../api/interviewOffer";
 import { getCompanyJobPostings, JobPostingListResponse } from "../../api/job";
-// import TalentResumeDetailPage from "./TalentResumeDetailPage"; // ✅ 제거
 import JobSelectionModal from "./components/JobSelectionModal";
 import { useAuth } from "../../context/AuthContext";
-import { useSearchParams } from "react-router-dom";
 
 export default function TalentSearchPage() {
   const { user } = useAuth();
-  const navigate = useNavigate(); // ✅ navigate 추가
+  const navigate = useNavigate();
   const { activeMenu, handleMenuClick } = useCompanyPageNavigation(
     "talent",
     "talent-sub-1",
@@ -37,75 +34,13 @@ export default function TalentSearchPage() {
   const [totalPages, setTotalPages] = useState(0);
 
   const [myJobs, setMyJobs] = useState<JobPostingListResponse[]>([]);
-  const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
   const [showJobModal, setShowJobModal] = useState(false);
   const [pendingTalent, setPendingTalent] =
     useState<TalentSearchResponse | null>(null);
-  const [offeredJobIds, setOfferedJobIds] = useState<number[]>([]); // ✅ 제안한 공고 ID 목록
+  const [offeredJobIds, setOfferedJobIds] = useState<number[]>([]);
 
-  // ✅ selectedResumeId 상태 제거
-  // const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
-
-  // 이력서 데이터 로드
-  useEffect(() => {
-    loadTalents();
-  }, [selectedPosition, selectedExperience, searchQuery, currentPage]);
-
-  useEffect(() => {
-    const loadMyJobs = async () => {
-      if (!user?.userId) return;
-
-      try {
-        const jobs = await getCompanyJobPostings(user.userId);
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const availableJobs = jobs.filter((job) => {
-          if (job.status === "CLOSED" || job.status === "EXPIRED") {
-            return false;
-          }
-
-          if (job.deadline) {
-            const deadline = new Date(job.deadline);
-            deadline.setHours(0, 0, 0, 0);
-            return deadline >= today;
-          }
-
-          return true;
-        });
-
-        setMyJobs(availableJobs);
-        if (availableJobs.length > 0) {
-          setSelectedJobId(availableJobs[0].jobId);
-        }
-      } catch (error) {
-        console.error("공고 로드 실패:", error);
-      }
-    };
-
-    loadMyJobs();
-  }, [user?.userId]);
-
-  useEffect(() => {
-    const reloadParam = searchParams.get("reload");
-    if (reloadParam) {
-      loadTalents();
-    }
-  }, [searchParams.get("reload")]);
-
-  const handleSearch = () => {
-    setSearchQuery(searchInput);
-    setCurrentPage(0);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
-  };
-
-  const loadTalents = async () => {
+  // ✅ 인재 목록 로드 함수 (useCallback으로 의존성 정리)
+  const loadTalents = useCallback(async () => {
     setIsLoading(true);
     try {
       const params: any = {
@@ -131,18 +66,78 @@ export default function TalentSearchPage() {
     } catch (error) {
       console.error("인재 검색 오류:", error);
       setTalents([]);
+      setTotalPages(0);
     } finally {
       setIsLoading(false);
     }
+  }, [currentPage, searchQuery, selectedPosition, user?.userId]);
+
+  // ✅ 필터/검색/페이지 변경 시 로드
+  useEffect(() => {
+    loadTalents();
+  }, [loadTalents, selectedExperience]); 
+  // selectedExperience는 프론트에서만 필터링하는 값이라 loadTalents에 포함되지 않지만,
+  // "경력 필터 변경 시 즉시 반영"을 위해 유지(원하면 제거 가능)
+
+  // ✅ 내 공고 로드
+  useEffect(() => {
+    const loadMyJobs = async () => {
+      if (!user?.userId) return;
+
+      try {
+        const jobs = await getCompanyJobPostings(user.userId);
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const availableJobs = jobs.filter((job) => {
+          if (job.status === "CLOSED" || job.status === "EXPIRED") return false;
+
+          if (job.deadline) {
+            const deadline = new Date(job.deadline);
+            deadline.setHours(0, 0, 0, 0);
+            return deadline >= today;
+          }
+          return true;
+        });
+
+        setMyJobs(availableJobs);
+      } catch (error) {
+        console.error("공고 로드 실패:", error);
+        setMyJobs([]);
+      }
+    };
+
+    loadMyJobs();
+  }, [user?.userId]);
+
+  // ✅ reload 파라미터 처리 (의존성에 get("reload") 직접 넣지 않기)
+  useEffect(() => {
+    const reloadParam = searchParams.get("reload");
+    if (reloadParam) {
+      loadTalents();
+    }
+  }, [searchParams, loadTalents]);
+
+  const handleSearch = () => {
+    setSearchQuery(searchInput);
+    setCurrentPage(0);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
+
+  // 프론트 단 필터링(경력)
   const filteredTalents = talents.filter((talent) => {
     if (selectedExperience === "전체") return true;
+
     const years = talent.experienceYears;
 
     if (selectedExperience === "신입" && years === 0) return true;
-    if (selectedExperience === "3년 이하" && years > 0 && years <= 3)
-      return true;
+    if (selectedExperience === "3년 이하" && years > 0 && years <= 3) return true;
     if (selectedExperience === "3-5년" && years > 3 && years <= 5) return true;
     if (selectedExperience === "5년 이상" && years > 5) return true;
 
@@ -182,7 +177,6 @@ export default function TalentSearchPage() {
       setOfferedJobIds([]);
     }
 
-    // 모달 열기
     setPendingTalent(talent);
     setShowJobModal(true);
   };
@@ -191,22 +185,18 @@ export default function TalentSearchPage() {
     if (!user?.userId || !pendingTalent) return;
 
     try {
-      // ✅ 스카웃 제안 전송
       await createInterviewOffer(user.userId, {
         userId: pendingTalent.userId,
-        jobId: jobId,
+        jobId,
       });
 
-      // ✅ 제안한 공고 목록에 추가 (로컬 업데이트)
-      setOfferedJobIds((prev) => [...prev, jobId]);
+      setOfferedJobIds((prev) => (prev.includes(jobId) ? prev : [...prev, jobId]));
 
       alert("면접 요청이 전송되었습니다!");
 
-      // ✅ 모달 닫기
       setShowJobModal(false);
       setPendingTalent(null);
 
-      // 목록 새로고침
       loadTalents();
     } catch (error: any) {
       console.error("면접 요청 오류:", error);
@@ -235,12 +225,10 @@ export default function TalentSearchPage() {
     }
   };
 
-  // ✅ 인재 클릭 시 별도 페이지로 이동
   const handleTalentClick = (resumeId: number) => {
     navigate(`/company/talent-search/${resumeId}`);
   };
 
-  // ✅ 조건부 렌더링 제거 - 항상 메인 리스트만 표시
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="flex gap-6 px-4 py-8 mx-auto max-w-7xl">
@@ -263,7 +251,10 @@ export default function TalentSearchPage() {
               </label>
               <select
                 value={selectedPosition}
-                onChange={(e) => setSelectedPosition(e.target.value)}
+                onChange={(e) => {
+                  setSelectedPosition(e.target.value);
+                  setCurrentPage(0);
+                }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
               >
                 <option value="전체">전체</option>
@@ -282,7 +273,10 @@ export default function TalentSearchPage() {
               </label>
               <select
                 value={selectedExperience}
-                onChange={(e) => setSelectedExperience(e.target.value)}
+                onChange={(e) => {
+                  setSelectedExperience(e.target.value);
+                  setCurrentPage(0);
+                }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
               >
                 <option value="전체">전체</option>
@@ -302,7 +296,7 @@ export default function TalentSearchPage() {
                 placeholder="기술 스택으로 검색"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyDown}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
               />
             </div>
@@ -337,6 +331,7 @@ export default function TalentSearchPage() {
                 </span>
                 명의 인재를 찾았습니다.
               </div>
+
               <div className="space-y-4">
                 {filteredTalents.map((talent) => (
                   <div
@@ -344,7 +339,6 @@ export default function TalentSearchPage() {
                     onClick={() => handleTalentClick(talent.resumeId)}
                     className="p-6 transition bg-white border border-gray-200 cursor-pointer rounded-xl hover:shadow-lg hover:border-purple-300"
                   >
-                    {/* 인재 카드 내용은 동일 */}
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-3">
@@ -352,12 +346,12 @@ export default function TalentSearchPage() {
                           <span className="px-3 py-1 text-sm font-medium text-purple-600 bg-purple-100 rounded">
                             {talent.jobCategory}
                           </span>
+
                           {talent.contactStatus === "ACCEPTED" ? (
                             <span className="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded">
                               면접 요청이 수락되었습니다
                             </span>
                           ) : null}
-
                         </div>
 
                         <div className="grid grid-cols-3 gap-4 mb-4 text-sm">
@@ -414,8 +408,7 @@ export default function TalentSearchPage() {
                         </div>
 
                         <div className="flex flex-col w-32 gap-2">
-                          {!talent.contactStatus ||
-                          talent.contactStatus === "" ? (
+                          {!talent.contactStatus || talent.contactStatus === "" ? (
                             <button
                               onClick={(e) =>
                                 handleInterviewRequest(talent.resumeId, e)
@@ -446,6 +439,7 @@ export default function TalentSearchPage() {
                               거절됨
                             </button>
                           ) : null}
+
                           <button
                             onClick={(e) => handleSave(talent.resumeId, e)}
                             className="px-4 py-2 text-purple-700 transition rounded-lg bg-purple-50 hover:bg-purple-100"

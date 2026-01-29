@@ -426,79 +426,89 @@ export default function ResumeDetailPage() {
                   </div>
                 </div>
 
-                {/* ✅ 인적사항 - User 테이블에서 가져온 정보 + structuredData */}
-                {(resume.userName ||
-                  resume.userEmail ||
-                  resume.userGender ||
-                  resume.userPhone ||
-                  structuredData?.personalInfo) && (
-                  <div className="p-6 mb-8 border-2 border-indigo-200 rounded-lg bg-indigo-50">
-                    <h2 className="mb-4 text-lg font-bold text-gray-900">
-                      📋 인적사항
-                    </h2>
-                    <div className="grid grid-cols-2 gap-4">
-                      {resume.userName && (
-                        <div className="p-3 bg-white border border-indigo-200 rounded-lg">
-                          <div className="mb-1 text-xs font-medium text-gray-500">
-                            이름
-                          </div>
-                          <div className="font-semibold text-gray-900">
-                            {resume.userName}
-                          </div>
+                {(resume.resumeName ||
+                  resume.resumeEmail ||
+                  resume.resumeGender ||
+                  resume.resumePhone ||
+                  resume.resumeBirthDate ||
+                  resume.resumeAddress ||
+                  resume.profileImage) && (
+                    <div className="p-6 mb-8 border-2 border-indigo-200 rounded-lg bg-indigo-50">
+                    <h2 className="mb-4 text-lg font-bold text-gray-900">📋 인적사항</h2>
+
+                    <div className="flex flex-col gap-6 md:flex-row md:items-start">
+                      {/* ✅ 프로필 이미지 */}
+                      {resume.profileImage && (
+                        <div className="flex justify-center md:justify-start">
+                          <img
+                            src={resume.profileImage}
+                            alt="프로필 이미지"
+                            className="object-cover w-40 h-48 bg-white border-2 border-indigo-200 rounded-lg shadow-sm"
+                          />
                         </div>
                       )}
-                      {resume.userGender && (
-                        <div className="p-3 bg-white border border-indigo-200 rounded-lg">
-                          <div className="mb-1 text-xs font-medium text-gray-500">
-                            성별
+
+
+                      {/* ✅ 인적사항 정보 */}
+                      <div className="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2">
+                        {resume.resumeName && (
+                          <div className="p-3 bg-white border border-indigo-200 rounded-lg">
+                            <div className="mb-1 text-xs font-medium text-gray-500">이름</div>
+                            <div className="font-semibold text-gray-900">{resume.resumeName}</div>
                           </div>
-                          <div className="font-semibold text-gray-900">
-                            {resume.userGender === "MALE" ? "남성" : "여성"}
+                        )}
+
+                        {resume.resumeGender && (
+                          <div className="p-3 bg-white border border-indigo-200 rounded-lg">
+                            <div className="mb-1 text-xs font-medium text-gray-500">성별</div>
+                            <div className="font-semibold text-gray-900">
+                              {resume.resumeGender === "MALE" ? "남성" : "여성"}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      {structuredData?.personalInfo?.birthDate && (
-                        <div className="p-3 bg-white border border-indigo-200 rounded-lg">
-                          <div className="mb-1 text-xs font-medium text-gray-500">
-                            생년월일
+                        )}
+
+                        {resume.resumeBirthDate && (
+                          <div className="p-3 bg-white border border-indigo-200 rounded-lg">
+                            <div className="mb-1 text-xs font-medium text-gray-500">생년월일</div>
+                            <div className="font-semibold text-gray-900">
+                              {resume.resumeBirthDate}
+                            </div>
                           </div>
-                          <div className="font-semibold text-gray-900">
-                            {structuredData.personalInfo.birthDate}
+                        )}
+
+                        {resume.resumeEmail && (
+                          <div className="p-3 bg-white border border-indigo-200 rounded-lg">
+                            <div className="mb-1 text-xs font-medium text-gray-500">이메일</div>
+                            <div className="font-semibold text-gray-900">
+                              {resume.resumeEmail}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      {resume.userEmail && (
-                        <div className="p-3 bg-white border border-indigo-200 rounded-lg">
-                          <div className="mb-1 text-xs font-medium text-gray-500">
-                            이메일
+                        )}
+
+                        {resume.resumePhone && (
+                          <div className="p-3 bg-white border border-indigo-200 rounded-lg">
+                            <div className="mb-1 text-xs font-medium text-gray-500">연락처</div>
+                            <div className="font-semibold text-gray-900">
+                              {resume.resumePhone}
+                            </div>
                           </div>
-                          <div className="font-semibold text-gray-900">
-                            {resume.userEmail}
+                        )}
+
+                        {resume.resumeAddress && (
+                          <div className="p-3 bg-white border border-indigo-200 rounded-lg sm:col-span-2">
+                            <div className="mb-1 text-xs font-medium text-gray-500">주소</div>
+                            <div className="font-semibold text-gray-900">
+                              {resume.resumeAddress}
+                              {resume.resumeDetailAddress && ` ${resume.resumeDetailAddress}`}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      {resume.userPhone && (
-                        <div className="p-3 bg-white border border-indigo-200 rounded-lg">
-                          <div className="mb-1 text-xs font-medium text-gray-500">
-                            연락처
-                          </div>
-                          <div className="font-semibold text-gray-900">
-                            {resume.userPhone}
-                          </div>
-                        </div>
-                      )}
-                      {structuredData?.personalInfo?.address && (
-                        <div className="col-span-2 p-3 bg-white border border-indigo-200 rounded-lg">
-                          <div className="mb-1 text-xs font-medium text-gray-500">
-                            주소
-                          </div>
-                          <div className="font-semibold text-gray-900">
-                            {structuredData.personalInfo.address}
-                          </div>
-                        </div>
-                      )}
+                        )}
+
+                      </div>
                     </div>
                   </div>
+
+                  
                 )}
 
                 {/* ✅ 주요 스킬 */}

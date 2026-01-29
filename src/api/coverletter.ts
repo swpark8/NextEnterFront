@@ -133,8 +133,9 @@ export const uploadCoverLetterFile = async (
  * 파일 다운로드
  */
 export const downloadCoverLetterFile = async (
-  userId: number,
-  id: number
+  id: number,           
+  userId: number,      
+  fileName?: string    
 ): Promise<Blob> => {
   const response = await api.get(`/api/coverletters/${id}/file`, {
     params: { userId },

@@ -34,6 +34,7 @@ export default function CoverLetterDetailPage({
   activeMenu,
 }: CoverLetterDetailPageProps) {
   const { user } = useAuth();
+
   // 사이드바 클릭 시 확인 후 이동
   const handleSidebarClick = (menuId: string) => {
     if (window.confirm("페이지를 이동하시겠습니까?")) {
@@ -48,47 +49,69 @@ export default function CoverLetterDetailPage({
     }
   };
 
-  // ✅ 파일 다운로드 핸들러
-  const handleFileDownload = (fileName: string) => {
-    // 파일명이 URL이면 새 탭에서 열기
-    if (fileName.startsWith('http://') || fileName.startsWith('https://')) {
-      window.open(fileName, '_blank');
+  // ✅ 파일 다운로드 핸들러 (백엔드 blob 다운로드로 수정)
+  const handleFileDownload = async (fileName: string) => {
+    if (!user?.userId) {
+      alert("로그인이 필요합니다.");
       return;
     }
 
-    // 파일명이 /uploads/로 시작하면 백엔드 URL 추가
-    if (fileName.startsWith('/uploads/')) {
+    // 1) 파일명이 URL이면 새 탭에서 열기
+    if (fileName.startsWith("http://") || fileName.startsWith("https://")) {
+      window.open(fileName, "_blank");
+      return;
+    }
+
+    // 2) 파일명이 /uploads/ 로 시작하면 백엔드 URL로 열기 (기존 로직 유지)
+    if (fileName.startsWith("/uploads/")) {
       const fileUrl = `http://localhost:8080${fileName}`;
-      window.open(fileUrl, '_blank');
+      window.open(fileUrl, "_blank");
       return;
     }
 
-    // 그 외에는 파일명으로 다운로드
-    // 실제로는 백엔드 API를 호출해야 하지만, 일단 알림만 표시
-    alert(`파일 다운로드: ${fileName}\n\n백엔드 파일 저장 기능이 구현되면 다운로드가 가능합니다.`);
+    // 3) ✅ 그 외에는 "실제 다운로드" (이력서처럼 blob 받아서 저장)
+    try {
+      /**
+       * downloadCoverLetterFile 쪽 구현에 따라 인자 형태가 다를 수 있는데,
+       * 보통은 (coverLetterId, userId, fileName?) 형태로 만들어두는 게 안전함.
+       */
+      const res = await downloadCoverLetterFile(coverLetter.id, user.userId, fileName);
+
+      // res가 AxiosResponse(blob) 이거나 Blob 자체일 수 있어서 둘 다 처리
+      const blob = (res as any)?.data ?? res;
+
+      // 파일 저장 트리거 (a태그 다운로드)
+      triggerFileDownload(blob, fileName);
+    } catch (error: any) {
+      console.error("자소서 파일 다운로드 오류:", error);
+      alert(
+        error.response?.data?.message ||
+          "파일 다운로드 중 오류가 발생했습니다."
+      );
+    }
   };
 
   // ✅ 파일 확장자에 따른 아이콘 반환
   const getFileIcon = (fileName: string) => {
-    const ext = fileName.split('.').pop()?.toLowerCase();
+    const ext = fileName.split(".").pop()?.toLowerCase();
     switch (ext) {
-      case 'pdf':
-        return '📄';
-      case 'doc':
-      case 'docx':
-        return '📝';
-      case 'hwp':
-        return '📋';
-      case 'txt':
-        return '📃';
-      case 'xlsx':
-      case 'xls':
-        return '📊';
-      case 'ppt':
-      case 'pptx':
-        return '📊';
+      case "pdf":
+        return "📄";
+      case "doc":
+      case "docx":
+        return "📝";
+      case "hwp":
+        return "📋";
+      case "txt":
+        return "📃";
+      case "xlsx":
+      case "xls":
+        return "📊";
+      case "ppt":
+      case "pptx":
+        return "📊";
       default:
-        return '📎';
+        return "📎";
     }
   };
 
@@ -97,10 +120,7 @@ export default function CoverLetterDetailPage({
       <h2 className="inline-block mb-6 text-2xl font-bold">자소서 상세</h2>
       <div className="flex gap-6">
         {/* 사이드바 */}
-        <ResumeSidebar
-          activeMenu={activeMenu}
-          onMenuClick={handleSidebarClick}
-        />
+        <ResumeSidebar activeMenu={activeMenu} onMenuClick={handleSidebarClick} />
 
         {/* 메인 컨텐츠 */}
         <div className="flex-1 space-y-8">
@@ -157,7 +177,7 @@ export default function CoverLetterDetailPage({
               </div>
             </div>
 
-            {/* ✅ 첨부파일 영역 - 클릭 가능하게 수정 */}
+            {/* ✅ 첨부파일 영역 */}
             {coverLetter.files && coverLetter.files.length > 0 && (
               <div className="pt-6 border-t border-gray-200">
                 <h4 className="mb-3 text-lg font-semibold text-gray-800">
