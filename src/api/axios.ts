@@ -2,7 +2,7 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: "http://localhost:8080",
-  timeout: 5000, // 5초 타임아웃 설정
+  timeout: 30000, // 30초 타임아웃 설정 (AI 응답 대기)
   headers: {
     "Content-Type": "application/json",
   },
@@ -19,7 +19,7 @@ api.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // 응답 인터셉터: 401 에러 시 로그아웃 처리
@@ -30,7 +30,7 @@ api.interceptors.response.use(
       console.error("❌ 401 에러 - 토큰 만료 또는 유효하지 않음");
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      
+
       // 현재 페이지가 /company로 시작하면 기업 로그인으로
       const currentPath = window.location.pathname;
       if (currentPath.startsWith("/company")) {
@@ -40,7 +40,7 @@ api.interceptors.response.use(
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

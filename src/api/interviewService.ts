@@ -58,32 +58,50 @@ export interface InterviewRequestPayload {
 }
 
 export const interviewService = {
-
-  startInterview: async (payload: InterviewRequestPayload): Promise<InterviewResponse> => {
-    const response = await api.post<InterviewResponse>("/api/interview/start", {
-      resumeId: payload.resumeId,
-      jobCategory: payload.jobCategory,
-      difficulty: payload.difficulty,
-      totalTurns: payload.totalTurns,
-      // Proxy
-      resumeContent: payload.resumeContent,
-      portfolio: payload.portfolio,
-      portfolioFiles: payload.portfolioFiles
-    });
+  startInterview: async (
+    userId: number,
+    payload: InterviewRequestPayload,
+  ): Promise<InterviewResponse> => {
+    const response = await api.post<InterviewResponse>(
+      "/api/interview/start",
+      {
+        resumeId: payload.resumeId,
+        jobCategory: payload.jobCategory,
+        difficulty: payload.difficulty,
+        totalTurns: payload.totalTurns,
+        // Proxy
+        resumeContent: payload.resumeContent,
+        portfolio: payload.portfolio,
+        portfolioFiles: payload.portfolioFiles,
+      },
+      {
+        params: { userId },
+      },
+    );
     return adaptResponse(response.data);
   },
 
-  submitAnswer: async (payload: InterviewRequestPayload): Promise<InterviewResponse> => {
-    const response = await api.post<InterviewResponse>("/api/interview/answer", {
-      interviewId: payload.interviewId,
-      answer: payload.answer,
-      // Proxy - Send context again for persistence
-      resumeContent: payload.resumeContent,
-      portfolio: payload.portfolio,
-      portfolioFiles: payload.portfolioFiles
-    });
+  submitAnswer: async (
+    userId: number,
+    payload: InterviewRequestPayload,
+  ): Promise<InterviewResponse> => {
+    console.log("🚀 [Service Debug] Submitting Answer Payload:", payload);
+    const response = await api.post<InterviewResponse>(
+      "/api/interview/answer",
+      {
+        interviewId: payload.interviewId,
+        answer: payload.answer,
+        // Proxy - Send context again for persistence
+        resumeContent: payload.resumeContent,
+        portfolio: payload.portfolio,
+        portfolioFiles: payload.portfolioFiles,
+      },
+      {
+        params: { userId },
+      },
+    );
     return adaptResponse(response.data);
-  }
+  },
 };
 
 // Adapter to match existing UI expectation if possible, or we update UI.
@@ -93,11 +111,11 @@ function adaptResponse(serverData: InterviewResponse): InterviewResponse {
     next_question: serverData.question,
     reaction: {
       type: serverData.reactionType || null,
-      text: serverData.reactionText || null
+      text: serverData.reactionText || null,
     },
     probe_goal: serverData.probeGoal || "",
     requested_evidence: serverData.requestedEvidence || [],
-    report: serverData.aiSystemReport as InterviewReport
+    report: serverData.aiSystemReport as InterviewReport,
   };
   return serverData;
 }

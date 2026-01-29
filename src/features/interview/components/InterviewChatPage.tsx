@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import InterviewSidebar from "./InterviewSidebar";
+import InterviewSetup from "./InterviewSetup";
 import { useApp } from "../../../context/AppContext";
+import { useAuth } from "../../../context/AuthContext";
 import {
   interviewService,
   InterviewReport,
 } from "../../../api/interviewService";
+import { getResumeList, getResumeDetail } from "../../../api/resume";
 
 interface Message {
   id: number;
@@ -29,9 +32,17 @@ export default function InterviewChatPage({
   const {
     addInterviewResult,
     addInterviewHistory,
-    detailedResumes,
     currentResume,
+    resumes,
+    setResumes,
   } = useApp();
+  const { user } = useAuth();
+
+  // 단계 관리: 'setup' | 'chat'
+  const [step, setStep] = useState<"setup" | "chat">("setup");
+
+  // 선택된 이력서 ID
+  const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
 
   // 메시지 상태
   const [messages, setMessages] = useState<Message[]>([]);
@@ -39,10 +50,15 @@ export default function InterviewChatPage({
   const [loading, setLoading] = useState(false);
 
   // 인터뷰 진행 상태
-  const [interviewId] = useState(Date.now().toString());
   const [startTime] = useState(Date.now());
   const [turnCount, setTurnCount] = useState(0);
   const totalQuestions = level === "junior" ? 5 : 7;
+
+  // 백엔드 인터뷰 ID
+  const [realInterviewId, setRealInterviewId] = useState<number | null>(null);
+
+  // 세션 유지를 위한 컨텍스트 (답변 전송 시 재전송용)
+  const [sessionContext, setSessionContext] = useState<any>(null);
 
   // 리포트 누적 (매 턴마다 AI가 분석한 결과)
   const [reports, setReports] = useState<InterviewReport[]>([]);
@@ -52,114 +68,163 @@ export default function InterviewChatPage({
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
 
-  // 이력서 데이터 매핑 (Context Payload)
-  // Reusable function to get the current context
-  const getContextPayload = () => {
-    const targetResume =
-      currentResume || (detailedResumes.length > 0 ? detailedResumes[0] : null);
-
-    if (!targetResume) return null;
-
-    const sections = targetResume.sections;
-    const skills = targetResume.skills || [];
-
-    const resumeContent = {
-      skills: {
-        essential: skills,
-        additional: [],
-      },
-      professional_experience:
-        sections.experiences?.map((exp) => ({
-          role: exp.title || "Unknown Role",
-          period: exp.period || "",
-          key_tasks: exp.content ? [exp.content] : [],
-        })) || [],
-      education:
-        sections.educations?.map((edu) => ({
-          major: edu.school || "",
-        })) || [],
-    };
-
-    const portfolioFiles = targetResume.portfolios?.map((p) => p.filePath) || [];
-
-    // Portfolio metadata (if any - current DetailedResume has only generic portfolios list)
-    // Constructing simple portfolio metadata if needed, but 'portfolios' in DetailedResume seems to have basic info.
-    // Backend DTO allows 'portfolio' map.
-    const portfolio = {
-      projects: targetResume.portfolios?.map(p => ({
-        title: p.filename,
-        description: p.description
-      }))
-    };
-
-    return {
-      resumeId: targetResume.resumeId,
-      jobCategory: targetResume.jobCategory || "frontend",
-      difficulty: (level === "junior" ? "JUNIOR" : "SENIOR") as "JUNIOR" | "SENIOR",
-      resumeContent,
-      portfolio,
-      portfolioFiles
-    };
-  };
-
-  // 초기 실행: 면접 시작
+  // 1. 초기 로드: 이력서 목록이 없으면 로드
   useEffect(() => {
-    const startInterview = async () => {
-      setLoading(true);
-      try {
-        const payloadContext = getContextPayload();
-
-        if (!payloadContext) {
-          throw new Error("이력서 정보를 찾을 수 없습니다.");
+    const loadResumes = async () => {
+      // 이미 resumes가 있고(length > 0) currentResume이 설정되어 있다면 초기값 세팅
+      if (resumes.length > 0) {
+        if (currentResume && !selectedResumeId) {
+          setSelectedResumeId(currentResume.resumeId);
         }
+        return;
+      }
 
-        const response = await interviewService.startInterview({
-          ...payloadContext,
-          totalTurns: totalQuestions
-        });
+      if (user?.userId) {
+        try {
+          const data = await getResumeList(user.userId);
+          if (Array.isArray(data)) {
+            const contextResumes = data.map((resume) => ({
+              id: resume.resumeId,
+              title: resume.title,
+              industry: resume.jobCategory || "미지정",
+              applications: 0,
+            }));
+            setResumes(contextResumes);
 
-        const welcomeMessage: Message = {
-          id: 1,
-          sender: "ai",
-          text: response.realtime?.next_question || response.question,
-          timestamp: new Date().toLocaleTimeString("ko-KR", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        };
-        setMessages([welcomeMessage]);
-        setTurnCount(1);
-        // Save Interview ID for subsequent calls
-        // Since interviewId is state initialized with Date.now(), we should update it if Backend returns a real DB ID.
-        // Backend returns `interviewId` (Long).
-        // Let's use a ref or state for the REAL backend ID.
-        // Wait, `interviewId` state was string. Backend returns number.
-        // I should update my state or just use response.interviewId for subsequent calls.
-        // Let's store backend ID
-        setRealInterviewId(response.interviewId); // Need to add this state
-
-      } catch (error) {
-        console.error("면접 시작 실패:", error);
-        setMessages([
-          {
-            id: 1,
-            sender: "ai",
-            text: "죄송합니다. 서버 연결에 실패하여 면접을 시작할 수 없습니다.",
-            timestamp: new Date().toLocaleTimeString(),
-          },
-        ]);
-      } finally {
-        setLoading(false);
+            // 만약 현재 컨텍스트 이력서가 있다면 자동 선택
+            if (currentResume) {
+              setSelectedResumeId(currentResume.resumeId);
+            }
+          }
+        } catch (error) {
+          console.error("이력서 목록 로드 실패:", error);
+        }
       }
     };
+    loadResumes();
+  }, [user?.userId, resumes.length, setResumes, currentResume]);
 
-    startInterview();
-  }, []);
+  // 2. 면접 시작 핸들러
+  const handleStartInterview = async (portfolioText: string) => {
+    if (!selectedResumeId) {
+      alert("이력서를 선택해주세요.");
+      return;
+    }
+    if (!user?.userId) {
+      alert("로그인 정보가 없습니다.");
+      return;
+    }
 
-  // New State for Backend Interview ID
-  const [realInterviewId, setRealInterviewId] = useState<number | null>(null);
+    setLoading(true);
 
-  // ... scroll handling ... (restored)
+    try {
+      // (1) 이력서 상세 정보 가져오기 (Context Refresh)
+      const userIdNum =
+        typeof user.userId === "string" ? parseInt(user.userId) : user.userId;
+      const resumeDetail = await getResumeDetail(selectedResumeId, userIdNum);
+
+      // (2) Payload 구성
+      const skills = resumeDetail.skills
+        ? Array.isArray(resumeDetail.skills)
+          ? resumeDetail.skills
+          : String(resumeDetail.skills).split(",")
+        : [];
+
+      // 포트폴리오 메타데이터
+      // 기존 포트폴리오 파일 목록
+      const existingPortfolios =
+        resumeDetail.portfolios?.map((p: any) => p.filename) || [];
+
+      const portfolioData = {
+        projects:
+          resumeDetail.portfolios?.map((p: any) => ({
+            title: p.filename,
+            description: p.description,
+          })) || [],
+        userInputCombined: portfolioText,
+      };
+
+      // 이력서 섹션 파싱 (JSON String -> Object)
+      let careers = [];
+      let educations = [];
+      try {
+        if (resumeDetail.careers && typeof resumeDetail.careers === "string") {
+          careers = JSON.parse(resumeDetail.careers);
+        } else if (Array.isArray(resumeDetail.careers)) {
+          careers = resumeDetail.careers;
+        }
+        if (
+          resumeDetail.educations &&
+          typeof resumeDetail.educations === "string"
+        ) {
+          educations = JSON.parse(resumeDetail.educations);
+        } else if (Array.isArray(resumeDetail.educations)) {
+          educations = resumeDetail.educations;
+        }
+      } catch (e) {
+        console.error("JSON Parsing failed", e);
+      }
+
+      const payloadContext = {
+        resumeId: resumeDetail.resumeId,
+        jobCategory: resumeDetail.jobCategory || "backend",
+        difficulty: (level === "junior" ? "JUNIOR" : "SENIOR") as
+          | "JUNIOR"
+          | "SENIOR",
+        // 이력서 내용 구조화
+        resumeContent: {
+          skills: {
+            essential: skills,
+            additional: [],
+          },
+          professional_experience: careers.map((c: any) => ({
+            role: c.role || c.title || "Unknown",
+            period: c.period || "",
+            key_tasks: c.content ? [c.content] : [],
+          })),
+          education: educations.map((e: any) => ({
+            major: e.major || e.school || "Unknown",
+          })),
+          self_introduction: "", // Removed introduction access
+        },
+        portfolio: portfolioData,
+        portfolioFiles: existingPortfolios,
+      };
+
+      setSessionContext(payloadContext);
+
+      // (3) API 호출
+      const response = await interviewService.startInterview(userIdNum, {
+        ...payloadContext,
+        totalTurns: totalQuestions,
+      });
+
+      // (4) 상태 업데이트 및 화면 전환
+      setRealInterviewId(response.interviewId);
+
+      const welcomeMessage: Message = {
+        id: 1,
+        sender: "ai",
+        text: response.realtime?.next_question || response.question,
+        timestamp: new Date().toLocaleTimeString("ko-KR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      };
+      setMessages([welcomeMessage]);
+      setTurnCount(1);
+      setStep("chat");
+    } catch (error) {
+      console.error("면접 시작 오류:", error);
+      alert(
+        "면접을 시작할 수 없습니다. 이력서 정보를 불러오는데 실패했습니다.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ... scroll handling ...
   const handleScroll = () => {
     if (!chatContainerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
@@ -180,22 +245,14 @@ export default function InterviewChatPage({
     }
   }, [messages, isUserScrolling]);
 
-  // 완료 처리 (restored)
+  // 완료 처리
   const handleCompleteInterview = () => {
     const duration = Math.round((Date.now() - startTime) / 60000);
     const durationText = `${duration}분`;
 
-    // 점수 합산 (단순 평균)
     let totalScore = 0;
     let validReports = 0;
     const competencySums: Record<string, number> = {};
-    const starrCoverage: Record<string, boolean> = {
-      situation: false,
-      task: false,
-      action: false,
-      result: false,
-      reflection: false,
-    };
     const allStrengths = new Set<string>();
     const allGaps = new Set<string>();
 
@@ -206,38 +263,17 @@ export default function InterviewChatPage({
         });
         validReports++;
       }
-      // Note: starr_coverage etc might be missing in new report type? 
-      // Current InterviewReport interface in interviewService.ts defines them but some are missing in previous lint?
-      // "Property 'starr_coverage' does not exist on type 'InterviewReport'."
-      // Ah, I changed `InterviewReport` in `interviewService.ts` in Step 111 to REMOVE `starr_coverage`!
-      // I should have kept them or updated this function.
-      // I will minimal-fix here by checking existence or using 'any' cast if I want to keep logic.
-      // Or better, just handle what IS in the report.
-      // The new AI report has `competency_scores` and `feedback_comment`.
-      // I'll comment out the missing fields logic for now to prevent errors.
-
-      /*
-      if (report.starr_coverage) {
-        Object.entries(report.starr_coverage).forEach(([key, val]) => {
-          if (val) starrCoverage[key] = true;
-        });
-      }
-      report.strengths?.forEach((s) => allStrengths.add(s));
-      report.gaps?.forEach((g) => allGaps.add(g));
-      */
     });
 
-    // 5점 만점 -> 100점 환산
     const avgCompetencyScore =
       validReports > 0
         ? Object.values(competencySums).reduce((a, b) => a + b, 0) /
-        (Object.keys(competencySums).length * validReports)
+          (Object.keys(competencySums).length * validReports)
         : 3.5;
 
     const finalScore = Math.min(100, Math.round(avgCompetencyScore * 20));
     const resultStatus = finalScore >= 70 ? "합격" : "불합격";
 
-    // 평균 역량 점수 계산
     const finalCompetencyScores: Record<string, number> = {};
     Object.keys(competencySums).forEach((key) => {
       finalCompetencyScores[key] = parseFloat(
@@ -246,11 +282,21 @@ export default function InterviewChatPage({
     });
 
     const now = new Date();
-    const date = now.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\. /g, ".").replace(/\.$/, "");
-    const time = now.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false });
+    const date = now
+      .toLocaleDateString("ko-KR", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      })
+      .replace(/\. /g, ".")
+      .replace(/\.$/, "");
+    const time = now.toLocaleTimeString("ko-KR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
     const resultId = Date.now();
 
-    // 결과 저장
     addInterviewResult({
       id: resultId,
       date,
@@ -261,17 +307,18 @@ export default function InterviewChatPage({
       score: finalScore,
       duration: durationText,
       result: resultStatus,
-      // 상세 리포트 저장
       detailedReport: {
         competency_scores: finalCompetencyScores,
-        starr_coverage: starrCoverage,
+        starr_coverage: {},
         strengths: Array.from(allStrengths),
         gaps: Array.from(allGaps),
-        feedback: finalScore >= 70 ? "전반적으로 훌륭한 역량을 보여주셨습니다." : "일부 역량에서 보완이 필요합니다.",
+        feedback:
+          finalScore >= 70
+            ? "전반적으로 훌륭한 역량을 보여주셨습니다."
+            : "일부 역량에서 보완이 필요합니다.",
       },
     });
 
-    // 히스토리 저장
     addInterviewHistory({
       id: resultId,
       date,
@@ -282,7 +329,9 @@ export default function InterviewChatPage({
       qaList: messages
         .filter((m) => m.sender === "user")
         .map((m, idx) => ({
-          question: messages.find((msg) => msg.id < m.id && msg.sender === "ai")?.text || "질문 없음",
+          question:
+            messages.find((msg) => msg.id < m.id && msg.sender === "ai")
+              ?.text || "질문 없음",
           answer: m.text,
           score: finalScore,
         })),
@@ -303,7 +352,6 @@ export default function InterviewChatPage({
     const userText = inputText;
     setInputText("");
 
-    // 1. 사용자 메시지 표시
     const userMsg: Message = {
       id: messages.length + 1,
       sender: "user",
@@ -315,7 +363,6 @@ export default function InterviewChatPage({
     };
     setMessages((prev) => [...prev, userMsg]);
 
-    // 마지막 질문이었으면 종료 처리
     if (turnCount >= totalQuestions) {
       setLoading(true);
       setTimeout(() => {
@@ -339,27 +386,42 @@ export default function InterviewChatPage({
     setLoading(true);
 
     try {
-      // 2. AI에게 답변 전송 (Submit Answer)
-      const payloadContext = getContextPayload();
+      if (!sessionContext) {
+        console.warn("⚠️ [Frontend Warning] Session Context is missing!");
+        // Optional: Alert user or try to restore?
+        // For now, we proceed but log warning. The backend might handle it with default context.
+      }
+      const payloadContext = sessionContext;
 
-      const response = await interviewService.submitAnswer({
+      console.log("🔍 [Frontend Debug] Payload Context:", payloadContext); // Debug log
+
+      const userIdNum =
+        typeof user?.userId === "string"
+          ? parseInt(user.userId)
+          : user?.userId || 0;
+
+      const submitPayload = {
         interviewId: realInterviewId,
         answer: userText,
-        // Re-send context for persistence
-        resumeId: payloadContext?.resumeId || 0, // Ignored by valid submitAnswer but needed for type?
+        resumeId: payloadContext?.resumeId || 0,
         jobCategory: payloadContext?.jobCategory || "",
         difficulty: payloadContext?.difficulty || "JUNIOR",
         resumeContent: payloadContext?.resumeContent,
         portfolio: payloadContext?.portfolio,
-        portfolioFiles: payloadContext?.portfolioFiles
-      });
+        portfolioFiles: payloadContext?.portfolioFiles,
+      };
 
-      // 리포트 저장
+      console.log("🚀 [Frontend Debug] Sending Submit Payload:", submitPayload); // Debug log
+
+      const response = await interviewService.submitAnswer(
+        userIdNum,
+        submitPayload,
+      );
+
       if (response.realtime?.report) {
         setReports((prev) => [...prev, response.realtime!.report!]);
       }
 
-      // 3. AI 리액션
       if (response.realtime?.reaction && response.realtime.reaction.text) {
         const reactionMsg: Message = {
           id: messages.length + 2,
@@ -373,12 +435,11 @@ export default function InterviewChatPage({
         setMessages((prev) => [...prev, reactionMsg]);
       }
 
-      // 4. 다음 질문 표시
       setTimeout(() => {
         const nextQMsg: Message = {
           id: Date.now(),
           sender: "ai",
-          text: response.realtime?.next_question || response.question, // fallback
+          text: response.realtime?.next_question || response.question,
           timestamp: new Date().toLocaleTimeString("ko-KR", {
             hour: "2-digit",
             minute: "2-digit",
@@ -413,111 +474,125 @@ export default function InterviewChatPage({
           <InterviewSidebar
             activeMenu={activeMenu}
             onMenuClick={(menuId) => {
-              if (confirm("면접을 종료하시겠습니까? 저장되지 않습니다.")) {
+              if (step === "chat") {
+                if (confirm("면접을 종료하시겠습니까? 저장되지 않습니다.")) {
+                  if (onMenuClick) onMenuClick(menuId);
+                }
+              } else {
                 if (onMenuClick) onMenuClick(menuId);
               }
             }}
           />
 
           <div className="flex-1 space-y-6">
-            {/* Header */}
-            <div className="bg-white border-2 border-blue-400 rounded-2xl p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={onBack}
-                    className="text-blue-600 hover:scale-105 transition font-semibold flex items-center gap-2"
-                  >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 19l-7-7 7-7"
-                      />
-                    </svg>
-                    나가기
-                  </button>
-                  <div>
-                    <h2 className="font-bold text-lg">
-                      AI 면접관 {level === "junior" ? "(Junior)" : "(Senior)"}
-                    </h2>
-                    <p className="text-sm text-gray-500">
-                      실시간 답변 분석 및 꼬리질문 엔진 가동 중
-                    </p>
-                  </div>
-                </div>
-                <div className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-bold">
-                  Q. {turnCount}/{totalQuestions}
-                </div>
-              </div>
-            </div>
-
-            {/* Chat Area */}
-            <div
-              ref={chatContainerRef}
-              onScroll={handleScroll}
-              className="bg-white border-2 border-blue-400 rounded-2xl p-6 h-[500px] overflow-y-auto space-y-4"
-            >
-              {messages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={`flex gap-3 ${msg.sender === "user" ? "flex-row-reverse" : ""}`}
-                >
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0 ${msg.sender === "ai" ? "bg-blue-100" : "bg-gray-200"}`}
-                  >
-                    {msg.sender === "ai" ? "🤖" : "👤"}
-                  </div>
-                  <div
-                    className={`max-w-[70%] p-4 rounded-2xl whitespace-pre-wrap ${msg.sender === "ai" ? "bg-gray-50 border border-gray-200 text-gray-800" : "bg-blue-600 text-white"}`}
-                  >
-                    {msg.text}
-                    <div
-                      className={`text-xs mt-2 ${msg.sender === "ai" ? "text-gray-400" : "text-blue-200"}`}
-                    >
-                      {msg.timestamp}
+            {step === "setup" ? (
+              <InterviewSetup
+                resumes={resumes}
+                selectedResumeId={selectedResumeId}
+                onResumeChange={setSelectedResumeId}
+                onStart={handleStartInterview}
+                isLoading={loading}
+              />
+            ) : (
+              <>
+                <div className="bg-white border-2 border-blue-400 rounded-2xl p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <button
+                        onClick={onBack}
+                        className="text-blue-600 hover:scale-105 transition font-semibold flex items-center gap-2"
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 19l-7-7 7-7"
+                          />
+                        </svg>
+                        나가기
+                      </button>
+                      <div>
+                        <h2 className="font-bold text-lg">
+                          AI 면접관{" "}
+                          {level === "junior" ? "(Junior)" : "(Senior)"}
+                        </h2>
+                        <p className="text-sm text-gray-500">
+                          실시간 답변 분석 및 꼬리질문 엔진 가동 중
+                        </p>
+                      </div>
+                    </div>
+                    <div className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-bold">
+                      Q. {turnCount}/{totalQuestions}
                     </div>
                   </div>
                 </div>
-              ))}
-              {loading && (
-                <div className="flex gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                    🤖
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-2xl text-gray-500 animate-pulse">
-                    답변을 분석하고 다음 질문을 생각하는 중입니다...
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
 
-            {/* Input Area */}
-            <div className="bg-white border-2 border-blue-400 rounded-2xl p-4 flex gap-4">
-              <textarea
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="답변을 입력하세요..."
-                className="flex-1 resize-none border-none outline-none p-2 text-lg"
-                rows={2}
-                disabled={loading}
-              />
-              <button
-                onClick={handleSend}
-                disabled={!inputText.trim() || loading}
-                className="bg-blue-600 text-white px-8 py-2 rounded-xl font-bold hover:bg-blue-700 disabled:bg-gray-300 transition"
-              >
-                전송
-              </button>
-            </div>
+                <div
+                  ref={chatContainerRef}
+                  onScroll={handleScroll}
+                  className="bg-white border-2 border-blue-400 rounded-2xl p-6 h-[500px] overflow-y-auto space-y-4"
+                >
+                  {messages.map((msg, idx) => (
+                    <div
+                      key={idx}
+                      className={`flex gap-3 ${msg.sender === "user" ? "flex-row-reverse" : ""}`}
+                    >
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0 ${msg.sender === "ai" ? "bg-blue-100" : "bg-gray-200"}`}
+                      >
+                        {msg.sender === "ai" ? "🤖" : "👤"}
+                      </div>
+                      <div
+                        className={`max-w-[70%] p-4 rounded-2xl whitespace-pre-wrap ${msg.sender === "ai" ? "bg-gray-50 border border-gray-200 text-gray-800" : "bg-blue-600 text-white"}`}
+                      >
+                        {msg.text}
+                        <div
+                          className={`text-xs mt-2 ${msg.sender === "ai" ? "text-gray-400" : "text-blue-200"}`}
+                        >
+                          {msg.timestamp}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {loading && (
+                    <div className="flex gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        🤖
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-2xl text-gray-500 animate-pulse">
+                        답변을 분석하고 다음 질문을 생각하는 중입니다...
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                <div className="bg-white border-2 border-blue-400 rounded-2xl p-4 flex gap-4">
+                  <textarea
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="답변을 입력하세요..."
+                    className="flex-1 resize-none border-none outline-none p-2 text-lg"
+                    rows={2}
+                    disabled={loading}
+                  />
+                  <button
+                    onClick={handleSend}
+                    disabled={!inputText.trim() || loading}
+                    className="bg-blue-600 text-white px-8 py-2 rounded-xl font-bold hover:bg-blue-700 disabled:bg-gray-300 transition"
+                  >
+                    전송
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
