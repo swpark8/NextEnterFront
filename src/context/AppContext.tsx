@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode, useCallback } from "react";
 import { ResumeResponse, ResumeSections, PortfolioInfo } from "../api/resume";
 
 // 이력서 타입 (기존 간단한 타입)
@@ -483,14 +483,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const setResumes = (resumes: Resume[]) => {
+  const setResumes = useCallback((resumes: Resume[]) => {
     setResumesState(resumes);
     try {
       localStorage.setItem("nextenter_resumes", JSON.stringify(resumes));
     } catch (error) {
       console.error("이력서 저장 실패:", error);
     }
-  };
+  }, []);
 
   // ✅ 상세 이력서 관리 함수들
   const setDetailedResumes = (resumes: DetailedResume[]) => {
@@ -603,14 +603,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const setBusinessJobs = (jobs: BusinessJob[]) => {
+  const setBusinessJobs = useCallback((jobs: BusinessJob[]) => {
     setBusinessJobsState(jobs);
     try {
       localStorage.setItem("nextenter_business_jobs", JSON.stringify(jobs));
     } catch (error) {
       console.error("기업 공고 저장 실패:", error);
     }
-  };
+  }, []);
 
   // 지원 내역 추가
   const addJobApplication = (application: JobApplication) => {
