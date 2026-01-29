@@ -194,7 +194,7 @@ export default function UserNotificationsPage() {
       case "INTERVIEW_REJECTED":
         return "✅";
       case "POSITION_OFFER":
-        return "💼";
+        return "";
       case "APPLICATION_STATUS":
         return "📊";
       default:
@@ -205,7 +205,7 @@ export default function UserNotificationsPage() {
   const getNotificationTypeText = (type: string) => {
     switch (type) {
       case "INTERVIEW_OFFER":
-        return "스카웃 제안";
+        return "기업의 요청";
       case "INTERVIEW_ACCEPTED":
         return "면접 수락 확인";
       case "INTERVIEW_REJECTED":

@@ -32,7 +32,7 @@ export default function MatchingHistoryPage({
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-white">
         <div className="px-4 py-8 mx-auto max-w-7xl">
           {/* 상단 헤더 */}
           <div className="flex items-center justify-between mb-6">

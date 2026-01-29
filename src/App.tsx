@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import UserLayout from "./layouts/UserLayout";
@@ -13,7 +13,7 @@ import OAuth2CallbackPage from "./pages/OAuth2CallbackPage";
 
 // 개인회원 페이지들
 import HomePage from "./features/home/HomePage";
-import MyPage from "./features/mypage/MyPage";
+import MyPage from "./features/mypage/ImprovedMyPage";
 import ProfilePage from "./features/mypage/ProfilePage";
 import CreditPage from "./features/credit/CreditPage";
 import CreditChargePage from "./features/credit-charge/CreditChargePage";
@@ -47,30 +47,13 @@ import ApplicantDetailPage from "./features-company/applicants/ApplicantDetailPa
 import ApplicantCompatibilityPage from "./features-company/applicants/ApplicantCompatibilityPage";
 import TalentSearchPage from "./features-company/talent-search/TalentSearchPage";
 import ScrapTalentPage from "./features-company/talent-search/ScrapTalentPage";
-import TalentResumeDetailPage from "./features-company/talent-search/TalentResumeDetailPage"; // ✅ 추가
+import TalentResumeDetailPage from "./features-company/talent-search/TalentResumeDetailPage";
 import BusinessCreditPage from "./features-company/credit/BusinessCreditPage";
 import CompanyMyPage from "./features-company/company-mypage/CompanyMyPage";
 import CompanyNotificationsPage from "./features-company/pages/CompanyNotificationsPage";
 
 // 화면 전환시 상단으로 끌어 올림
 import ScrollToTop from "./components/ScrollToTop";
-
-// ✅ 인재 상세보기를 위한 Wrapper 컴포넌트
-function TalentResumeDetailPageWrapper() {
-  const { resumeId } = useParams();
-  const navigate = useNavigate();
-
-  if (!resumeId) {
-    return <Navigate to="/company/talent-search" replace />;
-  }
-
-  return (
-    <TalentResumeDetailPage
-      resumeId={parseInt(resumeId)}
-      onBack={() => navigate("/company/talent-search")}
-    />
-  );
-}
 
 function App() {
   return (
@@ -330,12 +313,12 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            {/* ✅ 인재 상세보기 라우트 추가 */}
+            {/* ✅ 인재 상세보기 라우트 - Wrapper 제거하고 직접 사용 */}
             <Route
               path="talent-search/:resumeId"
               element={
                 <ProtectedRoute allowedUserType="company">
-                  <TalentResumeDetailPageWrapper />
+                  <TalentResumeDetailPage />
                 </ProtectedRoute>
               }
             />

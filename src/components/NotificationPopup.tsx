@@ -1,11 +1,17 @@
-import { useEffect, useState } from 'react';
-import { Notification as NotificationData, markAsRead, markAllAsRead, getUnreadNotifications, getUnreadCount } from '../api/notification';
-import { formatDistanceToNow } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { useEffect, useState } from "react";
+import {
+  Notification as NotificationData,
+  markAsRead,
+  markAllAsRead,
+  getUnreadNotifications,
+  getUnreadCount,
+} from "../api/notification";
+import { formatDistanceToNow } from "date-fns";
+import { ko } from "date-fns/locale";
 
 interface NotificationPopupProps {
   userId: number;
-  userType: 'company' | 'individual';
+  userType: "company" | "individual";
   isOpen: boolean;
   onClose: () => void;
   realtimeNotifications: NotificationData[];
@@ -20,7 +26,7 @@ export default function NotificationPopup({
   onClose,
   realtimeNotifications,
   unreadCount,
-  onUnreadCountChange
+  onUnreadCountChange,
 }: NotificationPopupProps) {
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -34,7 +40,7 @@ export default function NotificationPopup({
   // 실시간 알림 추가
   useEffect(() => {
     if (realtimeNotifications.length > 0) {
-      setNotifications(prev => [...realtimeNotifications, ...prev]);
+      setNotifications((prev) => [...realtimeNotifications, ...prev]);
     }
   }, [realtimeNotifications]);
 
@@ -43,12 +49,12 @@ export default function NotificationPopup({
     try {
       const [unreadList, count] = await Promise.all([
         getUnreadNotifications(userType, userId),
-        getUnreadCount(userType, userId)
+        getUnreadCount(userType, userId),
       ]);
       setNotifications(unreadList);
       onUnreadCountChange(count);
     } catch (error) {
-      console.error('알림 로드 실패:', error);
+      console.error("알림 로드 실패:", error);
     } finally {
       setLoading(false);
     }
@@ -57,10 +63,10 @@ export default function NotificationPopup({
   const handleMarkAsRead = async (notificationId: number) => {
     try {
       await markAsRead(notificationId);
-      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
       onUnreadCountChange(Math.max(0, unreadCount - 1));
     } catch (error) {
-      console.error('알림 읽음 처리 실패:', error);
+      console.error("알림 읽음 처리 실패:", error);
     }
   };
 
@@ -70,27 +76,27 @@ export default function NotificationPopup({
       setNotifications([]);
       onUnreadCountChange(0);
     } catch (error) {
-      console.error('모든 알림 읽음 처리 실패:', error);
+      console.error("모든 알림 읽음 처리 실패:", error);
     }
   };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'NEW_APPLICATION':
-        return '📝';
-      case 'DEADLINE_APPROACHING':
-        return '⏰';
-      case 'INTERVIEW_ACCEPTED':
-      case 'INTERVIEW_OFFER':
-        return '✅';
-      case 'INTERVIEW_REJECTED':
-        return '❌';
-      case 'POSITION_OFFER':
-        return '💼';
-      case 'APPLICATION_STATUS':
-        return '📊';
+      case "NEW_APPLICATION":
+        return "📝";
+      case "DEADLINE_APPROACHING":
+        return "⏰";
+      case "INTERVIEW_ACCEPTED":
+      case "INTERVIEW_OFFER":
+        return "✅";
+      case "INTERVIEW_REJECTED":
+        return "❌";
+      case "POSITION_OFFER":
+        return "";
+      case "APPLICATION_STATUS":
+        return "📊";
       default:
-        return '🔔';
+        return "🔔";
     }
   };
 
@@ -111,7 +117,9 @@ export default function NotificationPopup({
           <div>
             <h3 className="text-lg font-bold text-gray-900">알림</h3>
             <p className="text-sm text-gray-500 mt-1">
-              읽지 않은 알림 <span className="text-blue-600 font-semibold">{unreadCount}</span>개
+              읽지 않은 알림{" "}
+              <span className="text-blue-600 font-semibold">{unreadCount}</span>
+              개
             </p>
           </div>
           <div className="flex items-center space-x-2">
@@ -127,8 +135,18 @@ export default function NotificationPopup({
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 transition"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -142,11 +160,25 @@ export default function NotificationPopup({
             </div>
           ) : notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-              <svg className="w-20 h-20 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              <svg
+                className="w-20 h-20 mb-4 text-gray-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                />
               </svg>
-              <p className="text-base font-medium text-gray-500">새로운 알림이 없습니다</p>
-              <p className="text-sm text-gray-400 mt-1">알림이 오면 여기에 표시됩니다</p>
+              <p className="text-base font-medium text-gray-500">
+                새로운 알림이 없습니다
+              </p>
+              <p className="text-sm text-gray-400 mt-1">
+                알림이 오면 여기에 표시됩니다
+              </p>
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
@@ -175,7 +207,7 @@ export default function NotificationPopup({
                       <p className="text-xs text-gray-400 mt-2">
                         {formatDistanceToNow(new Date(notification.createdAt), {
                           addSuffix: true,
-                          locale: ko
+                          locale: ko,
                         })}
                       </p>
                     </div>

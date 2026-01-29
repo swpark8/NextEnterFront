@@ -3,7 +3,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import ResumeSidebar from "./components/ResumeSidebar";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
-import { getResumeDetail, deleteResume, type ResumeResponse } from "../../api/resume";
+import {
+  getResumeDetail,
+  deleteResume,
+  type ResumeResponse,
+} from "../../api/resume";
 import api from "../../api/axios";
 
 export default function ResumeDetailPage() {
@@ -12,7 +16,7 @@ export default function ResumeDetailPage() {
   const { user } = useAuth();
   const { activeMenu, handleMenuClick } = usePageNavigation(
     "resume",
-    "resume-sub-1"
+    "resume-sub-1",
   );
 
   const [loading, setLoading] = useState(true);
@@ -50,7 +54,7 @@ export default function ResumeDetailPage() {
         console.error("이력서 상세 조회 실패:", error);
         alert(
           error.response?.data?.message ||
-            "이력서 정보를 불러오는데 실패했습니다."
+            "이력서 정보를 불러오는데 실패했습니다.",
         );
         navigate("/user/resume");
       } finally {
@@ -94,7 +98,7 @@ export default function ResumeDetailPage() {
       console.error("파일 다운로드 오류:", error);
       alert(
         error.response?.data?.message ||
-          "파일 다운로드 중 오류가 발생했습니다."
+          "파일 다운로드 중 오류가 발생했습니다.",
       );
     }
   };
@@ -112,7 +116,7 @@ export default function ResumeDetailPage() {
               userId: user.userId.toString(),
             },
             responseType: "blob",
-          }
+          },
         );
 
         const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -126,12 +130,12 @@ export default function ResumeDetailPage() {
       } catch (error: any) {
         console.error("포트폴리오 다운로드 오류:", error);
         alert(
-          "포트폴리오를 다운로드할 수 없습니다. 파일이 서버에 저장되지 않았을 수 있습니다."
+          "포트폴리오를 다운로드할 수 없습니다. 파일이 서버에 저장되지 않았을 수 있습니다.",
         );
       }
     } else {
       alert(
-        "이 이력서의 포트폴리오는 파일명만 저장되어 있습니다.\n실제 파일을 다운로드하려면 이력서를 다시 작성하거나 포트폴리오를 별도로 업로드해주세요."
+        "이 이력서의 포트폴리오는 파일명만 저장되어 있습니다.\n실제 파일을 다운로드하려면 이력서를 다시 작성하거나 포트폴리오를 별도로 업로드해주세요.",
       );
     }
   };
@@ -140,12 +144,11 @@ export default function ResumeDetailPage() {
   const handleCoverLetterDownload = async (file: any) => {
     if (!user?.userId) return;
 
-    const coverLetterId =
-      typeof file === "object" ? file.coverLetterId : null;
-    
+    const coverLetterId = typeof file === "object" ? file.coverLetterId : null;
+
     // ✅ title 필드에서 파일명 가져오기
     let filename = typeof file === "string" ? file : file.title;
-    
+
     // ✅ 확장자 추가 (파일명에 확장자가 없으면)
     if (typeof file === "object" && file.fileType) {
       const fileType = file.fileType.toLowerCase();
@@ -163,7 +166,7 @@ export default function ResumeDetailPage() {
               userId: user.userId,
             },
             responseType: "blob",
-          }
+          },
         );
 
         const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -177,12 +180,12 @@ export default function ResumeDetailPage() {
       } catch (error: any) {
         console.error("자기소개서 다운로드 오류:", error);
         alert(
-          "자기소개서를 다운로드할 수 없습니다. 파일이 서버에 저장되지 않았을 수 있습니다."
+          "자기소개서를 다운로드할 수 없습니다. 파일이 서버에 저장되지 않았을 수 있습니다.",
         );
       }
     } else {
       alert(
-        "이 이력서의 자기소개서는 파일명만 저장되어 있습니다.\n실제 파일을 다운로드하려면 이력서를 다시 작성하거나 자기소개서를 별도로 업로드해주세요."
+        "이 이력서의 자기소개서는 파일명만 저장되어 있습니다.\n실제 파일을 다운로드하려면 이력서를 다시 작성하거나 자기소개서를 별도로 업로드해주세요.",
       );
     }
   };
@@ -296,7 +299,8 @@ export default function ResumeDetailPage() {
   const structuredData = parseStructuredData(resume.structuredData);
 
   // ✅ 파일만 업로드한 이력서가 아니면 모두 수정 가능
-  const isFormBasedResume = !resume.filePath || 
+  const isFormBasedResume =
+    !resume.filePath ||
     experiences.length > 0 ||
     certificates.length > 0 ||
     educations.length > 0 ||
@@ -337,7 +341,7 @@ export default function ResumeDetailPage() {
         </div>
       )}
 
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-white">
         <div className="px-4 py-8 mx-auto max-w-7xl">
           <h2 className="mb-6 text-2xl font-bold">이력서 상세</h2>
           <div className="flex gap-6">
@@ -426,79 +430,89 @@ export default function ResumeDetailPage() {
                   </div>
                 </div>
 
-                {/* ✅ 인적사항 - User 테이블에서 가져온 정보 + structuredData */}
-                {(resume.userName ||
-                  resume.userEmail ||
-                  resume.userGender ||
-                  resume.userPhone ||
-                  structuredData?.personalInfo) && (
-                  <div className="p-6 mb-8 border-2 border-indigo-200 rounded-lg bg-indigo-50">
-                    <h2 className="mb-4 text-lg font-bold text-gray-900">
-                      📋 인적사항
-                    </h2>
-                    <div className="grid grid-cols-2 gap-4">
-                      {resume.userName && (
-                        <div className="p-3 bg-white border border-indigo-200 rounded-lg">
-                          <div className="mb-1 text-xs font-medium text-gray-500">
-                            이름
-                          </div>
-                          <div className="font-semibold text-gray-900">
-                            {resume.userName}
-                          </div>
+                {(resume.resumeName ||
+                  resume.resumeEmail ||
+                  resume.resumeGender ||
+                  resume.resumePhone ||
+                  resume.resumeBirthDate ||
+                  resume.resumeAddress ||
+                  resume.profileImage) && (
+                    <div className="p-6 mb-8 border-2 border-indigo-200 rounded-lg bg-indigo-50">
+                    <h2 className="mb-4 text-lg font-bold text-gray-900">📋 인적사항</h2>
+
+                    <div className="flex flex-col gap-6 md:flex-row md:items-start">
+                      {/* ✅ 프로필 이미지 */}
+                      {resume.profileImage && (
+                        <div className="flex justify-center md:justify-start">
+                          <img
+                            src={resume.profileImage}
+                            alt="프로필 이미지"
+                            className="object-cover w-40 h-48 bg-white border-2 border-indigo-200 rounded-lg shadow-sm"
+                          />
                         </div>
                       )}
-                      {resume.userGender && (
-                        <div className="p-3 bg-white border border-indigo-200 rounded-lg">
-                          <div className="mb-1 text-xs font-medium text-gray-500">
-                            성별
+
+
+                      {/* ✅ 인적사항 정보 */}
+                      <div className="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2">
+                        {resume.resumeName && (
+                          <div className="p-3 bg-white border border-indigo-200 rounded-lg">
+                            <div className="mb-1 text-xs font-medium text-gray-500">이름</div>
+                            <div className="font-semibold text-gray-900">{resume.resumeName}</div>
                           </div>
-                          <div className="font-semibold text-gray-900">
-                            {resume.userGender === "MALE" ? "남성" : "여성"}
+                        )}
+
+                        {resume.resumeGender && (
+                          <div className="p-3 bg-white border border-indigo-200 rounded-lg">
+                            <div className="mb-1 text-xs font-medium text-gray-500">성별</div>
+                            <div className="font-semibold text-gray-900">
+                              {resume.resumeGender === "MALE" ? "남성" : "여성"}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      {structuredData?.personalInfo?.birthDate && (
-                        <div className="p-3 bg-white border border-indigo-200 rounded-lg">
-                          <div className="mb-1 text-xs font-medium text-gray-500">
-                            생년월일
+                        )}
+
+                        {resume.resumeBirthDate && (
+                          <div className="p-3 bg-white border border-indigo-200 rounded-lg">
+                            <div className="mb-1 text-xs font-medium text-gray-500">생년월일</div>
+                            <div className="font-semibold text-gray-900">
+                              {resume.resumeBirthDate}
+                            </div>
                           </div>
-                          <div className="font-semibold text-gray-900">
-                            {structuredData.personalInfo.birthDate}
+                        )}
+
+                        {resume.resumeEmail && (
+                          <div className="p-3 bg-white border border-indigo-200 rounded-lg">
+                            <div className="mb-1 text-xs font-medium text-gray-500">이메일</div>
+                            <div className="font-semibold text-gray-900">
+                              {resume.resumeEmail}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      {resume.userEmail && (
-                        <div className="p-3 bg-white border border-indigo-200 rounded-lg">
-                          <div className="mb-1 text-xs font-medium text-gray-500">
-                            이메일
+                        )}
+
+                        {resume.resumePhone && (
+                          <div className="p-3 bg-white border border-indigo-200 rounded-lg">
+                            <div className="mb-1 text-xs font-medium text-gray-500">연락처</div>
+                            <div className="font-semibold text-gray-900">
+                              {resume.resumePhone}
+                            </div>
                           </div>
-                          <div className="font-semibold text-gray-900">
-                            {resume.userEmail}
+                        )}
+
+                        {resume.resumeAddress && (
+                          <div className="p-3 bg-white border border-indigo-200 rounded-lg sm:col-span-2">
+                            <div className="mb-1 text-xs font-medium text-gray-500">주소</div>
+                            <div className="font-semibold text-gray-900">
+                              {resume.resumeAddress}
+                              {resume.resumeDetailAddress && ` ${resume.resumeDetailAddress}`}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      {resume.userPhone && (
-                        <div className="p-3 bg-white border border-indigo-200 rounded-lg">
-                          <div className="mb-1 text-xs font-medium text-gray-500">
-                            연락처
-                          </div>
-                          <div className="font-semibold text-gray-900">
-                            {resume.userPhone}
-                          </div>
-                        </div>
-                      )}
-                      {structuredData?.personalInfo?.address && (
-                        <div className="col-span-2 p-3 bg-white border border-indigo-200 rounded-lg">
-                          <div className="mb-1 text-xs font-medium text-gray-500">
-                            주소
-                          </div>
-                          <div className="font-semibold text-gray-900">
-                            {structuredData.personalInfo.address}
-                          </div>
-                        </div>
-                      )}
+                        )}
+
+                      </div>
                     </div>
                   </div>
+
+                  
                 )}
 
                 {/* ✅ 주요 스킬 */}
@@ -596,7 +610,7 @@ export default function ResumeDetailPage() {
                 {careers.length > 0 && (
                   <div className="p-6 mb-8 border-2 border-teal-200 rounded-lg bg-teal-50">
                     <h2 className="mb-4 text-lg font-bold text-gray-900">
-                      💼 경력
+                      경력
                     </h2>
                     <div className="space-y-3">
                       {careers.map((career: any, idx: number) => (
@@ -633,38 +647,32 @@ export default function ResumeDetailPage() {
                       📁 포트폴리오
                     </h2>
                     <div className="space-y-3">
-                      {resume.portfolios.map(
-                        (portfolio: any, idx: number) => (
-                          <div
-                            key={idx}
-                            className="flex items-center justify-between p-4 bg-white border border-pink-200 rounded-lg"
-                          >
-                            <div className="flex items-center gap-3">
-                              <span className="text-2xl">
-                                {portfolio.fileType === "pdf"
-                                  ? "📄"
-                                  : "📃"}
-                              </span>
-                              <div>
-                                <p className="font-semibold text-gray-900">
-                                  {portfolio.filename}
-                                </p>
-                                <p className="text-sm text-gray-600">
-                                  {portfolio.description || "설명 없음"}
-                                </p>
-                              </div>
+                      {resume.portfolios.map((portfolio: any, idx: number) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between p-4 bg-white border border-pink-200 rounded-lg"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl">
+                              {portfolio.fileType === "pdf" ? "📄" : "📃"}
+                            </span>
+                            <div>
+                              <p className="font-semibold text-gray-900">
+                                {portfolio.filename}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                {portfolio.description || "설명 없음"}
+                              </p>
                             </div>
-                            <button
-                              onClick={() =>
-                                handlePortfolioDownload(portfolio)
-                              }
-                              className="px-4 py-2 text-sm font-semibold text-pink-700 transition bg-white border-2 border-pink-300 rounded-lg hover:bg-pink-100"
-                            >
-                              다운로드
-                            </button>
                           </div>
-                        )
-                      )}
+                          <button
+                            onClick={() => handlePortfolioDownload(portfolio)}
+                            className="px-4 py-2 text-sm font-semibold text-pink-700 transition bg-white border-2 border-pink-300 rounded-lg hover:bg-pink-100"
+                          >
+                            다운로드
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -710,7 +718,7 @@ export default function ResumeDetailPage() {
                                 다운로드
                               </button>
                             </div>
-                          )
+                          ),
                         )}
                       </div>
                     </div>
@@ -734,7 +742,9 @@ export default function ResumeDetailPage() {
                               <div className="flex items-center justify-between pb-4 mb-4 border-b border-green-200">
                                 <div className="flex items-center gap-3">
                                   <span className="text-2xl">
-                                    {coverLetter.fileType === "pdf" ? "📄" : "📃"}
+                                    {coverLetter.fileType === "pdf"
+                                      ? "📄"
+                                      : "📃"}
                                   </span>
                                   <div>
                                     <p className="font-semibold text-gray-900">
@@ -755,7 +765,7 @@ export default function ResumeDetailPage() {
                                 </button>
                               </div>
                             )}
-                            
+
                             {/* 텍스트 내용 */}
                             {coverLetter.content && (
                               <div>
@@ -770,7 +780,7 @@ export default function ResumeDetailPage() {
                               </div>
                             )}
                           </div>
-                        )
+                        ),
                       )}
                     </div>
                   </div>
@@ -790,7 +800,9 @@ export default function ResumeDetailPage() {
                             {structuredData.coverLetter.files.map(
                               (file: any, idx: number) => {
                                 const filename =
-                                  typeof file === "string" ? file : file.filename;
+                                  typeof file === "string"
+                                    ? file
+                                    : file.filename;
                                 const coverLetterId =
                                   typeof file === "object"
                                     ? file.coverLetterId
@@ -803,7 +815,9 @@ export default function ResumeDetailPage() {
                                   >
                                     <div className="flex items-center gap-3">
                                       <span className="text-2xl">
-                                        {filename?.endsWith(".pdf") ? "📄" : "📃"}
+                                        {filename?.endsWith(".pdf")
+                                          ? "📄"
+                                          : "📃"}
                                       </span>
                                       <div>
                                         <p className="font-semibold text-gray-900">
@@ -826,7 +840,7 @@ export default function ResumeDetailPage() {
                                     </button>
                                   </div>
                                 );
-                              }
+                              },
                             )}
                           </div>
                         </div>

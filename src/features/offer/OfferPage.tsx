@@ -85,7 +85,7 @@ export default function OfferPage({ initialMenu, onNavigate }: OfferPageProps) {
     }
 
     return (
-      <div className="px-4 py-8 mx-auto max-w-7xl">
+      <div className="px-4 py-8 mx-auto max-w-7xl ">
         <div className="flex gap-6">
           <OfferSidebar activeMenu={activeMenu} onMenuClick={handleMenuClick} />
 

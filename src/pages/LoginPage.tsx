@@ -117,7 +117,7 @@ export default function LoginPage({
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-white">
       {/* 메인 컨텐츠 */}
       <div
         className="flex flex-col items-center flex-1 gap-6 px-4 pb-4 pt-18"

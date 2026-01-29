@@ -100,7 +100,7 @@ export default function CoverLetterFormPage({
   };
 
   return (
-    <div className="px-4 py-8 mx-auto max-w-7xl">
+    <div className="px-4 py-8 mx-auto max-w-7xl bg-white">
       <h2 className="inline-block mb-6 text-2xl font-bold">
         {isEditMode ? "자소서 수정" : "자소서 작성"}
       </h2>

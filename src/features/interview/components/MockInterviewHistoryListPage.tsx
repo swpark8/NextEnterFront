@@ -63,7 +63,7 @@ export default function MockInterviewHistoryListPage({
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-white">
         <div className="px-4 py-8 mx-auto max-w-7xl">
           {/* AI 모의 면접 타이틀 */}
           <div className="flex items-center gap-3 mb-6">

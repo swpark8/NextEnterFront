@@ -1,13 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import OfferSidebar from "./components/OfferSidebar";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 import { useAuth } from "../../context/AuthContext";
-// ✅ [수정 1] getReceivedOffers -> getMyOffers로 변경 (전체 목록 조회용)
 import {
   getMyOffers,
   acceptOffer,
   rejectOffer,
+  deleteOffer,
+  deleteOffersBulk,
   type InterviewOfferResponse,
 } from "../../api/interviewOffer";
 
@@ -21,54 +22,57 @@ export default function InterviewOfferPage({
   onNavigate,
 }: InterviewOfferPageProps) {
   const [searchParams, setSearchParams] = useSearchParams();
-
   const { activeMenu, handleMenuClick } = usePageNavigation(
-    "mypage",
-    initialMenu || "mypage-sub-4",
+    "offer",
+    initialMenu || "offer-sub-2",
     onNavigate,
   );
-
   const { user } = useAuth();
   const [offers, setOffers] = useState<InterviewOfferResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-
-  // ✅ [수정 2] 필터 상태 추가 (기본값: 전체)
   const [filterStatus, setFilterStatus] = useState("ALL");
-
-  // ✅ 스카웃 제안 로드 (전체 내역 가져오기)
-  useEffect(() => {
-    if (user?.userId) {
-      loadOffers();
-    }
-  }, [user?.userId]);
-
-  const loadOffers = async () => {
-    if (!user?.userId) return;
-
-    setIsLoading(true);
-    try {
-      // ✅ [수정 3] getMyOffers 사용하여 모든 상태(수락/거절 포함)의 제안을 가져옴
-      const data = await getMyOffers(user.userId);
-      setOffers(data);
-      console.log("스카웃 제안 로드 성공:", data);
-    } catch (error) {
-      console.error("스카웃 제안 로드 실패:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const [selectedOfferId, setSelectedOfferId] = useState<number | null>(null);
   const [hoveredId, setHoveredId] = useState<number | null>(null);
 
+  // 페이지네이션 및 선택 상태
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const listContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (user?.userId) loadOffers();
+  }, [user?.userId, filterStatus]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setSelectedIds([]); // 필터 바뀌면 선택 초기화
+  }, [filterStatus, itemsPerPage]);
+
   useEffect(() => {
     const idParam = searchParams.get("id");
-    if (idParam) {
-      setSelectedOfferId(Number(idParam));
-    } else {
-      setSelectedOfferId(null);
-    }
+    if (idParam) setSelectedOfferId(Number(idParam));
+    else setSelectedOfferId(null);
   }, [searchParams]);
+
+  const loadOffers = async () => {
+    if (!user?.userId) return;
+    const scrollPosition = listContainerRef.current?.scrollTop || 0;
+    setIsLoading(true);
+    try {
+      const includeDeleted = filterStatus === "DELETED" ? true : undefined;
+      const data = await getMyOffers(user.userId, includeDeleted);
+      setOffers(data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+      setTimeout(() => {
+        if (listContainerRef.current)
+          listContainerRef.current.scrollTop = scrollPosition;
+      }, 0);
+    }
+  };
 
   const handleOfferClick = (id: number) => {
     const newParams = new URLSearchParams(searchParams);
@@ -82,50 +86,122 @@ export default function InterviewOfferPage({
     setSearchParams(newParams);
   };
 
+  // 상세 화면 액션 핸들러
   const handleAccept = async (offerId: number) => {
     if (!user?.userId) return;
-    if (window.confirm("스카웃 제안을 수락하시겠습니까?")) {
+    if (window.confirm("면접 제안을 수락하시겠습니까?")) {
       try {
         await acceptOffer(offerId, user.userId);
-        alert("스카웃 제안을 수락했습니다.");
+        alert("수락했습니다.");
         loadOffers();
         handleBackToList();
       } catch (error) {
-        console.error("면접 수락 실패:", error);
-        alert("면접 수락에 실패했습니다.");
+        console.error(error);
       }
     }
   };
 
   const handleReject = async (offerId: number) => {
     if (!user?.userId) return;
-    if (window.confirm("스카웃 제안을 거절하시겠습니까?")) {
+    if (window.confirm("면접 제안을 거절하시겠습니까?")) {
       try {
         await rejectOffer(offerId, user.userId);
-        alert("스카웃 제안을 거절했습니다.");
+        alert("거절했습니다.");
         loadOffers();
         handleBackToList();
       } catch (error) {
-        console.error("면접 거절 실패:", error);
-        alert("면접 거절에 실패했습니다.");
+        console.error(error);
       }
     }
   };
 
+  // 개별 삭제
+  const handleDelete = async (offerId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user?.userId) return;
+    if (window.confirm("삭제하시겠습니까?")) {
+      try {
+        await deleteOffer(offerId, user.userId);
+        alert("삭제되었습니다.");
+        loadOffers();
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  };
+
+  // 일괄 삭제
+  const handleBulkDelete = async () => {
+    if (!user?.userId || selectedIds.length === 0) return;
+    if (window.confirm(`선택한 ${selectedIds.length}개를 삭제하시겠습니까?`)) {
+      try {
+        await deleteOffersBulk(selectedIds, user.userId);
+        alert("일괄 삭제되었습니다.");
+        setSelectedIds([]);
+        loadOffers();
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  };
+
+  // 체크박스 토글
+  const toggleSelect = (offerId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedIds((prev) =>
+      prev.includes(offerId)
+        ? prev.filter((id) => id !== offerId)
+        : [...prev, offerId],
+    );
+  };
+
+  // 전체 선택
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      const currentIds = currentOffers.map((o) => o.offerId);
+      setSelectedIds(Array.from(new Set([...selectedIds, ...currentIds])));
+    } else {
+      const currentIds = currentOffers.map((o) => o.offerId);
+      setSelectedIds((prev) => prev.filter((id) => !currentIds.includes(id)));
+    }
+  };
+
+  // 데이터 필터링 & 페이지네이션
+  const filteredOffers = offers.filter((offer) => {
+    if (filterStatus === "DELETED") return offer.deleted === true;
+    if (filterStatus === "ALL") return offer.deleted !== true;
+    return offer.interviewStatus === filterStatus && offer.deleted !== true;
+  });
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentOffers = filteredOffers.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredOffers.length / itemsPerPage);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    listContainerRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   const selectedOffer = offers.find((o) => o.offerId === selectedOfferId);
 
-  const getStatusText = (status: string) => {
+  // UI 헬퍼 함수
+  const getStatusText = (status: string, finalResult?: string) => {
     switch (status) {
       case "OFFERED":
-        return "제안됨";
+        return "면접 제안됨";
       case "ACCEPTED":
-        return "수락함";
+        return "면접 수락";
       case "REJECTED":
         return "거절함";
       case "SCHEDULED":
-        return "면접예정";
+        return "결과 대기";
       case "COMPLETED":
-        return "면접완료";
+        return finalResult === "PASSED"
+          ? "합격"
+          : finalResult === "REJECTED"
+            ? "불합격"
+            : "면접완료";
       case "CANCELED":
         return "제안취소";
       default:
@@ -133,20 +209,46 @@ export default function InterviewOfferPage({
     }
   };
 
+  const getStatusColor = (status: string, finalResult?: string) => {
+    switch (status) {
+      case "OFFERED":
+        return "text-blue-700 bg-blue-50 border-blue-200";
+      case "ACCEPTED":
+        return "text-green-700 bg-green-50 border-green-200";
+      case "REJECTED":
+        return "text-red-700 bg-red-50 border-red-200";
+      case "SCHEDULED":
+        return "text-purple-700 bg-purple-50 border-purple-200";
+      default:
+        return "text-gray-500 bg-gray-100 border-gray-200";
+    }
+  };
+
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("ko-KR", {
+    return new Date(dateString).toLocaleDateString("ko-KR", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
   };
 
-  // ✅ [수정 4] 필터링 로직 구현
-  const filteredOffers = offers.filter((offer) => {
-    if (filterStatus === "ALL") return true;
-    return offer.interviewStatus === filterStatus;
-  });
+  const getDday = (deadline?: string) => {
+    if (!deadline) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const deadlineDate = new Date(deadline);
+    deadlineDate.setHours(0, 0, 0, 0);
+    const diff = Math.ceil(
+      (deadlineDate.getTime() - today.getTime()) / 86400000,
+    );
+    if (diff < 0) return { text: "마감", color: "text-gray-500" };
+    if (diff <= 3)
+      return {
+        text: `D-${diff === 0 ? "day" : diff}`,
+        color: "text-red-600 font-bold",
+      };
+    return { text: `D-${diff}`, color: "text-gray-600" };
+  };
 
   return (
     <div className="px-4 py-8 mx-auto max-w-7xl">
@@ -155,27 +257,67 @@ export default function InterviewOfferPage({
         <OfferSidebar activeMenu={activeMenu} onMenuClick={handleMenuClick} />
         <div className="flex-1">
           <div className="mb-6">
-            {/* ✅ [수정 5] 헤더에 드롭다운 필터 추가 */}
             <div className="flex items-center justify-between pb-2 mb-4 border-b-2 border-blue-600">
-              <h3 className="text-lg font-bold text-blue-600">스카웃 제안</h3>
+              <div className="flex items-center gap-4">
+                <h3 className="text-lg font-bold text-blue-600">
+                  받은 면접 제안{" "}
+                  <span className="ml-2 text-sm font-normal text-gray-500">
+                    총 {filteredOffers.length}건
+                  </span>
+                </h3>
+                {selectedIds.length > 0 && !selectedOfferId && (
+                  <button
+                    onClick={handleBulkDelete}
+                    className="px-3 py-1 text-sm font-bold text-red-600 transition-colors bg-red-100 rounded hover:bg-red-200"
+                  >
+                    선택 삭제 ({selectedIds.length})
+                  </button>
+                )}
+              </div>
 
-              {/* 목록 화면일 때만 필터 보여주기 */}
               {!selectedOfferId && (
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-                >
-                  <option value="ALL">전체 보기</option>
-                  <option value="OFFERED">대기중 (제안됨)</option>
-                  <option value="ACCEPTED">수락함</option>
-                  <option value="REJECTED">거절함</option>
-                </select>
+                <div className="flex gap-2">
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg"
+                  >
+                    <option value={10}>10개씩</option>
+                    <option value={20}>20개씩</option>
+                  </select>
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg"
+                  >
+                    <option value="ALL">전체 보기</option>
+                    <option value="OFFERED">대기중</option>
+                    <option value="ACCEPTED">수락함</option>
+                    <option value="REJECTED">거절함</option>
+                    <option value="DELETED">휴지통</option>
+                  </select>
+                </div>
               )}
             </div>
 
+            {/* 전체 선택 바 (목록에서만 보임) */}
+            {!selectedOfferId && currentOffers.length > 0 && (
+              <div className="flex items-center px-4 py-2 mb-2 border border-gray-200 rounded-lg bg-gray-50">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded cursor-pointer focus:ring-blue-500"
+                  checked={
+                    currentOffers.length > 0 &&
+                    currentOffers.every((o) => selectedIds.includes(o.offerId))
+                  }
+                  onChange={handleSelectAll}
+                />
+                <span className="ml-3 text-sm text-gray-600">전체 선택</span>
+              </div>
+            )}
+
             {selectedOfferId && selectedOffer ? (
-              // 🟦 상세 화면 (기존 코드 유지)
+              // 🟦 상세 화면 (복구됨!)
               <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
                 <div className="flex items-center justify-between pb-6 mb-8 border-b border-gray-100">
                   <div>
@@ -183,8 +325,13 @@ export default function InterviewOfferPage({
                       <h2 className="text-2xl font-bold">
                         {selectedOffer.companyName} - {selectedOffer.jobTitle}
                       </h2>
-                      <span className="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded-full">
-                        {getStatusText(selectedOffer.interviewStatus)}
+                      <span
+                        className={`px-3 py-1 text-sm font-medium rounded-full border ${getStatusColor(selectedOffer.interviewStatus, selectedOffer.finalResult)}`}
+                      >
+                        {getStatusText(
+                          selectedOffer.interviewStatus,
+                          selectedOffer.finalResult,
+                        )}
                       </span>
                     </div>
                     <p className="text-gray-500">{selectedOffer.jobCategory}</p>
@@ -199,9 +346,7 @@ export default function InterviewOfferPage({
 
                 <div className="mb-8 space-y-6">
                   <div className="p-6 border border-blue-200 bg-blue-50 rounded-xl">
-                    <h3 className="mb-2 font-bold text-gray-900">
-                      💼 스카웃 제안
-                    </h3>
+                    <h3 className="mb-2 font-bold text-gray-900">면접 제안</h3>
                     <p className="leading-relaxed text-gray-700">
                       {selectedOffer.companyName}에서 귀하에게 면접 기회를
                       제안합니다.{" "}
@@ -210,7 +355,6 @@ export default function InterviewOfferPage({
                         : "인재검색을 통해 귀하의 프로필을 보고 면접을 제안합니다."}
                     </p>
                   </div>
-                  {/* ... 상세 정보 표시 (기존 유지) ... */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="p-4 border rounded-lg">
                       <span className="block mb-1 text-sm text-gray-500">
@@ -243,9 +387,23 @@ export default function InterviewOfferPage({
                         현재 상태
                       </span>
                       <span className="font-medium">
-                        {getStatusText(selectedOffer.interviewStatus)}
+                        {getStatusText(
+                          selectedOffer.interviewStatus,
+                          selectedOffer.finalResult,
+                        )}
                       </span>
                     </div>
+                    {selectedOffer.deadline && (
+                      <div className="p-4 border rounded-lg">
+                        <span className="block mb-1 text-sm text-gray-500">
+                          마감일
+                        </span>
+                        <span className="font-medium">
+                          {selectedOffer.deadline} (
+                          {getDday(selectedOffer.deadline)?.text})
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -268,66 +426,150 @@ export default function InterviewOfferPage({
                   ) : (
                     <p className="text-gray-500">
                       이 제안은 이미{" "}
-                      {getStatusText(selectedOffer.interviewStatus)} 상태입니다.
+                      {getStatusText(
+                        selectedOffer.interviewStatus,
+                        selectedOffer.finalResult,
+                      )}{" "}
+                      상태입니다.
                     </p>
                   )}
                 </div>
               </section>
             ) : (
-              // 🟦 목록 화면 (필터링 적용됨)
-              <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
-                {isLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="w-10 h-10 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {/* ✅ [수정 6] filteredOffers 사용 */}
-                    {filteredOffers.length === 0 ? (
-                      <div className="py-12 text-center text-gray-500 border-2 border-dashed rounded-xl">
-                        해당하는 스카웃 제안이 없습니다.
-                      </div>
-                    ) : (
-                      filteredOffers.map((offer) => (
-                        <div
-                          key={offer.offerId}
-                          onClick={() => handleOfferClick(offer.offerId)}
-                          onMouseEnter={() => setHoveredId(offer.offerId)}
-                          onMouseLeave={() => setHoveredId(null)}
-                          className={`p-4 bg-white border-2 rounded-lg cursor-pointer transition-all flex items-center justify-between ${
-                            hoveredId === offer.offerId
-                              ? "border-blue-500 shadow-md transform scale-[1.01]"
-                              : "border-gray-200 hover:border-gray-300"
-                          }`}
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h4
-                                className={`transition-all ${
-                                  hoveredId === offer.offerId
-                                    ? "text-xl font-bold text-gray-900"
-                                    : "text-lg font-semibold text-gray-800"
-                                }`}
-                              >
-                                {offer.companyName} - {offer.jobTitle}
-                              </h4>
-                              <span className="px-2 py-0.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-md border border-blue-100">
-                                {getStatusText(offer.interviewStatus)}
-                              </span>
-                              {offer.offerType === "COMPANY_INITIATED" && (
-                                <span className="px-2 py-0.5 text-xs font-medium text-green-600 bg-green-50 rounded-md border border-green-100">
-                                  기업 제안
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-sm text-gray-600">
-                              {offer.jobCategory} |{" "}
-                              {formatDate(offer.offeredAt)}
-                            </p>
-                          </div>
+              // 🟦 목록 화면 (체크박스 포함)
+              <section
+                ref={listContainerRef}
+                className="p-8 bg-white border-2 border-gray-200 rounded-2xl min-h-[500px] flex flex-col justify-between"
+              >
+                <div>
+                  {isLoading ? (
+                    <div className="py-12 text-center">로딩중...</div>
+                  ) : (
+                    <div className="space-y-4">
+                      {currentOffers.length === 0 ? (
+                        <div className="py-12 text-center text-gray-500 border-2 border-dashed rounded-xl">
+                          제안이 없습니다.
                         </div>
-                      ))
+                      ) : (
+                        currentOffers.map((offer) => (
+                          <div
+                            key={offer.offerId}
+                            onClick={() => handleOfferClick(offer.offerId)}
+                            onMouseEnter={() => setHoveredId(offer.offerId)}
+                            onMouseLeave={() => setHoveredId(null)}
+                            className={`p-4 bg-white border-2 rounded-lg cursor-pointer transition-all flex gap-4 items-center ${
+                              hoveredId === offer.offerId
+                                ? "border-blue-500 shadow-md transform scale-[1.01]"
+                                : "border-gray-200 hover:border-gray-300"
+                            }`}
+                          >
+                            {/* ✅ 왼쪽 체크박스 */}
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex items-center justify-center"
+                            >
+                              <input
+                                type="checkbox"
+                                className="w-5 h-5 text-blue-600 border-gray-300 rounded cursor-pointer focus:ring-blue-500"
+                                checked={selectedIds.includes(offer.offerId)}
+                                onChange={(e) =>
+                                  toggleSelect(offer.offerId, e as any)
+                                }
+                              />
+                            </div>
+
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <h4
+                                  className={`transition-all ${hoveredId === offer.offerId ? "text-xl font-bold text-gray-900" : "text-lg font-semibold text-gray-800"}`}
+                                >
+                                  {offer.companyName} - {offer.jobTitle}
+                                </h4>
+                                <span
+                                  className={`px-2 py-0.5 text-xs font-medium rounded-md border ${getStatusColor(offer.interviewStatus, offer.finalResult)}`}
+                                >
+                                  {getStatusText(
+                                    offer.interviewStatus,
+                                    offer.finalResult,
+                                  )}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-3 text-sm text-gray-600">
+                                <span className="font-medium">
+                                  {offer.jobCategory}
+                                </span>
+                                <span className="text-gray-400">|</span>
+                                <span>
+                                  제안일: {formatDate(offer.offeredAt)}
+                                </span>
+                                {offer.deadline && getDday(offer.deadline) && (
+                                  <span
+                                    className={getDday(offer.deadline)?.color}
+                                  >
+                                    {" "}
+                                    | 마감 {getDday(offer.deadline)?.text}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* 오른쪽 개별 삭제 */}
+                            {!offer.deleted && (
+                              <button
+                                onClick={(e) => handleDelete(offer.offerId, e)}
+                                className="p-2 text-gray-400 transition-all rounded-lg hover:text-red-600 hover:bg-red-50"
+                                title="삭제"
+                              >
+                                <svg
+                                  className="w-5 h-5"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                  />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* 페이지네이션 */}
+                {filteredOffers.length > 0 && (
+                  <div className="flex items-center justify-center gap-2 pt-4 mt-8 border-t border-gray-100">
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1 border rounded disabled:opacity-50"
+                    >
+                      이전
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (page) => (
+                        <button
+                          key={page}
+                          onClick={() => handlePageChange(page)}
+                          className={`px-3 py-1 rounded border ${currentPage === page ? "bg-blue-600 text-white" : "bg-white"}`}
+                        >
+                          {page}
+                        </button>
+                      ),
                     )}
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1 border rounded disabled:opacity-50"
+                    >
+                      다음
+                    </button>
                   </div>
                 )}
               </section>

@@ -17,7 +17,7 @@ export default function BusinessCreditPage() {
     "credit-sub-1",
   );
 
-  const reloadParam = searchParams.get('reload');
+  const reloadParam = searchParams.get("reload");
 
   const [currentCredit, setCurrentCredit] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,14 +31,12 @@ export default function BusinessCreditPage() {
     ApplyListResponse[]
   >([]);
 
-  // 크레딧 잔액 조회
+  // [로직 유지]
   useEffect(() => {
     const fetchCreditBalance = async () => {
       if (user?.companyId) {
         try {
-          console.log("📡 기업 크레딧 잔액 조회:", user.companyId);
           const balance = await getCreditBalance(user.companyId);
-          console.log("✅ 크레딧 잔액:", balance.balance);
           setCurrentCredit(balance.balance);
         } catch (error) {
           console.error("❌ 크레딧 잔액 조회 실패:", error);
@@ -50,11 +48,9 @@ export default function BusinessCreditPage() {
         setIsLoading(false);
       }
     };
-
     fetchCreditBalance();
   }, [user?.companyId, reloadParam]);
 
-  // 추천 지원자 조회 (인재 검색 API 사용)
   useEffect(() => {
     const fetchRecommendedApplicants = async () => {
       if (user?.companyId) {
@@ -70,19 +66,15 @@ export default function BusinessCreditPage() {
         }
       }
     };
-
     fetchRecommendedApplicants();
   }, [user?.companyId, reloadParam]);
 
-  // 내가 올린 공고 조회
   useEffect(() => {
     const fetchMyJobPostings = async () => {
       if (user?.companyId) {
         try {
-          // API에서 제공하는 일반 공고 목록을 받아오고 클라이언트에서 회사 ID로 필터링
           const res = await getJobPostings({ page: 0, size: 20 });
           const postings = res?.content ?? [];
-          // ACTIVE 상태의 공고 중 해당 회사의 게시물만 가져오고 최대 3개로 제한
           const activePostings = postings
             .filter(
               (p) => p.status === "ACTIVE" && p.companyId === user.companyId,
@@ -94,12 +86,9 @@ export default function BusinessCreditPage() {
         }
       }
     };
-    // test
-
     fetchMyJobPostings();
   }, [user?.companyId, reloadParam]);
 
-  // 지원한 인재 조회
   useEffect(() => {
     const fetchAppliedCandidates = async () => {
       if (user?.companyId) {
@@ -114,7 +103,6 @@ export default function BusinessCreditPage() {
         }
       }
     };
-
     fetchAppliedCandidates();
   }, [user?.companyId, reloadParam]);
 
@@ -122,7 +110,6 @@ export default function BusinessCreditPage() {
     navigate("/company/credit/charge");
   };
 
-  // 경력 포맷팅 함수
   const formatExperience = (years: number) => {
     if (years === 0) return "신입";
     if (years < 0) return "경력무관";
@@ -130,53 +117,46 @@ export default function BusinessCreditPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="flex px-4 py-8 mx-auto max-w-7xl">
-        {/* 왼쪽 사이드바 */}
+    <div className="min-h-screen bg-[#f8f9fa]">
+      <div className="flex px-6 py-10 mx-auto max-w-7xl">
         <CompanyLeftSidebar
           activeMenu={activeMenu}
           onMenuClick={handleMenuClick}
         />
 
-        {/* 메인 컨텐츠 */}
-        <div className="flex-1 pl-6">
-          {/* 타이틀 & 충전 버튼 */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center justify-center w-12 h-12 text-xl text-white rounded-full bg-gradient-to-br from-yellow-400 to-orange-400">
-                🪙
-              </div>
-              <h1 className="text-2xl font-bold text-purple-600">
-                보유 크레딧
-              </h1>
-            </div>
+        <div className="flex-1 pl-10">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">보유 크레딧</h1>
             <button
               onClick={handleChargeClick}
-              className="flex items-center px-6 py-2 space-x-2 font-semibold text-purple-600 transition bg-white border-2 border-purple-600 rounded-lg hover:bg-purple-50"
+              className="px-5 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded hover:bg-slate-50 transition-colors shadow-sm"
             >
-              <span>+</span>
-              <span>충전하기</span>
+              + 충전하기
             </button>
           </div>
 
-          {/* 크레딧 카드 */}
-          <div className="p-8 mb-8 shadow-lg bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-400 rounded-2xl">
+          {/* Credit Card Section: 이미지의 숫자 박스 스타일 보존 */}
+          <div className="p-10 mb-10 bg-gradient-to-r from-[#7a87fb] via-[#6ba6f2] to-[#69d1f5] rounded-xl shadow-md">
             <div className="flex items-center justify-between">
               <div className="text-white">
-                <div className="mb-2 text-xl font-semibold">
-                  {user?.name || "admin"}님의 현재 사용 가능 크레딧
-                </div>
+                <p className="text-xl font-medium opacity-90">
+                  {user?.name || "관리자"}님의 현재 사용 가능 크레딧
+                </p>
               </div>
-              <div className="flex items-center px-10 py-5 space-x-3 bg-white rounded-full shadow-lg">
+              
+              {/* 이미지 부분 보존: 화이트 알약형 박스 */}
+              <div className="flex items-center px-10 py-5 space-x-6 bg-white rounded-full shadow-lg">
                 {isLoading ? (
-                  <span className="text-3xl text-gray-400">로딩 중...</span>
+                  <span className="text-3xl text-gray-300 animate-pulse">Loading...</span>
                 ) : (
                   <>
-                    <span className="text-5xl font-bold text-gray-900">
+                    <span className="text-[54px] font-black text-[#1e2329] leading-none">
                       {currentCredit.toLocaleString()}
                     </span>
-                    <div className="flex items-center justify-center w-12 h-12 text-2xl rounded-full bg-gradient-to-br from-yellow-400 to-orange-400">
-                      🪙
+                    {/* 이미지 내 코인 아이콘 형태 재현 */}
+                    <div className="flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-b from-[#fcd34d] to-[#f59e0b] shadow-inner border-2 border-[#fbbf24]">
+                       <span className="text-white text-2xl font-bold">🪙</span>
                     </div>
                   </>
                 )}
@@ -184,185 +164,104 @@ export default function BusinessCreditPage() {
             </div>
           </div>
 
-          {/* 그리드 레이아웃 */}
-          <div className="grid grid-cols-2 gap-6">
-            {/* 왼쪽 상단: 추천 지원자에게 연락 보내기 */}
-            <div className="p-6 bg-white border-2 border-purple-500 shadow-lg rounded-2xl">
-              <div className="flex items-center mb-6 space-x-2">
-                <span className="text-2xl">⭐</span>
-                <h2 className="text-xl font-bold text-gray-900">
-                  추천 지원자에게 연락 보내기
-                </h2>
+          {/* Dashboard Grid: 대기업 스타일 (정갈한 보더와 폰트) */}
+          <div className="grid grid-cols-2 gap-8">
+            
+            {/* 추천 지원자 */}
+            <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden flex flex-col">
+              <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider">추천 지원자 현황</h2>
               </div>
-              {recommendedApplicants.length > 0 ? (
-                <div className="overflow-hidden border-2 border-purple-300 rounded-xl">
-                  <table className="w-full">
-                    <tbody className="divide-y divide-purple-200">
+              <div className="flex-1">
+                {recommendedApplicants.length > 0 ? (
+                  <table className="w-full text-left">
+                    <tbody className="divide-y divide-slate-100">
                       {recommendedApplicants.map((candidate, idx) => (
                         <tr
                           key={idx}
-                          className="transition cursor-pointer hover:bg-purple-50"
+                          className="hover:bg-slate-50 transition-colors cursor-pointer"
                           onClick={() => navigate("/company/talent-search")}
                         >
-                          <td className="px-6 py-4 font-bold text-gray-900">
-                            {candidate.name}
-                          </td>
-                          <td className="px-6 py-4 font-semibold text-gray-700">
-                            {candidate.jobCategory}
-                          </td>
-                          <td className="px-6 py-4 font-semibold text-gray-700">
-                            {formatExperience(candidate.experienceYears)}
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center justify-center space-x-2">
-                              <span className="px-3 py-1 text-sm font-semibold text-blue-700 bg-blue-100 rounded-full">
-                                매칭 {candidate.matchScore}%
-                              </span>
-                            </div>
+                          <td className="px-6 py-4 font-bold text-slate-800 text-sm">{candidate.name}</td>
+                          <td className="px-6 py-4 text-slate-500 text-sm">{candidate.jobCategory} · {formatExperience(candidate.experienceYears)}</td>
+                          <td className="px-6 py-4 text-right">
+                            <span className="px-2.5 py-1 text-[11px] font-bold text-blue-600 bg-blue-50 rounded">매칭 {candidate.matchScore}%</span>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                </div>
-              ) : (
-                <div className="py-12 text-center border-2 border-gray-300 border-dashed bg-gray-50 rounded-xl">
-                  <p className="mb-4 text-gray-600">추천 지원자가 없습니다</p>
-                  <button
-                    onClick={() => navigate("/company/talent-search")}
-                    className="px-6 py-2 text-purple-600 transition border-2 border-purple-600 rounded-lg hover:bg-purple-50"
-                  >
-                    인재 검색하기
-                  </button>
-                </div>
-              )}
+                ) : (
+                  <div className="py-12 text-center text-slate-400 text-sm">데이터가 없습니다.</div>
+                )}
+              </div>
             </div>
 
-            {/* 오른쪽 상단: 내가 올린 공고 보기 */}
-            <div className="p-6 bg-white border-2 border-purple-500 shadow-lg rounded-2xl">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-2">
-                  <span className="text-2xl">📋</span>
-                  <h2 className="text-xl font-bold text-gray-900">
-                    내가 올린 공고 보기
-                  </h2>
-                </div>
-                <button
-                  onClick={() => navigate("/company/jobs/create")}
-                  className="text-3xl font-bold text-purple-600 hover:text-purple-700"
-                >
-                  +
-                </button>
+            {/* 내 공고 보기 */}
+            <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden flex flex-col">
+              <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider">진행 중인 채용 공고</h2>
+                <button onClick={() => navigate("/company/jobs/create")} className="text-slate-400 hover:text-slate-900 text-lg font-light">+</button>
               </div>
-              {myJobPostings.length > 0 ? (
-                <div className="space-y-3">
-                  {myJobPostings.map((job) => (
-                    <div
-                      key={job.jobId}
-                      className="p-4 transition border-2 border-purple-300 cursor-pointer rounded-xl hover:bg-purple-50"
-                      onClick={() => navigate(`/company/jobs/${job.jobId}`)}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="mb-2 font-bold text-gray-900 line-clamp-1">
-                            {job.title}
-                          </h3>
-                          <div className="flex items-center space-x-3 text-sm text-gray-600">
-                            <span>📍 {job.location}</span>
-                            <span>•</span>
-                            <span>
-                              👁️ {job.viewCount} · 📝 {job.applicantCount}
-                            </span>
-                          </div>
-                        </div>
-                        <span className="px-3 py-1 text-sm font-semibold text-green-700 bg-green-100 rounded-full">
-                          모집중
-                        </span>
-                      </div>
+              <div className="p-4 space-y-3 flex-1">
+                {myJobPostings.map((job) => (
+                  <div
+                    key={job.jobId}
+                    className="p-4 border border-slate-100 rounded hover:border-slate-300 hover:bg-slate-50 transition-all cursor-pointer group"
+                    onClick={() => navigate(`/company/jobs/${job.jobId}`)}
+                  >
+                    <div className="flex justify-between items-start mb-1">
+                      <h3 className="text-sm font-bold text-slate-800 group-hover:text-blue-600">{job.title}</h3>
+                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">Active</span>
                     </div>
-                  ))}
-                  <button
-                    onClick={() => navigate("/company/jobs")}
-                    className="w-full py-2 text-purple-600 transition border-2 border-purple-600 rounded-lg hover:bg-purple-50"
-                  >
-                    전체 공고 보기
-                  </button>
-                </div>
-              ) : (
-                <div className="py-12 text-center border-2 border-gray-300 border-dashed bg-gray-50 rounded-xl">
-                  <div className="mb-4">
-                    <h3 className="mb-4 text-xl font-bold text-gray-900">
-                      등록된 공고가 없습니다
-                    </h3>
+                    <p className="text-[11px] text-slate-400">📍 {job.location} | 지원자 {job.applicantCount}명</p>
                   </div>
-                  <button
-                    onClick={() => navigate("/company/jobs")}
-                    className="px-6 py-2 text-purple-600 transition border-2 border-purple-600 rounded-lg hover:bg-purple-50"
-                  >
-                    공고 관리 바로가기
-                  </button>
-                </div>
-              )}
+                ))}
+                <button onClick={() => navigate("/company/jobs")} className="w-full py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 border-t border-slate-50 mt-2">전체 공고 보기</button>
+              </div>
             </div>
 
-            {/* 왼쪽 하단: 크레딧은 어디에 쓸 수 있나요? */}
-            <div className="p-6 bg-white border-2 border-gray-200 shadow-lg rounded-2xl">
-              <div className="pl-4 mb-6 border-l-4 border-red-500">
-                <h3 className="text-xl font-bold text-gray-900">
-                  크레딧은 어디에 쓸 수 있나요?
-                </h3>
-              </div>
-              <ol className="space-y-3 text-base text-gray-700 list-decimal list-inside">
-                <li>인재 검색 및 이력서 열람</li>
-                <li>채용 공고 프리미엄 노출</li>
-                <li>지원자에게 스카웃 제안 발송</li>
-              </ol>
+            {/* 크레딧 안내 */}
+            <div className="p-8 bg-[#1e2329] rounded-lg shadow-sm text-white">
+              <h3 className="text-lg font-bold mb-5 border-l-4 border-blue-500 pl-4">크레딧 사용 가이드</h3>
+              <ul className="space-y-4 text-sm text-slate-400">
+                <li className="flex items-center space-x-3">
+                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                  <span>인재 검색 및 상세 이력서 열람</span>
+                </li>
+                <li className="flex items-center space-x-3">
+                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                  <span>채용 공고 프리미엄 노출 서비스</span>
+                </li>
+                <li className="flex items-center space-x-3">
+                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                  <span>적합한 지원자 대상 직접 채용 제안</span>
+                </li>
+              </ul>
             </div>
 
-            {/* 오른쪽 하단: 지원한 인재 */}
-            <div className="p-6 bg-white border-2 border-purple-500 shadow-lg rounded-2xl">
-              <div className="flex items-center mb-6 space-x-2">
-                <span className="text-2xl">👤</span>
-                <h2 className="text-xl font-bold text-gray-900">지원한 인재</h2>
+            {/* 지원한 인재 */}
+            <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden flex flex-col">
+              <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider">최근 지원 인재</h2>
               </div>
-              {appliedCandidates.length > 0 ? (
-                <div className="overflow-hidden border-2 border-purple-300 rounded-xl">
-                  <table className="w-full">
-                    <tbody className="divide-y divide-purple-200">
-                      {appliedCandidates.map((candidate, idx) => (
-                        <tr
-                          key={idx}
-                          className="transition cursor-pointer hover:bg-purple-50"
-                          onClick={() =>
-                            navigate(`/company/applicants/${candidate.applyId}`)
-                          }
-                        >
-                          <td className="px-6 py-4 font-bold text-gray-900">
-                            {candidate.userName}
-                          </td>
-                          <td className="px-6 py-4 font-semibold text-gray-700">
-                            {candidate.userAge}세
-                          </td>
-                          <td className="max-w-xs px-6 py-4 text-gray-700 truncate">
-                            {candidate.jobTitle}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="py-12 text-center border-2 border-gray-300 border-dashed bg-gray-50 rounded-xl">
-                  <p className="mb-4 text-gray-600">지원자가 없습니다</p>
-                  <button
-                    onClick={() => navigate("/company/applicants")}
-                    className="px-6 py-2 text-purple-600 transition border-2 border-purple-600 rounded-lg hover:bg-purple-50"
+              <div className="flex-1 divide-y divide-slate-100">
+                {appliedCandidates.map((candidate, idx) => (
+                  <div
+                    key={idx}
+                    className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 cursor-pointer"
+                    onClick={() => navigate(`/company/applicants/${candidate.applyId}`)}
                   >
-                    지원자 관리 바로가기
-                  </button>
-                </div>
-              )}
+                    <div>
+                      <p className="text-sm font-bold text-slate-800">{candidate.userName}</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">{candidate.jobTitle}</p>
+                    </div>
+                    <span className="text-xs font-medium text-slate-400">{candidate.userAge}세</span>
+                  </div>
+                ))}
+              </div>
             </div>
+
           </div>
         </div>
       </div>

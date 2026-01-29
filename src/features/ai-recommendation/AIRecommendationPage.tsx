@@ -95,7 +95,7 @@ export default function AIRecommendationPage({
         </div>
       )}
 
-      <div className="px-4 py-8 mx-auto max-w-7xl">
+      <div className="px-4 py-8 mx-auto max-w-7xl bg-white">
         <div className="flex gap-6">
           {/* 왼쪽 사이드바 */}
           <AISidebar activeMenu={activeMenu} onMenuClick={handleMenuClick} />

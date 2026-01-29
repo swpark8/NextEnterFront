@@ -4,10 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import CompanyJobPostingCard, {
   JobPostingData,
 } from "../components/CompanyJobPostingCard";
-import {
-  getJobPostings,
-  JobPostingListResponse,
-} from "../../api/job";
+import { getJobPostings, JobPostingListResponse } from "../../api/job";
 
 export default function CompanyHomePage() {
   const navigate = useNavigate();
@@ -49,7 +46,7 @@ export default function CompanyHomePage() {
       icon: "📂",
       title: "지원자 관리",
       description: "지원 현황 및 분석",
-      features: ["지원자 목록", "적합도 분석", "스카웃 제안"],
+      features: ["지원자 목록", "적합도 분석", "기업의 요청"],
       path: "/company/applicants",
     },
     {
@@ -130,10 +127,11 @@ export default function CompanyHomePage() {
                 setActiveService(service.id);
                 handleProtectedNavigation(service.path);
               }}
-              className={`p-6 bg-white border-2 rounded-xl hover:shadow-lg transition text-left ${activeService === service.id
-                ? "border-purple-500"
-                : "border-gray-200"
-                }`}
+              className={`p-6 bg-white border-2 rounded-xl hover:shadow-lg transition text-left ${
+                activeService === service.id
+                  ? "border-purple-500"
+                  : "border-gray-200"
+              }`}
             >
               <div className="mb-2 text-4xl">{service.icon}</div>
               <h3 className="mb-1 text-lg font-bold">{service.title}</h3>

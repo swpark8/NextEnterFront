@@ -40,7 +40,7 @@ export interface ApplicationSummaryResponse {
 
 /**
  * 사용자의 모든 지원 내역 조회 (통합)
- * 일반 지원(Apply) + 스카웃 제안(InterviewOffer)을 하나로 통합
+ * 일반 지원(Apply) + 기업의 요청(InterviewOffer)을 하나로 통합
  */
 export const getMyApplications = async (
   userId: number,

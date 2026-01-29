@@ -48,11 +48,8 @@ export const usePageNavigation = (
       "credit-sub-2": "/user/credit/charge",
       "mypage-sub-2": "/user/profile",
       "mypage-sub-3": "/user/application-status",
-
-      // ✅ [수정] App.tsx에 등록된 '진짜 주소'로 변경
-      "mypage-sub-4": "/user/offers/interview", // 스카웃 제안
-
-      "mypage-sub-5": "/user/scrap-status", // 스크랩 현황
+      "mypage-sub-4": "/user/offers/interview",
+      "mypage-sub-5": "/user/scrap-status",
     };
 
     // 특별 처리 라우트
@@ -62,27 +59,33 @@ export const usePageNavigation = (
     };
 
     if (specialRoutes[menuId]) {
-      navigate(specialRoutes[menuId]);
+      const targetPath = specialRoutes[menuId];
+      
+      // ✅ 같은 메뉴 클릭 시 새로고침
+      if (activeMenu === menuId && location.pathname === targetPath) {
+        window.location.reload();
+        return;
+      }
+      
+      navigate(targetPath);
       return;
     }
 
-    // ✅ [여기가 수정되었습니다] 별도 페이지 이동 로직 개선
+    // ✅ 별도 페이지 이동 로직
     if (separateRoutes[menuId]) {
       const targetPath = separateRoutes[menuId];
-
-      // 1. 이미 해당 페이지에 있고 + 같은 메뉴를 클릭했다면? -> 강제 리로드(새로고침 효과)
-      if (location.pathname === targetPath && activeMenu === menuId) {
-        const timestamp = Date.now();
-        setSearchParams({ menu: menuId, reload: timestamp.toString() });
+      
+      // 같은 페이지에서 같은 메뉴를 클릭하면 새로고침
+      if (activeMenu === menuId && location.pathname === targetPath) {
+        window.location.reload();
+        return;
       }
-      // 2. 다른 페이지라면? -> 정상 이동
-      else {
-        navigate(`${targetPath}?menu=${menuId}`);
-      }
+      
+      navigate(`${targetPath}?menu=${menuId}`);
       return;
     }
 
-    // --- 기존 탭 내부 이동 로직 (변경 없음) ---
+    // --- 기존 탭 내부 이동 로직 ---
     let targetTab = "";
     const sections = Object.values(navigationMenuData) as any[];
 
@@ -109,10 +112,9 @@ export const usePageNavigation = (
 
       const targetBaseRoute = baseRoutes[targetTab];
 
-      // 같은 탭 내에서 같은 메뉴 클릭 시 리로드
+      // ✅ 같은 메뉴 클릭 시 새로고침
       if (activeMenu === menuId) {
-        const timestamp = Date.now();
-        setSearchParams({ menu: menuId, reload: timestamp.toString() });
+        window.location.reload();
         return;
       }
 

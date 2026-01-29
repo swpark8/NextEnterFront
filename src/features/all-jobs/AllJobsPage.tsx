@@ -303,7 +303,7 @@ export default function AllJobsPage() {
       {/* 이력서 선택 모달 */}
       {showResumeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+          <div className="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto ">
             <h3 className="mb-6 text-2xl font-bold text-gray-900">
               지원할 이력서를 선택해주세요
             </h3>
@@ -322,7 +322,7 @@ export default function AllJobsPage() {
               </div>
             ) : (
               <>
-                <div className="mb-6 space-y-4">
+                <div className="mb-6 space-y-4 ">
                   {resumes.map((resume) => (
                     <div
                       key={resume.id}
@@ -363,7 +363,7 @@ export default function AllJobsPage() {
         </div>
       )}
 
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-white">
         <div className="px-4 py-8 mx-auto max-w-7xl">
           <h1 className="mb-6 text-2xl font-bold">채용정보</h1>
           <div className="flex gap-6">

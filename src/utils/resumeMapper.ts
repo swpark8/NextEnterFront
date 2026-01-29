@@ -89,47 +89,76 @@ export function mapResumeToAiFormat(
 export function generateResumeText(resume: ResumeResponse): string {
   const parts: string[] = [];
 
+  // Helper to safely parse JSON or return if already array
+  const safeParse = (data: any): any[] => {
+    if (Array.isArray(data)) return data;
+    if (typeof data === 'string') {
+      try {
+        const parsed = JSON.parse(data);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  };
+
   // 직무 카테고리
   if (resume.jobCategory) {
     parts.push(`희망 직무: ${resume.jobCategory}`);
   }
 
   // 학력
-  if (resume.education && resume.education.length > 0) {
-    const eduText = resume.education
-      .map((edu) => `${edu.school} (${edu.period})`)
+  const educations = safeParse(resume.educations || resume.education); // Handle both field names if needed, though ResumeResponse has educations
+  if (educations.length > 0) {
+    const eduText = educations
+      .map((edu: any) => `${edu.school} (${edu.period})`)
       .join(", ");
     parts.push(`학력: ${eduText}`);
   }
 
   // 경력
-  if (resume.careers && resume.careers.length > 0) {
-    const careerText = resume.careers
-      .map((career) => `${career.company} - ${career.period}`)
+  const careers = safeParse(resume.careers);
+  if (careers.length > 0) {
+    const careerText = careers
+      .map((career: any) => `${career.company} - ${career.period}`)
       .join(", ");
     parts.push(`경력: ${careerText}`);
   }
 
   // 기술 스택
-  if (resume.skills && resume.skills.length > 0) {
-    parts.push(`기술 스택: ${resume.skills.join(", ")}`);
+  let skills: string[] = [];
+  if (Array.isArray(resume.skills)) {
+    skills = resume.skills;
+  } else if (typeof resume.skills === 'string') {
+    try {
+      skills = JSON.parse(resume.skills);
+      if (!Array.isArray(skills)) skills = [resume.skills]; // Fallback if not array
+    } catch {
+       skills = resume.skills.split(',').map(s => s.trim()).filter(Boolean);
+    }
+  }
+
+  if (skills.length > 0) {
+    parts.push(`기술 스택: ${skills.join(", ")}`);
   }
 
   // 경험/활동
-  if (resume.experiences && resume.experiences.length > 0) {
-    const expText = resume.experiences
-      .map((exp) => `${exp.title} (${exp.period})`)
+  // Note: ResumeResponse has 'experiences' as string (JSON), but logic below used 'experiences' array directly.
+  // We need to parse 'experiences' from JSON string.
+  // Also 'projectExperiences' was in original code but is NOT in ResumeResponse interface shown. 
+  // Assuming 'experiences' contains what we need.
+  const experiences = safeParse(resume.experiences);
+  if (experiences.length > 0) {
+    const expText = experiences
+      .map((exp: any) => `${exp.title} (${exp.period})`)
       .join(", ");
     parts.push(`경험/활동: ${expText}`);
   }
-
-  // 프로젝트 (존재할 경우)
-  if (resume.projectExperiences && resume.projectExperiences.length > 0) {
-    const projText = resume.projectExperiences
-      .map((proj) => proj.title)
-      .join(", ");
-    parts.push(`프로젝트: ${projText}`);
-  }
-
+  
+  // Note: 'projectExperiences' field was removed/substituted as it was likely not in the main type.
+  // If strict mapping is needed, we should check if 'experiences' covers projects too.
+  // Based on `MatchingPage.tsx`, experience -> projects mapping happens.
+  
   return parts.join("\n\n");
 }

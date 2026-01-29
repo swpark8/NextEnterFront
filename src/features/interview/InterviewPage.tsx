@@ -124,9 +124,9 @@ export default function InterviewPage({
   return (
     <>
       {showConfirmDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-full max-w-md p-8 mx-4 bg-white shadow-2xl rounded-2xl">
-            <div className="mb-6 text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 ">
+          <div className="w-full max-w-md p-8 mx-4 bg-white shadow-2xl rounded-2xl ">
+            <div className="mb-6 text-center ">
               <div className="mb-4 text-5xl">💳</div>
               <h3 className="mb-4 text-2xl font-bold">
                 정말 크레딧을 사용하시겠습니까?
@@ -154,7 +154,7 @@ export default function InterviewPage({
         </div>
       )}
 
-      <div className="px-4 py-8 mx-auto max-w-7xl">
+      <div className="px-4 py-8 mx-auto max-w-7xl bg-white">
         <h2 className="inline-block mb-6 text-2xl font-bold">모의면접</h2>
         <div className="flex gap-6">
           <InterviewSidebar

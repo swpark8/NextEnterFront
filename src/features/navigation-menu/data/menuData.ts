@@ -43,8 +43,8 @@ export const navigationMenuData = {
       { id: "mypage-sub-1", label: "마이페이지" },
       { id: "mypage-sub-2", label: "내 정보" },
       { id: "mypage-sub-3", label: "지원 현황" },
-      // ✅ [추가] 스카웃 제안을 4번째로 이동
-      { id: "mypage-sub-4", label: "스카웃 제안" },
+      // ✅ [추가] 기업의 요청을 4번째로 이동
+      { id: "mypage-sub-4", label: "기업의 요청" },
       // ✅ [변경] 스크랩 현황을 5번째로 밀어냄 (ID도 sub-5로 변경)
       { id: "mypage-sub-5", label: "스크랩 현황" },
     ],

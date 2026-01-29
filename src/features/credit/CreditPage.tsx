@@ -145,7 +145,7 @@ useEffect(() => {
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-white">
         <div className="px-4 py-5 mx-auto max-w-7xl">
           <div className="flex items-end justify-between mb-6">
             <div className="flex items-center gap-3">
@@ -153,7 +153,7 @@ useEffect(() => {
             </div>
             <button
               onClick={handlePromote}
-              className="flex items-center gap-2 px-6 py-2 text-blue-600 transition border-2 border-blue-500 rounded-lg hover:bg-blue-50"
+              className="flex items-center gap-2 px-6 py-2 font-bold text-blue-600 transition border-2 border-blue-500 rounded-lg hover:bg-blue-50"
             >
               <span>+</span>
               <span>충전하기</span>
@@ -190,7 +190,7 @@ useEffect(() => {
               {/* 탭 */}
               <div className="overflow-hidden bg-white border-2 border-gray-200 rounded-2xl">
                 <div className="flex border-b-2 border-gray-200">
-                  {["coupon", "usage", "mileage"].map((tab) => (
+                  {["mileage", "coupon", "usage"].map((tab) => (
                     <button
                       key={tab}
                       onClick={() =>
@@ -204,7 +204,7 @@ useEffect(() => {
                     >
                       {tab === "coupon" && "쿠폰 목록"}
                       {tab === "usage" && "쿠폰 이용 내역"}
-                      {tab === "mileage" && "마일리지 내역"}
+                      {tab === "mileage" && "쿠폰 등록"}
                     </button>
                   ))}
                 </div>
@@ -329,45 +329,6 @@ useEffect(() => {
                   <li>매칭 분석 서비스 이용</li>
                   <li>AI 모의 면접 진행</li>
                 </ol>
-              </div>
-            </div>
-
-            {/* 오른쪽 사이드 - 추천 공고 */}
-            <div className="w-80">
-              <div className="sticky p-6 bg-white border-2 border-blue-400 rounded-2xl top-8">
-                <div className="flex items-center gap-2 mb-4">
-                  <span>⭐</span>
-                  <h3 className="text-lg font-bold">
-                    지금 뜨는 공고 바로 지원
-                  </h3>
-                </div>
-
-                {featuredJob ? (
-                  <button
-                    onClick={handleJobClick}
-                    className="w-full p-6 transition border-2 border-blue-300 rounded-xl hover:shadow-lg"
-                  >
-                    <div className="flex items-center justify-center h-40 mb-4 border-2 border-blue-300 border-dashed rounded-lg">
-                      <span className="text-4xl">🏢</span>
-                    </div>
-                    <h4 className="mb-4 text-xl font-bold text-center">
-                      {featuredJob.title}
-                    </h4>
-                    <div className="space-y-1 text-sm text-gray-600">
-                      <div>직무: {featuredJob.job_category}</div>
-                      <div>위치: {featuredJob.location}</div>
-                      <div>마감: {featuredJob.deadline}</div>
-                      <div className="mt-3 text-blue-600">
-                        조회: {featuredJob.view_count} | 지원: {featuredJob.applicant_count}
-                      </div>
-                    </div>
-                  </button>
-                ) : (
-                  <div className="p-8 text-center text-gray-500">
-                    <div className="mb-4 text-4xl">📋</div>
-                    <p>등록된 공고가 없습니다</p>
-                  </div>
-                )}
               </div>
             </div>
           </div>
