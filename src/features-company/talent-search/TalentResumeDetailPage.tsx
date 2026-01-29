@@ -3,57 +3,82 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
   getPublicResumeDetail,
-  ResumeResponse,
-  ResumeSections,
+  type ResumeResponse,
 } from "../../api/resume";
 import { saveTalent, contactTalent } from "../../api/talent";
 import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
+import api from "../../api/axios";
 
-export default function TalentResumeDetailPage() {
-  const { resumeId } = useParams<{ resumeId: string }>();
+interface TalentResumeDetailPageProps {
+  resumeId?: number; // prop으로 받는 경우
+  onBack?: () => void; // 뒤로가기 콜백
+}
+
+export default function TalentResumeDetailPage({ 
+  resumeId: resumeIdProp, 
+  onBack 
+}: TalentResumeDetailPageProps = {}) {
+  const { resumeId: resumeIdParam } = useParams<{ resumeId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  
+  // prop으로 받은 resumeId 우선, 없으면 URL 파라미터 사용
+  const resumeId = resumeIdProp?.toString() || resumeIdParam;
+  
   const { activeMenu, handleMenuClick } = useCompanyPageNavigation(
     "talent",
     "talent-sub-1",
   );
 
   const [resume, setResume] = useState<ResumeResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // resumeId가 없으면 목록으로 리다이렉트
-    if (!resumeId) {
-      navigate("/company/talent-search");
-      return;
-    }
+    window.scrollTo(0, 0);
+  }, []);
 
-    // user가 없으면 로딩 상태 유지
-    if (!user?.userId) {
-      return;
-    }
+  useEffect(() => {
+    const loadResumeDetail = async () => {
+      if (!resumeId || !user?.userId) {
+        alert("잘못된 접근입니다.");
+        if (onBack) {
+          onBack();
+        } else {
+          navigate("/company/talent-search");
+        }
+        return;
+      }
 
-    // 데이터 로딩
+      try {
+        setLoading(true);
+        const data = await getPublicResumeDetail(parseInt(resumeId), user.userId);
+        setResume(data);
+        console.log("📥 받은 이력서 데이터:", data);
+      } catch (error: any) {
+        console.error("이력서 조회 실패:", error);
+        alert(
+          error.response?.data?.message ||
+            "이력서 정보를 불러오는데 실패했습니다.",
+        );
+        if (onBack) {
+          onBack();
+        } else {
+          navigate("/company/talent-search");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
     loadResumeDetail();
-  }, [resumeId, user?.userId]); // 의존성 배열을 명확하게 설정
+  }, [resumeId, user, navigate, onBack]);
 
-  const loadResumeDetail = async () => {
-    if (!resumeId || !user?.userId) return;
-
-    try {
-      setIsLoading(true);
-      setError("");
-
-      const data = await getPublicResumeDetail(parseInt(resumeId), user.userId);
-      console.log("이력서 데이터:", data);
-      setResume(data);
-    } catch (err: any) {
-      console.error("이력서 조회 오류:", err);
-      setError(err.response?.data?.message || "이력서를 불러올 수 없습니다.");
-    } finally {
-      setIsLoading(false);
+  const handleBackClick = () => {
+    if (onBack) {
+      onBack();
+    } else {
+      navigate("/company/talent-search");
     }
   };
 
@@ -92,87 +117,193 @@ export default function TalentResumeDetailPage() {
     }
   };
 
-  // 스킬 데이터를 안전하게 파싱하는 함수
-  const parseSkills = (skillsData: any): string[] => {
-    if (!skillsData) return [];
+  const handlePortfolioDownload = async (portfolio: any) => {
+    if (!resumeId || !user?.userId) return;
 
-    // 이미 배열이면 그대로 반환
-    if (Array.isArray(skillsData)) {
-      return skillsData;
-    }
-
-    // 문자열이면 JSON 파싱 시도
-    if (typeof skillsData === "string") {
+    if (portfolio.portfolioId) {
       try {
-        const parsed = JSON.parse(skillsData);
-        return Array.isArray(parsed) ? parsed : [];
-      } catch (e) {
-        console.error("스킬 파싱 오류:", e);
-        return [];
+        const response = await api.get(
+          `/api/resume/${resumeId}/portfolios/${portfolio.portfolioId}/download`,
+          {
+            headers: {
+              userId: user.userId.toString(),
+            },
+            responseType: "blob",
+          },
+        );
+
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", portfolio.filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      } catch (error: any) {
+        console.error("포트폴리오 다운로드 오류:", error);
+        alert("포트폴리오를 다운로드할 수 없습니다.");
+      }
+    } else {
+      alert("이 포트폴리오는 파일명만 저장되어 있습니다.");
+    }
+  };
+
+  const handleCoverLetterDownload = async (file: any) => {
+    if (!user?.userId) return;
+
+    const coverLetterId = typeof file === "object" ? file.coverLetterId : null;
+    let filename = typeof file === "string" ? file : file.title;
+
+    if (typeof file === "object" && file.fileType) {
+      const fileType = file.fileType.toLowerCase();
+      if (!filename.toLowerCase().endsWith(`.${fileType}`)) {
+        filename = `${filename}.${fileType}`;
       }
     }
 
-    return [];
-  };
-
-  // structuredData를 안전하게 파싱하는 함수
-  const parseStructuredData = (data: any) => {
-    if (!data) return {};
-
-    if (typeof data === "object") return data;
-
-    if (typeof data === "string") {
+    if (coverLetterId) {
       try {
-        return JSON.parse(data);
-      } catch (e) {
-        console.error("structuredData 파싱 오류:", e);
-        return {};
-      }
-    }
+        const response = await api.get(
+          `/api/coverletters/${coverLetterId}/file`,
+          {
+            params: {
+              userId: user.userId,
+            },
+            responseType: "blob",
+          },
+        );
 
-    return {};
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      } catch (error: any) {
+        console.error("자기소개서 다운로드 오류:", error);
+        alert("자기소개서를 다운로드할 수 없습니다.");
+      }
+    } else {
+      alert("이 자기소개서는 파일명만 저장되어 있습니다.");
+    }
   };
 
-  if (isLoading) {
+  // 파싱 함수들...
+  const parseExperiences = (experiences: string | undefined) => {
+    if (!experiences) return [];
+    try {
+      return JSON.parse(experiences);
+    } catch {
+      return [];
+    }
+  };
+
+  const parseCertificates = (certificates: string | undefined) => {
+    if (!certificates) return [];
+    try {
+      return JSON.parse(certificates);
+    } catch {
+      return [];
+    }
+  };
+
+  const parseEducations = (educations: string | undefined) => {
+    if (!educations) return [];
+    try {
+      return JSON.parse(educations);
+    } catch {
+      return [];
+    }
+  };
+
+  const parseCareers = (careers: string | undefined) => {
+    if (!careers) return [];
+    try {
+      return JSON.parse(careers);
+    } catch {
+      return [];
+    }
+  };
+
+  const parseSkills = (skills: string | undefined) => {
+    if (!skills) return [];
+    return skills
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s);
+  };
+
+  const parseStructuredData = (structuredData: string | undefined) => {
+    if (!structuredData) return null;
+    try {
+      return JSON.parse(structuredData);
+    } catch {
+      return null;
+    }
+  };
+
+  const LabelRow = ({
+    label,
+    value,
+  }: {
+    label: string;
+    value?: string;
+  }) => (
+    <div className="flex gap-3 text-sm leading-6">
+      <div className="w-20 shrink-0 text-gray-600">{label}</div>
+      <div className="flex-1 text-gray-900 whitespace-pre-wrap">
+        {value && value.trim() ? value : "-"}
+      </div>
+    </div>
+  );
+
+  const Section = ({
+    title,
+    children,
+  }: {
+    title: string;
+    children: React.ReactNode;
+  }) => (
+    <section className="py-8 border-t border-gray-900">
+      <h2 className="mb-4 text-lg font-bold text-gray-900">{title}</h2>
+      {children}
+    </section>
+  );
+
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="flex gap-10 px-6 py-8 mx-auto max-w-screen-2xl">
-          <aside className="flex-shrink-0 w-64">
+          <aside className="flex-shrink-0 hidden w-64 lg:block">
             <CompanyLeftSidebar
               activeMenu={activeMenu}
               onMenuClick={handleMenuClick}
             />
           </aside>
           <main className="flex items-center justify-center flex-1 min-w-0">
-            <div className="w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+            <div className="text-xl font-semibold text-gray-600">로딩 중...</div>
           </main>
         </div>
       </div>
     );
   }
 
-  if (error || !resume) {
+  if (!resume) {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="flex gap-10 px-6 py-8 mx-auto max-w-screen-2xl">
-          <aside className="flex-shrink-0 w-64">
+          <aside className="flex-shrink-0 hidden w-64 lg:block">
             <CompanyLeftSidebar
               activeMenu={activeMenu}
               onMenuClick={handleMenuClick}
             />
           </aside>
           <main className="flex-1 min-w-0">
-            <div className="p-8 text-center bg-white border border-red-200 rounded-xl">
-              <div className="mb-4 text-4xl">❌</div>
-              <p className="mb-4 text-lg text-red-600">
-                {error || "이력서를 찾을 수 없습니다."}
-              </p>
-              <button
-                onClick={() => navigate("/company/talent-search")}
-                className="px-6 py-2 text-white transition bg-purple-600 rounded-lg hover:bg-purple-700"
-              >
-                목록으로 돌아가기
-              </button>
+            <div className="text-xl font-semibold text-gray-600">
+              이력서 정보를 찾을 수 없습니다.
             </div>
           </main>
         </div>
@@ -180,307 +311,312 @@ export default function TalentResumeDetailPage() {
     );
   }
 
-  // 데이터 안전하게 파싱 및 Derived State 생성
+  const experiences = parseExperiences(resume.experiences);
+  const certificates = parseCertificates(resume.certificates);
+  const educations = parseEducations(resume.educations);
+  const careers = parseCareers(resume.careers);
   const skills = parseSkills(resume.skills);
-  const sections = parseStructuredData(resume.structuredData);
-
-  const {
-    personalInfo = {},
-    experiences = [],
-    certificates = [],
-    educations = [],
-    careers = [],
-    portfolios = [],
-    coverLetter = {},
-  } = sections;
+  const structuredData = parseStructuredData(resume.structuredData);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="flex gap-10 px-6 py-8 mx-auto max-w-screen-2xl">
-        {/* 왼쪽 사이드바 */}
-        <aside className="flex-shrink-0 hidden w-64 lg:block">
-          <CompanyLeftSidebar
-            activeMenu={activeMenu}
-            onMenuClick={handleMenuClick}
-          />
-        </aside>
+    <div className="min-h-screen bg-white">
+      <div className="px-4 py-8 mx-auto max-w-7xl">
+        <h2 className="mb-6 text-2xl font-bold">인재 이력서 상세</h2>
 
-        {/* 메인 컨텐츠 */}
-        <main className="flex-1 min-w-0">
-          {/* 메인 카드 */}
-          <div className="p-8 bg-white border border-gray-200 rounded-lg shadow-sm">
-            {/* 프로필 헤더 */}
-            <div className="flex items-start justify-between pb-6 mb-6 border-b border-gray-200">
-              <div className="flex items-start gap-4">
-                <div className="flex items-center justify-center flex-shrink-0 w-20 h-20 text-3xl font-bold text-white bg-purple-500 rounded-full">
-                  {personalInfo?.name?.charAt(0) || "이"}
-                </div>
-                <div>
-                  <h1 className="mb-2 text-3xl font-bold text-gray-900">
-                    {personalInfo?.name || "이상연"}
-                  </h1>
-                  <div className="space-y-1 text-sm text-gray-600">
-                    <p className="flex items-center gap-2">
-                      <span>👤</span>
-                      <span>{personalInfo?.email || "이메일 미등록"}</span>
-                    </p>
-                    <p className="flex items-center gap-2">
-                      <span>📱</span>
-                      <span>{personalInfo?.phone || "연락처 미등록"}</span>
-                    </p>
-                    <p className="flex items-center gap-2">
-                      <span>📅</span>
-                      <span>
-                        {personalInfo?.birthDate || "생년월일 미등록"}
-                      </span>
-                    </p>
-                  </div>
-                </div>
+        <div className="flex gap-6">
+          <aside className="flex-shrink-0 hidden w-64 lg:block">
+            <CompanyLeftSidebar
+              activeMenu={activeMenu}
+              onMenuClick={handleMenuClick}
+            />
+          </aside>
+
+          <div className="flex-1 min-w-0">
+            <div className="p-8 bg-white border border-gray-300 rounded-2xl">
+              {/* 상단 버튼 */}
+              <div className="flex items-center justify-between mb-6">
+                <button
+                  onClick={handleBackClick}
+                  className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
+                >
+                  <span>←</span>
+                  <span>목록으로 돌아가기</span>
+                </button>
               </div>
 
-              {/* 오른쪽: AI 매칭 점수 */}
-              <div className="text-right">
-                <div className="text-5xl font-bold text-purple-600">0</div>
-                <div className="text-sm text-gray-500">AI 매칭 점수</div>
-              </div>
-            </div>
-
-            {/* 지원 정보 */}
-            <div className="p-6 mb-8 rounded-lg bg-gray-50">
-              <h2 className="mb-4 text-lg font-bold text-gray-900">
-                이력서 정보
-              </h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="mb-1 text-sm text-gray-500">이력서 제목</div>
-                  <div className="font-medium text-gray-900">
-                    {resume.title || "제목 없음"}
-                  </div>
-                </div>
-                <div>
-                  <div className="mb-1 text-sm text-gray-500">직무</div>
-                  <div className="font-medium text-gray-900">
-                    {resume.jobCategory || "미지정"}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 인적사항 */}
-            <div className="p-6 mb-8 border-2 border-indigo-200 rounded-lg bg-indigo-50">
-              <h2 className="mb-4 text-lg font-bold text-gray-900">
-                📋 인적사항
-              </h2>
-              <div className="grid grid-cols-2 gap-4">
-                {personalInfo?.gender && (
-                  <div className="p-3 bg-white border border-indigo-200 rounded-lg">
-                    <div className="mb-1 text-xs font-medium text-gray-500">
-                      성별
-                    </div>
-                    <div className="font-semibold text-gray-900">
-                      {personalInfo.gender}
-                    </div>
-                  </div>
-                )}
-                {personalInfo?.birthDate && (
-                  <div className="p-3 bg-white border border-indigo-200 rounded-lg">
-                    <div className="mb-1 text-xs font-medium text-gray-500">
-                      생년월일
-                    </div>
-                    <div className="font-semibold text-gray-900">
-                      {personalInfo.birthDate}
-                    </div>
-                  </div>
-                )}
-                {personalInfo?.email && (
-                  <div className="col-span-2 p-3 bg-white border border-indigo-200 rounded-lg">
-                    <div className="mb-1 text-xs font-medium text-gray-500">
-                      이메일
-                    </div>
-                    <div className="font-semibold text-gray-900">
-                      {personalInfo.email}
-                    </div>
-                  </div>
-                )}
-                {personalInfo?.address && (
-                  <div className="col-span-2 p-3 bg-white border border-indigo-200 rounded-lg">
-                    <div className="mb-1 text-xs font-medium text-gray-500">
-                      주소
-                    </div>
-                    <div className="font-semibold text-gray-900">
-                      {personalInfo.address}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* 주요 스킬 */}
-            {skills.length > 0 && (
-              <div className="p-6 mb-8 border-2 border-purple-200 rounded-lg bg-purple-50">
-                <h2 className="mb-4 text-lg font-bold text-gray-900">
-                  💻 주요 스킬
-                </h2>
-                <div className="flex flex-wrap gap-2">
-                  {skills.map((skill: string, idx: number) => (
-                    <span
-                      key={idx}
-                      className="px-4 py-2 text-sm font-semibold text-purple-700 bg-white border-2 border-purple-300 rounded-lg"
-                    >
-                      {skill}
+              {/* 헤더 */}
+              <div className="pb-8 border-b border-gray-400">
+                <h1 className="mb-4 text-3xl font-bold text-gray-900">
+                  {resume.title}
+                </h1>
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">직무</span>
+                    <span className="ml-2 font-medium text-gray-900">
+                      {resume.jobCategory || "미지정"}
                     </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 경험/활동/교육 */}
-            {experiences && experiences.length > 0 && (
-              <div className="p-6 mb-8 border-2 border-orange-200 rounded-lg bg-orange-50">
-                <h2 className="mb-4 text-lg font-bold text-gray-900">
-                  🌟 경험/활동/교육
-                </h2>
-                <div className="space-y-3">
-                  {experiences.map((exp: any, idx: number) => (
-                    <div
-                      key={idx}
-                      className="p-4 bg-white border border-orange-200 rounded-lg"
-                    >
-                      <div className="font-semibold text-gray-900">
-                        {exp.title}
-                      </div>
-                      <div className="text-sm text-gray-600">{exp.period}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 자격증/어학/수상 */}
-            {certificates && certificates.length > 0 && (
-              <div className="p-6 mb-8 border-2 border-yellow-200 rounded-lg bg-yellow-50">
-                <h2 className="mb-4 text-lg font-bold text-gray-900">
-                  🏆 자격증/어학/수상
-                </h2>
-                <div className="space-y-3">
-                  {certificates.map((cert: any, idx: number) => (
-                    <div
-                      key={idx}
-                      className="p-4 bg-white border border-yellow-200 rounded-lg"
-                    >
-                      <div className="font-semibold text-gray-900">
-                        {cert.title}
-                      </div>
-                      <div className="text-sm text-gray-600">{cert.date}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 학력 */}
-            {educations && educations.length > 0 && (
-              <div className="p-6 mb-8 border-2 border-blue-200 rounded-lg bg-blue-50">
-                <h2 className="mb-4 text-lg font-bold text-gray-900">
-                  🎓 학력
-                </h2>
-                <div className="space-y-3">
-                  {educations.map((edu: any, idx: number) => (
-                    <div
-                      key={idx}
-                      className="p-4 bg-white border border-blue-200 rounded-lg"
-                    >
-                      <div className="font-semibold text-gray-900">
-                        {edu.school}
-                      </div>
-                      <div className="text-sm text-gray-600">{edu.period}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 경력 */}
-            {careers && careers.length > 0 && (
-              <div className="p-6 mb-8 border-2 border-teal-200 rounded-lg bg-teal-50">
-                <h2 className="mb-4 text-lg font-bold text-gray-900"> 경력</h2>
-                <div className="space-y-3">
-                  {careers.map((career: any, idx: number) => (
-                    <div
-                      key={idx}
-                      className="p-4 bg-white border border-teal-200 rounded-lg"
-                    >
-                      <div className="font-semibold text-gray-900">
-                        {career.company}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        {career.period}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 포트폴리오 */}
-            {portfolios && portfolios.length > 0 && (
-              <div className="p-6 mb-8 border-2 border-green-200 rounded-lg bg-green-50">
-                <h2 className="mb-4 text-lg font-bold text-gray-900">
-                  📁 포트폴리오
-                </h2>
-                <div className="space-y-3">
-                  {portfolios.map((portfolio: any, idx: number) => (
-                    <div
-                      key={idx}
-                      className="p-4 bg-white border border-green-200 rounded-lg"
-                    >
-                      <div className="font-medium text-gray-700">
-                        📄 {portfolio.filename}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 자기소개서 */}
-            {coverLetter && (coverLetter.title || coverLetter.content) && (
-              <div className="p-6 mb-8 border-2 border-green-200 rounded-lg bg-green-50">
-                <h2 className="mb-4 text-lg font-bold text-gray-900">
-                  ✍️ 자기소개서
-                </h2>
-                {coverLetter.title && (
-                  <div className="p-4 mb-4 bg-white border border-green-200 rounded-lg">
-                    <div className="font-semibold">{coverLetter.title}</div>
                   </div>
-                )}
-                {coverLetter.content && (
-                  <div className="p-4 bg-white border border-green-200 rounded-lg">
-                    <p className="leading-relaxed text-gray-900 whitespace-pre-wrap">
-                      {coverLetter.content}
-                    </p>
+                  <div>
+                    <span className="text-gray-600">조회수</span>
+                    <span className="ml-2 font-medium text-gray-900">
+                      {resume.viewCount}회
+                    </span>
                   </div>
-                )}
+                  <div>
+                    <span className="text-gray-600">작성일</span>
+                    <span className="ml-2 font-medium text-gray-900">
+                      {new Date(resume.createdAt).toLocaleDateString("ko-KR")}
+                    </span>
+                  </div>
+                </div>
               </div>
-            )}
 
-            {/* 하단 버튼 */}
-            <div className="flex gap-4">
-              <button
-                onClick={handleContact}
-                className="flex-1 px-6 py-3 font-semibold text-white transition bg-purple-600 rounded-lg hover:bg-purple-700"
-              >
-                면접 제안
-              </button>
-              <button
-                onClick={handleSave}
-                className="flex-1 px-6 py-3 font-semibold text-purple-700 transition bg-purple-100 rounded-lg hover:bg-purple-200"
-              >
-                스크랩
-              </button>
+              {/* 인적사항 */}
+              {(resume.resumeName ||
+                resume.resumeEmail ||
+                resume.resumeGender ||
+                resume.resumePhone ||
+                resume.resumeBirthDate ||
+                resume.resumeAddress ||
+                resume.profileImage) && (
+                <Section title="인적사항">
+                  <div className="flex flex-col gap-6 md:flex-row md:items-start">
+                    {resume.profileImage && (
+                      <div className="flex justify-center md:justify-start">
+                        <img
+                          src={resume.profileImage}
+                          alt="프로필 이미지"
+                          className="object-cover w-40 h-48 bg-white border border-gray-400 rounded-lg"
+                        />
+                      </div>
+                    )}
+
+                    <div className="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2">
+                      {resume.resumeName && (
+                        <div className="p-4 border border-gray-400 rounded-lg">
+                          <div className="text-xs text-gray-500">이름</div>
+                          <div className="mt-1 font-semibold text-gray-900">
+                            {resume.resumeName}
+                          </div>
+                        </div>
+                      )}
+                      {resume.resumeGender && (
+                        <div className="p-4 border border-gray-400 rounded-lg">
+                          <div className="text-xs text-gray-500">성별</div>
+                          <div className="mt-1 font-semibold text-gray-900">
+                            {resume.resumeGender === "MALE" ? "남성" : "여성"}
+                          </div>
+                        </div>
+                      )}
+                      {resume.resumeBirthDate && (
+                        <div className="p-4 border border-gray-400 rounded-lg">
+                          <div className="text-xs text-gray-500">생년월일</div>
+                          <div className="mt-1 font-semibold text-gray-900">
+                            {resume.resumeBirthDate}
+                          </div>
+                        </div>
+                      )}
+                      {resume.resumeEmail && (
+                        <div className="p-4 border border-gray-400 rounded-lg">
+                          <div className="text-xs text-gray-500">이메일</div>
+                          <div className="mt-1 font-semibold text-gray-900">
+                            {resume.resumeEmail}
+                          </div>
+                        </div>
+                      )}
+                      {resume.resumePhone && (
+                        <div className="p-4 border border-gray-400 rounded-lg">
+                          <div className="text-xs text-gray-500">연락처</div>
+                          <div className="mt-1 font-semibold text-gray-900">
+                            {resume.resumePhone}
+                          </div>
+                        </div>
+                      )}
+                      {resume.resumeAddress && (
+                        <div className="p-4 border border-gray-400 rounded-lg sm:col-span-2">
+                          <div className="text-xs text-gray-500">주소</div>
+                          <div className="mt-1 font-semibold text-gray-900">
+                            {resume.resumeAddress}
+                            {resume.resumeDetailAddress
+                              ? ` ${resume.resumeDetailAddress}`
+                              : ""}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Section>
+              )}
+
+              {/* 주요 스킬 */}
+              {skills.length > 0 && (
+                <Section title="주요 스킬">
+                  <div className="flex flex-wrap gap-2">
+                    {skills.map((skill: string, idx: number) => (
+                      <span
+                        key={idx}
+                        className="px-3 py-1 text-sm text-gray-900 border border-gray-400 rounded"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </Section>
+              )}
+
+              {/* 경험/활동/교육 */}
+              {experiences.length > 0 && (
+                <Section title="경험/활동/교육">
+                  <div className="space-y-3">
+                    {experiences.map((exp: any, idx: number) => (
+                      <div key={idx} className="p-4 border border-gray-400 rounded-lg">
+                        <div className="font-semibold text-gray-900">{exp.title}</div>
+                        <div className="mt-1 text-sm text-gray-600">{exp.period}</div>
+                      </div>
+                    ))}
+                  </div>
+                </Section>
+              )}
+
+              {/* 자격증/어학/수상 */}
+              {certificates.length > 0 && (
+                <Section title="자격증/어학/수상">
+                  <div className="space-y-3">
+                    {certificates.map((cert: any, idx: number) => (
+                      <div key={idx} className="p-4 border border-gray-400 rounded-lg">
+                        <div className="font-semibold text-gray-900">{cert.title}</div>
+                        <div className="mt-1 text-sm text-gray-600">{cert.date}</div>
+                      </div>
+                    ))}
+                  </div>
+                </Section>
+              )}
+
+              {/* 학력 */}
+              {educations.length > 0 && (
+                <Section title="학력">
+                  <div className="space-y-3">
+                    {educations.map((edu: any, idx: number) => (
+                      <div key={idx} className="p-4 border border-gray-400 rounded-lg">
+                        <div className="font-semibold text-gray-900">{edu.school}</div>
+                        <div className="mt-1 text-sm text-gray-600">{edu.period}</div>
+                      </div>
+                    ))}
+                  </div>
+                </Section>
+              )}
+
+              {/* 경력 */}
+              {careers.length > 0 && (
+                <Section title="경력">
+                  <div className="space-y-3">
+                    {careers.map((career: any, idx: number) => (
+                      <div key={idx} className="p-4 border border-gray-400 rounded-lg">
+                        <LabelRow label="회사명" value={career.company} />
+                        <div className="mt-2" />
+                        <LabelRow label="직급" value={career.position} />
+                        <div className="mt-2" />
+                        <LabelRow label="기간" value={career.period} />
+                        <div className="mt-2" />
+                        <LabelRow label="직무" value={career.role} />
+                      </div>
+                    ))}
+                  </div>
+                </Section>
+              )}
+
+              {/* 포트폴리오 */}
+              {resume.portfolios && resume.portfolios.length > 0 && (
+                <Section title="포트폴리오">
+                  <div className="space-y-3">
+                    {resume.portfolios.map((portfolio: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between p-4 border border-gray-400 rounded-lg"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-semibold text-gray-900 truncate">
+                            {portfolio.filename}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handlePortfolioDownload(portfolio)}
+                          className="px-4 py-2 text-sm font-semibold text-gray-900 border border-gray-400 rounded-lg hover:bg-gray-50"
+                        >
+                          다운로드
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </Section>
+              )}
+
+              {/* 자기소개서 */}
+              {resume.coverLetters && resume.coverLetters.length > 0 && (
+                <Section title="자기소개서">
+                  <div className="space-y-4">
+                    {resume.coverLetters.map((coverLetter: any, idx: number) => (
+                      <div key={idx} className="p-4 border border-gray-400 rounded-lg">
+                        {coverLetter.filePath && (
+                          <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-400">
+                            <div className="min-w-0">
+                              <p className="font-semibold text-gray-900 truncate">
+                                {coverLetter.title}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => handleCoverLetterDownload(coverLetter)}
+                              className="px-4 py-2 text-sm font-semibold text-gray-900 border border-gray-400 rounded-lg hover:bg-gray-50"
+                            >
+                              다운로드
+                            </button>
+                          </div>
+                        )}
+
+                        {coverLetter.content && (
+                          <div>
+                            {coverLetter.title && !coverLetter.filePath && (
+                              <h3 className="mb-3 text-base font-bold text-gray-900">
+                                {coverLetter.title}
+                              </h3>
+                            )}
+                            <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">
+                              {coverLetter.content}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </Section>
+              )}
+
+              {/* 하단 버튼 */}
+              <div className="pt-8 border-t border-gray-900">
+                <div className="flex gap-4">
+                  <button
+                    onClick={handleContact}
+                    className="flex-1 px-6 py-3 font-semibold text-white transition bg-black rounded-lg hover:bg-gray-800"
+                  >
+                    스카우트 제안
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    className="flex-1 px-6 py-3 font-semibold text-gray-900 transition border border-gray-400 rounded-lg hover:bg-gray-50"
+                  >
+                    스크랩
+                  </button>
+                  <button
+                    onClick={handleBackClick}
+                    className="px-8 py-3 font-semibold text-white transition bg-black rounded-lg hover:bg-gray-800"
+                  >
+                    목록으로
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </main>
+        </div>
       </div>
     </div>
   );

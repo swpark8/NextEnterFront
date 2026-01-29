@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom"; 
+import { useNavigate, useSearchParams } from "react-router-dom";
 import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
 import { getJobPostings, type JobPostingListResponse } from "../../api/job";
 
-import JobSearchFilter, {
-  SearchFilters,
-} from "./components/CompanySearchFilter";
+import JobSearchFilter, { SearchFilters } from "./components/CompanySearchFilter";
 
 export default function AllJobPostingsPage() {
   const navigate = useNavigate();
@@ -16,8 +14,7 @@ export default function AllJobPostingsPage() {
     "jobs-sub-1",
   );
 
-  const reloadParam = searchParams.get('reload');
-
+  const reloadParam = searchParams.get("reload");
 
   // 데이터 상태
   const [jobPostings, setJobPostings] = useState<JobPostingListResponse[]>([]);
@@ -57,18 +54,11 @@ export default function AllJobPostingsPage() {
         };
 
         // 필터 적용
-        if (filters.keyword) {
-          params.keyword = filters.keyword;
-        }
-        if (filters.regions.length > 0) {
-          params.regions = filters.regions.join(",");
-        }
-        if (filters.jobCategories.length > 0) {
+        if (filters.keyword) params.keyword = filters.keyword;
+        if (filters.regions.length > 0) params.regions = filters.regions.join(",");
+        if (filters.jobCategories.length > 0)
           params.jobCategories = filters.jobCategories.join(",");
-        }
-        if (filters.status && filters.status !== "전체") {
-          params.status = filters.status;
-        }
+        if (filters.status && filters.status !== "전체") params.status = filters.status;
 
         const response = await getJobPostings(params);
         setJobPostings(response.content);
@@ -134,7 +124,9 @@ export default function AllJobPostingsPage() {
 
     return (
       <span
-        className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(status)}`}
+        className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(
+          status,
+        )}`}
       >
         {getStatusText(status)}
       </span>
@@ -146,10 +138,7 @@ export default function AllJobPostingsPage() {
       <div className="flex gap-6 px-4 py-8 mx-auto max-w-7xl">
         {/* 사이드바 */}
         <div className="w-64 shrink-0">
-          <CompanyLeftSidebar
-            activeMenu={activeMenu}
-            onMenuClick={handleMenuClick}
-          />
+          <CompanyLeftSidebar activeMenu={activeMenu} onMenuClick={handleMenuClick} />
         </div>
 
         {/* 메인 컨텐츠 */}
@@ -226,11 +215,20 @@ export default function AllJobPostingsPage() {
               ) : (
                 jobPostings.map((job) => {
                   const daysLeft = getDaysLeft(job.deadline);
+
                   return (
                     <div
                       key={job.jobId}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => handleJobClick(job.jobId)}
-                      className="flex flex-col overflow-hidden transition bg-white border border-gray-300 shadow-sm cursor-pointer rounded-xl hover:shadow-xl hover:border-purple-400"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleJobClick(job.jobId);
+                        }
+                      }}
+                      className="flex flex-col overflow-hidden transition bg-white border border-gray-300 shadow-sm cursor-pointer rounded-xl hover:shadow-xl hover:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400"
                     >
                       {/* 로고 영역 */}
                       <div className="flex items-center justify-center h-12 bg-gradient-to-br from-gray-50 to-gray-100">
@@ -332,10 +330,7 @@ export default function AllJobPostingsPage() {
                                 d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                               />
                             </svg>
-                            {formatExperience(
-                              job.experienceMin,
-                              job.experienceMax,
-                            )}
+                            {formatExperience(job.experienceMin, job.experienceMax)}
                           </span>
                           {getStatusBadge(job.status)}
                         </div>
@@ -367,6 +362,7 @@ export default function AllJobPostingsPage() {
                               ~ {job.deadline || "상시채용"}
                             </span>
                           </div>
+
                           {/* D-Day 배지 */}
                           <div
                             className={`px-3 py-1 text-xs font-bold rounded-lg ${

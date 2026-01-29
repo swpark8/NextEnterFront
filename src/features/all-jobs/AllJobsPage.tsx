@@ -12,7 +12,6 @@ import {
   type ApplyCreateRequest,
 } from "../../api/apply";
 
-// 👇 필터 컴포넌트와 타입 가져오기
 import JobSearchFilter, { SearchFilters } from "./components/JobSearchFilter";
 
 interface AllJobsPageProps {
@@ -33,6 +32,7 @@ type JobListing = {
   daysLeft: number;
   thumbnailUrl?: string;
   logoUrl?: string;
+  status: string; // ✅ 추가: ACTIVE/CLOSED/EXPIRED
 };
 
 export default function AllJobsPage() {
@@ -74,18 +74,15 @@ export default function AllJobsPage() {
     const fetchResumesIfNeeded = async () => {
       if (user?.userId && resumes.length === 0) {
         try {
-          // 1. API에서 데이터 가져오기 (ResumeListItem 타입)
           const data = await getResumeList(user.userId);
 
-          // 2. AppContext가 원하는 모양(Resume 타입)으로 변환
           const mappedResumes = data.map((item) => ({
-            id: item.resumeId, // resumeId -> id 로 연결
-            title: item.title, // title -> title 그대로
-            industry: item.jobCategory, // jobCategory -> industry 로 연결
-            applications: 0, // (임시) 지원수는 API에 없으므로 0으로 설정
+            id: item.resumeId,
+            title: item.title,
+            industry: item.jobCategory,
+            applications: 0,
           }));
 
-          // 3. 변환된 데이터를 저장
           setResumes(mappedResumes);
         } catch (error) {
           console.error("이력서 목록 로드 실패:", error);
@@ -113,7 +110,7 @@ export default function AllJobsPage() {
     fetchMyApplications();
   }, [user?.userId]);
 
-  // 2. 채용공고 데이터 조회 (필터 적용)
+  // ✅ 2. 채용공고 데이터 조회 (필터 적용)
   useEffect(() => {
     const fetchJobPostings = async () => {
       try {
@@ -130,13 +127,26 @@ export default function AllJobsPage() {
           params.regions = filters.regions.join(",");
         if (filters.jobCategories.length > 0)
           params.jobCategories = filters.jobCategories.join(",");
-        if (filters.status && filters.status !== "전체")
-          params.status = filters.status;
+
+        /**
+         * ✅ 핵심 수정:
+         * 개인 회원 "전체 공고 조회"에서는 기업이 삭제(실제로는 CLOSED)한 공고가 보이면 안 되므로
+         * 서버가 CLOSED까지 내려주더라도 프론트에서 ACTIVE만 남깁니다.
+         *
+         * (옵션) 서버가 status 파라미터를 제대로 지원하면 아래 한 줄로도 충분:
+         * params.status = "ACTIVE";
+         *
+         * 그런데 현재 filters.status 값이 '전체' 같은 한글일 수 있어
+         * 서버 규격과 불일치 가능성이 있어, 안전하게 프론트 필터를 강제합니다.
+         */
+        // params.status = "ACTIVE"; // ✅ 서버가 ACTIVE 필터를 지원하면 주석 해제 권장
 
         const response = await getJobPostings(params);
 
-        const convertedJobs: JobListing[] = response.content.map(
-          (job: JobPostingListResponse) => {
+        const convertedJobs: JobListing[] = response.content
+          // ✅ ACTIVE만 노출 (삭제/마감된 공고는 숨김)
+          .filter((job: JobPostingListResponse) => job.status === "ACTIVE")
+          .map((job: JobPostingListResponse) => {
             const deadline = new Date(job.deadline);
             const today = new Date();
             const diffTime = deadline.getTime() - today.getTime();
@@ -153,9 +163,9 @@ export default function AllJobsPage() {
               daysLeft: daysLeft > 0 ? daysLeft : 0,
               thumbnailUrl: job.thumbnailUrl,
               logoUrl: job.logoUrl,
+              status: job.status, // ✅ 추가
             };
-          },
-        );
+          });
 
         setApiJobListings(convertedJobs);
       } catch (err) {
@@ -169,8 +179,6 @@ export default function AllJobsPage() {
     fetchJobPostings();
   }, [filters]);
 
-  // ... (이하 나머지 코드는 기존과 동일하게 유지)
-
   // ✅ 검색 필터링 + 페이징 처리
   const allJobListings = apiJobListings.filter((job) => {
     if (!searchQuery.trim()) return true;
@@ -180,6 +188,7 @@ export default function AllJobsPage() {
       job.company.toLowerCase().includes(query)
     );
   });
+
   const totalJobs = allJobListings.length;
   const totalPages = Math.ceil(totalJobs / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -198,8 +207,7 @@ export default function AllJobsPage() {
     }
   };
 
-  const handleResumeSelect = (resumeId: number) =>
-    setSelectedResumeId(resumeId);
+  const handleResumeSelect = (resumeId: number) => setSelectedResumeId(resumeId);
 
   const handleCancelResume = () => {
     setShowResumeModal(false);
@@ -292,10 +300,18 @@ export default function AllJobsPage() {
     if (endPage - startPage < maxPagesToShow - 1) {
       startPage = Math.max(1, endPage - maxPagesToShow + 1);
     }
-    for (let i = startPage; i <= endPage; i++) {
-      pageNumbers.push(i);
-    }
+    for (let i = startPage; i <= endPage; i++) pageNumbers.push(i);
     return pageNumbers;
+  };
+
+  // ✅ 카드 전체 클릭으로 상세 이동
+  const handleCardClick = (jobId: number) => {
+    navigate(`/user/jobs/${jobId}`);
+  };
+
+  // ✅ "입사지원" 버튼 누르면 카드 클릭(상세 이동) 이벤트가 같이 안 타게
+  const stopCardNavigation = (e: React.MouseEvent) => {
+    e.stopPropagation();
   };
 
   return (
@@ -367,10 +383,7 @@ export default function AllJobsPage() {
         <div className="px-4 py-8 mx-auto max-w-7xl">
           <h1 className="mb-6 text-2xl font-bold">채용정보</h1>
           <div className="flex gap-6">
-            <JobsSidebar
-              activeMenu={activeMenu}
-              onMenuClick={handleMenuClick}
-            />
+            <JobsSidebar activeMenu={activeMenu} onMenuClick={handleMenuClick} />
 
             <div className="flex-1 space-y-8">
               <JobSearchFilter onFilterChange={handleFilterChange} />
@@ -449,7 +462,16 @@ export default function AllJobsPage() {
                       return (
                         <div
                           key={job.id}
-                          className="flex flex-col overflow-hidden transition bg-white border border-gray-300 shadow-sm rounded-xl hover:shadow-xl hover:border-purple-400"
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => handleCardClick(job.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              handleCardClick(job.id);
+                            }
+                          }}
+                          className="flex flex-col overflow-hidden transition bg-white border border-gray-300 shadow-sm rounded-xl hover:shadow-xl hover:border-purple-400 cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-400"
                         >
                           <div className="flex items-center justify-center h-12 bg-gradient-to-br from-gray-50 to-gray-100">
                             {job.logoUrl ? (
@@ -470,10 +492,7 @@ export default function AllJobsPage() {
                           </div>
 
                           <div className="flex flex-col flex-1 p-5">
-                            <h3
-                              onClick={() => navigate(`/user/jobs/${job.id}`)}
-                              className="mb-2 text-lg font-bold text-gray-900 transition-colors cursor-pointer line-clamp-2 hover:text-blue-600"
-                            >
+                            <h3 className="mb-2 text-lg font-bold text-gray-900 transition-colors line-clamp-2 hover:text-blue-600">
                               {job.title}
                             </h3>
 
@@ -533,9 +552,7 @@ export default function AllJobsPage() {
                               </div>
                               <span
                                 className={`text-sm font-bold ${
-                                  job.daysLeft <= 7
-                                    ? "text-red-600"
-                                    : "text-blue-600"
+                                  job.daysLeft <= 7 ? "text-red-600" : "text-blue-600"
                                 }`}
                               >
                                 D-{job.daysLeft}
@@ -543,9 +560,10 @@ export default function AllJobsPage() {
                             </div>
 
                             <button
-                              onClick={() =>
-                                isApplied ? null : handleApply(job.id)
-                              }
+                              onClick={(e) => {
+                                stopCardNavigation(e);
+                                if (!isApplied) handleApply(job.id);
+                              }}
                               disabled={isApplied}
                               className={`w-full py-2.5 mt-4 text-sm font-semibold transition rounded-lg ${
                                 isApplied

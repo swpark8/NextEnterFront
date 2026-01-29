@@ -26,6 +26,11 @@ export default function ResumePage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
 
+  // ✅ 공개/비공개 드롭다운 오픈 상태 (resumeId별)
+  const [openVisibilityDropdownId, setOpenVisibilityDropdownId] = useState<
+    number | null
+  >(null);
+
   // 실제 이력서 목록 상태
   const [resumes, setResumes] = useState<ResumeListItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -42,12 +47,12 @@ export default function ResumePage() {
       const data = await getResumeList(user.userId);
       if (Array.isArray(data)) {
         setResumes(data);
-        
+
         // ✅ AppContext에도 저장 (매칭 페이지에서 사용할 수 있도록)
         const contextResumes = data.map((resume) => ({
           id: resume.resumeId,
           title: resume.title,
-          industry: resume.jobCategory || '미지정',
+          industry: resume.jobCategory || "미지정",
           applications: 0, // API에서 제공하지 않으므로 0으로 설정
         }));
         setContextResumes(contextResumes);
@@ -67,6 +72,18 @@ export default function ResumePage() {
   useEffect(() => {
     loadResumes();
   }, [loadResumes]); // ✅ user?.userId 체크 제거 (loadResumes에 이미 포함)
+
+  // ✅ 바깥 클릭 시 드롭다운 닫기
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // 드롭다운 내부 클릭이면 무시 (data-visibility-dropdown 속성으로 구분)
+      if (target.closest("[data-visibility-dropdown='true']")) return;
+      setOpenVisibilityDropdownId(null);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const handleFileUpload = () => {
     fileInputRef.current?.click();
@@ -128,6 +145,28 @@ export default function ResumePage() {
 
   const handleApplicationClick = (resumeId: number) => {
     handleMenuClick("mypage-sub-3");
+  };
+
+  // ✅ 공개/비공개 설정 (현재는 UI만 + 로컬 상태 즉시 반영)
+  // 서버 반영 API가 있다면 여기에서 호출하면 됩니다.
+  const handleChangeVisibility = async (
+    resumeId: number,
+    visibility: "PUBLIC" | "PRIVATE"
+  ) => {
+    // 1) 즉시 UI 반영
+    setResumes((prev) =>
+      prev.map((r) => (r.resumeId === resumeId ? { ...r, visibility } : r))
+    );
+
+    // 2) 드롭다운 닫기
+    setOpenVisibilityDropdownId(null);
+
+    // 3) TODO: 서버 API 호출
+    // try {
+    //   await updateResumeVisibility(resumeId, user!.userId, visibility);
+    // } catch (e) {
+    //   // 실패 시 롤백하려면 기존 visibility를 저장해뒀다가 되돌리기
+    // }
   };
 
   // 이력서 작성/수정 페이지 표시
@@ -235,52 +274,121 @@ export default function ResumePage() {
                     </div>
                   ) : resumes.length > 0 ? (
                     <div className="p-2 space-y-3 overflow-y-auto max-h-96">
-                      {resumes.map((resume) => (
-                        <div
-                          key={resume.resumeId}
-                          onClick={() => navigate(`/user/resume/${resume.resumeId}`)}
-                          className="p-6 transition bg-white border-2 border-gray-300 rounded-lg cursor-pointer hover:shadow-md hover:border-blue-400"
-                        >
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                              <h3 className="text-lg font-bold">
-                                {resume.title}
-                              </h3>
-                              {resume.visibility === "PUBLIC" ? (
-                                <span className="px-3 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-full">
-                                  공개
+                      {resumes.map((resume) => {
+                        const isOpen =
+                          openVisibilityDropdownId === resume.resumeId;
+                        const isPublic = resume.visibility === "PUBLIC";
+
+                        return (
+                          <div
+                            key={resume.resumeId}
+                            onClick={() =>
+                              navigate(`/user/resume/${resume.resumeId}`)
+                            }
+                            className="relative p-6 transition bg-white border-2 border-gray-300 rounded-lg cursor-pointer hover:shadow-md hover:border-blue-400"
+                          >
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center gap-3">
+                                <h3 className="text-lg font-bold">
+                                  {resume.title}
+                                </h3>
+
+                                {isPublic ? (
+                                  <span className="px-3 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-full">
+                                    공개
+                                  </span>
+                                ) : (
+                                  <span className="px-3 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded-full">
+                                    비공개
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* ✅ 우측 상단 공개/비공개 드롭다운 */}
+                              <div
+                                className="relative"
+                                data-visibility-dropdown="true"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setOpenVisibilityDropdownId((prev) =>
+                                      prev === resume.resumeId
+                                        ? null
+                                        : resume.resumeId
+                                    )
+                                  }
+                                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 transition bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                                >
+                                  <span>{isPublic ? "공개" : "비공개"}</span>
+                                  <span className="text-xs">▾</span>
+                                </button>
+
+                                {isOpen && (
+                                  <div className="absolute right-0 z-10 w-32 mt-2 overflow-hidden bg-white border border-gray-200 rounded-lg shadow-lg">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleChangeVisibility(
+                                          resume.resumeId,
+                                          "PUBLIC"
+                                        )
+                                      }
+                                      className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 ${
+                                        isPublic
+                                          ? "font-semibold text-green-700"
+                                          : "text-gray-700"
+                                      }`}
+                                    >
+                                      공개
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleChangeVisibility(
+                                          resume.resumeId,
+                                          "PRIVATE"
+                                        )
+                                      }
+                                      className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 ${
+                                        !isPublic
+                                          ? "font-semibold text-gray-900"
+                                          : "text-gray-700"
+                                      }`}
+                                    >
+                                      비공개
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-4 text-sm">
+                              <div>
+                                <span className="text-gray-600">직무:</span>
+                                <span className="ml-2 font-medium">
+                                  {resume.jobCategory || "미지정"}
                                 </span>
-                              ) : (
-                                <span className="px-3 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded-full">
-                                  비공개
+                              </div>
+                              <div>
+                                <span className="text-gray-600">상태:</span>
+                                <span className="ml-2 font-medium">
+                                  {resume.status === "COMPLETED"
+                                    ? "완료"
+                                    : "작성중"}
                                 </span>
-                              )}
+                              </div>
+                              <div>
+                                <span className="text-gray-600">조회수:</span>
+                                <span className="ml-2 font-medium">
+                                  {resume.viewCount}회
+                                </span>
+                              </div>
                             </div>
                           </div>
-                          <div className="grid grid-cols-3 gap-4 text-sm">
-                            <div>
-                              <span className="text-gray-600">직무:</span>
-                              <span className="ml-2 font-medium">
-                                {resume.jobCategory || "미지정"}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-gray-600">상태:</span>
-                              <span className="ml-2 font-medium">
-                                {resume.status === "COMPLETED"
-                                  ? "완료"
-                                  : "작성중"}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-gray-600">조회수:</span>
-                              <span className="ml-2 font-medium">
-                                {resume.viewCount}회
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : null}
                 </div>
