@@ -34,7 +34,7 @@ export default function JobSelectionModal({
       >
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-900">
-            스카웃 제안할 공고 선택
+            기업의 요청할 공고 선택
           </h2>
           <p className="mt-2 text-gray-600">
             <span className="font-semibold text-purple-600">{talentName}</span>

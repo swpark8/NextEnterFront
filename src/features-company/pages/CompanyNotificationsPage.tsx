@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { useNavigate, useSearchParams } from "react-router-dom"; 
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Notification as NotificationData,
   markAsRead,
@@ -17,7 +17,7 @@ export default function CompanyNotificationsPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const reloadParam = searchParams.get('reload');
+  const reloadParam = searchParams.get("reload");
 
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -140,7 +140,7 @@ export default function CompanyNotificationsPage() {
       case "INTERVIEW_REJECTED":
         return "❌";
       case "POSITION_OFFER":
-        return "💼";
+        return "";
       case "APPLICATION_STATUS":
         return "📊";
       default:

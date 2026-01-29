@@ -215,7 +215,7 @@ export default function Header() {
       "mypage-sub-3": "/user/application-status",
 
       // ✅ [수정] 여기도 똑같이 변경
-      "mypage-sub-4": "/user/offers/interview", // 스카웃 제안
+      "mypage-sub-4": "/user/offers/interview", // 기업의 요청
       "mypage-sub-5": "/user/scrap-status", // 스크랩 현황
     };
     const targetMenuId = menuId || defaultSubMenus[tabId];

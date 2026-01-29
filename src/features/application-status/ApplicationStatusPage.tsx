@@ -63,7 +63,7 @@ export default function ApplicationStatusPage({
     if (finalStatus === "REJECTED") return "불합격";
     if (finalStatus === "CANCELED") return "지원취소";
 
-    // 스카웃 제안인 경우
+    // 기업의 요청인 경우
     if (type === "INTERVIEW_OFFER") {
       if (interviewStatus === "CANCELED" || interviewStatus === "REJECTED")
         return "제안취소";
@@ -164,7 +164,7 @@ export default function ApplicationStatusPage({
           ),
         );
       } else if (type === "INTERVIEW_OFFER") {
-        console.log(`🚀 [Front] 스카웃 제안 취소 요청: offerId=${id}`);
+        console.log(`🚀 [Front] 기업의 요청 취소 요청: offerId=${id}`);
         await rejectOffer(id, user.userId);
 
         setApplications((prev) =>
@@ -307,7 +307,7 @@ export default function ApplicationStatusPage({
                     <option value="전체">전체</option>
                     <option value="서류심사 대기">서류심사 대기</option>
                     <option value="서류합격">서류합격</option>
-                    <option value="스카웃 제안받음">스카웃 제안받음</option>
+                    <option value="기업의 요청받음">기업의 요청받음</option>
                     <option value="면접 수락">면접 수락</option>
                     <option value="합격">합격</option>
                     <option value="불합격">불합격</option>

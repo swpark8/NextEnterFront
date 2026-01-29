@@ -16,7 +16,7 @@ export default function ApplicantDetailPage() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
 
-  const reloadParam = searchParams.get('reload');
+  const reloadParam = searchParams.get("reload");
 
   const [loading, setLoading] = useState(true);
   const [applicant, setApplicant] = useState<ApplyDetailResponse | null>(null);
@@ -49,7 +49,7 @@ export default function ApplicantDetailPage() {
         console.error("지원자 상세 조회 실패:", error);
         alert(
           error.response?.data?.message ||
-          "지원자 정보를 불러오는데 실패했습니다.",
+            "지원자 정보를 불러오는데 실패했습니다.",
         );
         navigate("/company/applicants");
       } finally {
@@ -123,7 +123,7 @@ export default function ApplicantDetailPage() {
     }
 
     if (
-      window.confirm(`${applicant.userName}님에게 스카웃 제안을 하시겠습니까?`)
+      window.confirm(`${applicant.userName}님에게 기업의 요청을 하시겠습니까?`)
     ) {
       try {
         await createInterviewOffer(user.companyId, {
@@ -133,11 +133,11 @@ export default function ApplicantDetailPage() {
         });
 
         alert(
-          "스카웃 제안이 성공적으로 전송되었습니다.\n개인 회원은 '받은 제안' 페이지에서 확인할 수 있습니다.",
+          "기업의 요청이 성공적으로 전송되었습니다.\n개인 회원은 '받은 제안' 페이지에서 확인할 수 있습니다.",
         );
       } catch (error: any) {
-        console.error("스카웃 제안 실패:", error);
-        alert(error.response?.data?.message || "스카웃 제안에 실패했습니다.");
+        console.error("기업의 요청 실패:", error);
+        alert(error.response?.data?.message || "기업의 요청에 실패했습니다.");
       }
     }
   };
@@ -425,7 +425,7 @@ export default function ApplicantDetailPage() {
             {applicant.careers && applicant.careers.length > 0 && (
               <div className="p-6 mb-8 border-2 border-teal-200 rounded-lg bg-teal-50">
                 <h2 className="mb-4 text-lg font-bold text-gray-900">
-                  💼 경력 ({applicant.experience || "신입"})
+                  경력 ({applicant.experience || "신입"})
                 </h2>
                 <div className="space-y-3">
                   {applicant.careers.map((career, idx) => (
@@ -495,12 +495,13 @@ export default function ApplicantDetailPage() {
                 disabled={
                   applicant.status === "ACCEPTED" // ✅ 합격 상태일 때도 비활성화
                 }
-                className={`flex-1 px-6 py-3 font-semibold transition rounded-lg ${applicant.status === "ACCEPTED"
+                className={`flex-1 px-6 py-3 font-semibold transition rounded-lg ${
+                  applicant.status === "ACCEPTED"
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                     : "bg-blue-600 text-white hover:bg-blue-700"
-                  }`}
+                }`}
               >
-                스카웃 제안
+                기업의 요청
               </button>
               <button
                 onClick={handleCompatibilityClick}

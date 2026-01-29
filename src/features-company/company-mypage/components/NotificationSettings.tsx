@@ -178,7 +178,7 @@ export default function NotificationSettings({
                 면접자의 면접 동의 알림
               </p>
               <p className="text-sm text-gray-500">
-                스카웃 제안에 대한 지원자의 수락/거절 알림을 받습니다
+                기업의 요청에 대한 지원자의 수락/거절 알림을 받습니다
               </p>
             </div>
             <label className="relative inline-block h-8 w-14">

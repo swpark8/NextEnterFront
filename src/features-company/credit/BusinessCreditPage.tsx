@@ -17,7 +17,7 @@ export default function BusinessCreditPage() {
     "credit-sub-1",
   );
 
-  const reloadParam = searchParams.get('reload');
+  const reloadParam = searchParams.get("reload");
 
   const [currentCredit, setCurrentCredit] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -315,7 +315,7 @@ export default function BusinessCreditPage() {
               <ol className="space-y-3 text-base text-gray-700 list-decimal list-inside">
                 <li>인재 검색 및 이력서 열람</li>
                 <li>채용 공고 프리미엄 노출</li>
-                <li>지원자에게 스카웃 제안 발송</li>
+                <li>지원자에게 기업의 요청 발송</li>
               </ol>
             </div>
 

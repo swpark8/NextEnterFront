@@ -191,7 +191,7 @@ export default function TalentSearchPage() {
     if (!user?.userId || !pendingTalent) return;
 
     try {
-      // ✅ 스카웃 제안 전송
+      // ✅ 기업의 요청 전송
       await createInterviewOffer(user.userId, {
         userId: pendingTalent.userId,
         jobId: jobId,
@@ -357,7 +357,6 @@ export default function TalentSearchPage() {
                               면접 요청이 수락되었습니다
                             </span>
                           ) : null}
-
                         </div>
 
                         <div className="grid grid-cols-3 gap-4 mb-4 text-sm">

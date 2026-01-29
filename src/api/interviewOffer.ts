@@ -1,6 +1,6 @@
 import api from "./axios";
 
-// 스카웃 제안 응답 타입
+// 면접 제안 응답 타입
 export interface InterviewOfferResponse {
   offerId: number;
   userId: number;
@@ -12,6 +12,7 @@ export interface InterviewOfferResponse {
   jobCategory: string;
   companyName: string;
   companyLogoUrl?: string;
+  deadline?: string;
   // 사용자 정보
   userName: string;
   userAge?: number;
@@ -19,14 +20,16 @@ export interface InterviewOfferResponse {
   offerType: string; // "COMPANY_INITIATED" | "FROM_APPLICATION"
   interviewStatus: string; // "OFFERED" | "ACCEPTED" | "REJECTED" | "SCHEDULED" | "COMPLETED" | "CANCELED"
   finalResult?: string; // "PASSED" | "REJECTED"
+  deleted: boolean; // ✅ Soft Delete 필드
   // 날짜 정보
   offeredAt: string;
   respondedAt?: string;
   scheduledAt?: string;
   updatedAt: string;
+  deletedAt?: string; // ✅ 삭제 시각
 }
 
-// 스카웃 제안 생성 요청 타입
+// 면접 제안 생성 요청 타입
 export interface InterviewOfferRequest {
   userId: number;
   jobId: number;
@@ -34,7 +37,7 @@ export interface InterviewOfferRequest {
 }
 
 /**
- * 기업이 스카웃 제안 생성
+ * 기업이 면접 제안 생성
  */
 export const createInterviewOffer = async (
   companyId: number,
@@ -47,7 +50,7 @@ export const createInterviewOffer = async (
 };
 
 /**
- * 사용자가 받은 스카웃 제안 목록 (OFFERED 상태만)
+ * 사용자가 받은 면접 제안 목록 (OFFERED 상태만)
  */
 export const getReceivedOffers = async (
   userId: number,
@@ -59,19 +62,21 @@ export const getReceivedOffers = async (
 };
 
 /**
- * 사용자의 모든 스카웃 제안 조회
+ * ✅ 사용자의 모든 면접 제안 조회 (deleted 필터 포함)
  */
 export const getMyOffers = async (
   userId: number,
+  includeDeleted?: boolean,
 ): Promise<InterviewOfferResponse[]> => {
   const response = await api.get("/api/interview-offers/my", {
+    params: { includeDeleted },
     headers: { userId },
   });
   return response.data;
 };
 
 /**
- * 기업의 스카웃 제안 목록
+ * 기업의 면접 제안 목록
  */
 export const getCompanyOffers = async (
   companyId: number,
@@ -85,7 +90,7 @@ export const getCompanyOffers = async (
 };
 
 /**
- * 스카웃 제안 수락
+ * 면접 제안 수락
  */
 export const acceptOffer = async (
   offerId: number,
@@ -102,7 +107,7 @@ export const acceptOffer = async (
 };
 
 /**
- * 스카웃 제안 거절
+ * 면접 제안 거절
  */
 export const rejectOffer = async (
   offerId: number,
@@ -119,6 +124,18 @@ export const rejectOffer = async (
 };
 
 /**
+ * ✅ 면접 제안 삭제 (Soft Delete)
+ */
+export const deleteOffer = async (
+  offerId: number,
+  userId: number,
+): Promise<void> => {
+  await api.delete(`/api/interview-offers/${offerId}`, {
+    headers: { userId },
+  });
+};
+
+/**
  * 특정 인재에게 제안한 공고 ID 목록
  */
 export const getOfferedJobIds = async (
@@ -130,4 +147,17 @@ export const getOfferedJobIds = async (
     headers: { companyId },
   });
   return response.data;
+};
+
+/**
+ * ✅ 면접 제안 일괄 삭제
+ */
+export const deleteOffersBulk = async (
+  offerIds: number[],
+  userId: number,
+): Promise<void> => {
+  await api.delete("/api/interview-offers/bulk", {
+    data: offerIds, // Body에 ID 리스트 전송
+    headers: { userId }, // 인증 헤더 (필요시)
+  });
 };

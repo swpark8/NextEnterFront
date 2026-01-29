@@ -120,9 +120,9 @@ export default function IndividualNotificationSettings({
 
           <div className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg">
             <div>
-              <p className="font-medium text-gray-900">받은 스카웃 제안 알림</p>
+              <p className="font-medium text-gray-900">받은 기업의 요청 알림</p>
               <p className="text-sm text-gray-500">
-                기업으로부터 스카웃 제안을 받을 때 알림을 받습니다
+                기업으로부터 기업의 요청을 받을 때 알림을 받습니다
               </p>
             </div>
             <label className="relative inline-block h-8 w-14">

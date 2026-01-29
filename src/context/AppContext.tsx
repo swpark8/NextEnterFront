@@ -160,7 +160,7 @@ export interface PositionOffer {
   jobId?: number;
 }
 
-// 스카웃 제안 타입
+// 기업의 요청 타입
 export interface InterviewOffer {
   id: number;
   company: string;
@@ -430,7 +430,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     loadPositionOffersFromStorage(),
   );
 
-  // 스카웃 제안 데이터
+  // 기업의 요청 데이터
   const loadInterviewOffersFromStorage = () => {
     try {
       const savedOffers = localStorage.getItem("nextenter_interview_offers");
@@ -438,7 +438,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return JSON.parse(savedOffers);
       }
     } catch (error) {
-      console.error("스카웃 제안 로드 실패:", error);
+      console.error("기업의 요청 로드 실패:", error);
     }
     return [];
   };
@@ -801,7 +801,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           JSON.stringify(updated),
         );
       } catch (error) {
-        console.error("스카웃 제안 저장 실패:", error);
+        console.error("기업의 요청 저장 실패:", error);
       }
       return updated;
     });
@@ -816,7 +816,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           JSON.stringify(updated),
         );
       } catch (error) {
-        console.error("스카웃 제안 삭제 실패:", error);
+        console.error("기업의 요청 삭제 실패:", error);
       }
       return updated;
     });
