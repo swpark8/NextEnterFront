@@ -57,7 +57,7 @@ export interface JobPostingListResponse {
   companyName: string;
   jobCategory: string;
   location: string;
-  locationCity?: string; // 시/도 정보 (필터링용)
+  locationCity?: string;
   experienceMin?: number;
   experienceMax?: number;
   salaryMin?: number;
@@ -66,10 +66,11 @@ export interface JobPostingListResponse {
   status: string;
   viewCount: number;
   applicantCount: number;
-  bookmarkCount: number; // 북마크 수
+  bookmarkCount: number;
   createdAt: string;
   thumbnailUrl?: string;
   logoUrl?: string;
+  detailImageUrl?: string; // ✅ 추가
 }
 
 // 페이징 응답 타입
