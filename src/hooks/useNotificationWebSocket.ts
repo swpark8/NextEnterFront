@@ -62,13 +62,16 @@ export const useNotificationWebSocket = ({
     let isCleanedUp = false;
 
     // WebSocket 클라이언트 초기화
-    const socket = new SockJS('http://localhost:8080/ws/notifications');
+    const backendUrl = 'http://localhost:8080/ws/notifications';
+    console.log(`STOMP: Connecting to ${backendUrl}`);
+    
+    const socket = new SockJS(backendUrl);
     const stompClient = new Client({
       webSocketFactory: () => socket as any,
       debug: (str) => {
         // 프로덕션에서는 debug 로그 비활성화
-        if (process.env.NODE_ENV === 'development') {
-          console.log('STOMP: ', str);
+        if (import.meta.env.DEV) {
+          console.log('STOMP Debug: ', str);
         }
       },
       reconnectDelay: 0, // 자동 재연결 비활성화
@@ -109,8 +112,9 @@ export const useNotificationWebSocket = ({
     stompClient.onStompError = (frame) => {
       if (isCleanedUp) return;
       
-      console.error('❌ STOMP 에러:', frame);
-      setError('알림 서버 연결 실패');
+      console.error('❌ STOMP Protocol Error:', frame.headers['message']);
+      console.error('STOMP Details:', frame.body);
+      setError(`알림 서버 프로토콜 오류: ${frame.headers['message']}`);
       setConnected(false);
       reconnectAttempts.current++;
     };

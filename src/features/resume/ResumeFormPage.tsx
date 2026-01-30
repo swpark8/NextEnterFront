@@ -496,11 +496,19 @@ export default function ResumeFormPage({
       const newFiles = Array.from(files);
       const validFiles = newFiles.filter((file) => {
         const ext = file.name.split(".").pop()?.toLowerCase();
-        return ["pdf", "docx"].includes(ext || "");
+        const validExtensions = ["pdf", "docx"];
+        const validMimeTypes = [
+          "application/pdf",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        ];
+        
+        return validExtensions.includes(ext || "") && 
+               validMimeTypes.includes(file.type);
       });
 
       if (validFiles.length !== newFiles.length) {
-        alert("PDF, DOCX 파일만 업로드 가능합니다.");
+        const invalidFiles = newFiles.filter(f => !validFiles.includes(f));
+        alert(`다음 파일은 업로드할 수 없습니다:\n${invalidFiles.map(f => f.name).join('\n')}\n\nPDF, DOCX 파일만 업로드 가능합니다.`);
       }
 
       if (type === "resume") {

@@ -168,9 +168,70 @@ export default function ResumePage() {
   };
 
   const handleFileUpload = () => fileInputRef.current?.click();
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) console.log("파일 업로드됨:", file.name);
+    if (!file || !user?.userId) return;
+
+    // 파일 확장자 및 MIME 타입 검증
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    const validExtensions = ["pdf", "docx"];
+    const validMimeTypes = [
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ];
+
+    if (!validExtensions.includes(ext || "") || !validMimeTypes.includes(file.type)) {
+      alert("PDF, DOCX 파일만 업로드 가능합니다.");
+      return;
+    }
+
+    console.log("파일 업로드됨:", file.name);
+    setIsLoading(true);
+
+    try {
+      // 파일 이름에서 확장자 제거하여 이력서 제목으로 사용
+      const resumeTitle = file.name.replace(/\.(pdf|docx)$/i, "");
+      
+      const resumeData = {
+        title: resumeTitle,
+        jobCategory: "backend", // 기본값
+        status: "COMPLETED",
+      };
+
+      // createResumeWithFiles API 호출
+      const { createResumeWithFiles } = await import("../../api/resume");
+      const response = await createResumeWithFiles(
+        resumeData,
+        user.userId,
+        [file], // resumeFiles
+        [],     // portfolioFiles
+        []      // coverLetterFiles
+      );
+
+      console.log("✅ 이력서 생성 완료:", response.resumeId);
+      
+      // 이력서 목록 새로고침
+      await loadResumes();
+      
+      // 면접 페이지로 이동 옵션 제공
+      const shouldGoToInterview = window.confirm(
+        `"${resumeTitle}" 이력서가 성공적으로 업로드되었습니다!\n\n면접 페이지로 이동하시겠습니까?`
+      );
+
+      if (shouldGoToInterview) {
+        navigate('/user/interview');
+      }
+    } catch (error) {
+      console.error("파일 업로드 실패:", error);
+      alert("파일 업로드 중 오류가 발생했습니다. 다시 시도해주세요.");
+    } finally {
+      setIsLoading(false);
+      // 파일 input 초기화
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
   };
 
   if (isCreating) {

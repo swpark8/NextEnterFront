@@ -11,7 +11,7 @@ interface InterviewSetupProps {
   resumes: Resume[];
   selectedResumeId: number | null;
   onResumeChange: (id: number) => void;
-  onStart: (portfolioText: string) => void;
+  onStart: (portfolioText: string, portfolioFiles: File[]) => void;
   isLoading: boolean;
 }
 
@@ -23,14 +23,41 @@ export default function InterviewSetup({
   isLoading,
 }: InterviewSetupProps) {
   const [portfolioText, setPortfolioText] = useState("");
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [portfolioFiles, setPortfolioFiles] = useState<File[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
 
-  // 파일 업로드 시뮬레이션
+  // 파일 업로드 핸들러
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
-      setUploadedFiles((prev) => [...prev, ...newFiles]);
+    if (!e.target.files) return;
+    const newFiles = Array.from(e.target.files);
+    processFiles(newFiles);
+  };
+
+  const processFiles = (files: File[]) => {
+    // PDF/DOCX 파일 필터링
+    const validFiles = files.filter((file) => {
+      const ext = file.name.split(".").pop()?.toLowerCase();
+      const validExtensions = ["pdf", "docx"];
+      const validMimeTypes = [
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ];
+
+      return (
+        validExtensions.includes(ext || "") &&
+        validMimeTypes.includes(file.type)
+      );
+    });
+
+    if (validFiles.length !== files.length) {
+      const invalidFiles = files.filter((f) => !validFiles.includes(f));
+      alert(
+        `다음 파일은 업로드할 수 없습니다:\n${invalidFiles.map((f) => f.name).join("\n")}\n\nPDF, DOCX 파일만 업로드 가능합니다.`
+      );
+    }
+
+    if (validFiles.length > 0) {
+      setPortfolioFiles((prev) => [...prev, ...validFiles]);
     }
   };
 
@@ -39,7 +66,7 @@ export default function InterviewSetup({
     setIsDragOver(false);
     if (e.dataTransfer.files) {
       const newFiles = Array.from(e.dataTransfer.files);
-      setUploadedFiles((prev) => [...prev, ...newFiles]);
+      processFiles(newFiles);
     }
   };
 
@@ -54,8 +81,9 @@ export default function InterviewSetup({
   };
 
   const removeFile = (index: number) => {
-    setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
+    setPortfolioFiles((prev) => prev.filter((_, i) => i !== index));
   };
+
 
   return (
     <div className="bg-white border-2 border-blue-400 rounded-2xl p-8 max-w-2xl mx-auto shadow-lg">
@@ -78,7 +106,15 @@ export default function InterviewSetup({
           <div className="relative">
             <select
               value={selectedResumeId || ""}
-              onChange={(e) => onResumeChange(Number(e.target.value))}
+              onChange={(e) => {
+                const newResumeId = Number(e.target.value);
+                console.log("📋 이력서 선택 변경:", {
+                  이전: selectedResumeId,
+                  새로운: newResumeId,
+                  선택된이력서: resumes.find(r => r.id === newResumeId)
+                });
+                onResumeChange(newResumeId);
+              }}
               className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
             >
               <option value="" disabled>
@@ -131,41 +167,49 @@ export default function InterviewSetup({
               <input
                 type="file"
                 multiple
+                accept=".pdf,.docx"
                 className="hidden"
-                id="file-upload"
+                id="portfolio-file-upload"
                 onChange={handleFileChange}
               />
               <label
-                htmlFor="file-upload"
+                htmlFor="portfolio-file-upload"
                 className="cursor-pointer flex flex-col items-center justify-center gap-2"
               >
                 <span className="text-4xl">📎</span>
                 <span className="text-gray-600 font-medium">
-                  {isDragOver ? "여기에 파일을 놓으세요" : "파일 추가하기"}
+                  {isDragOver ? "여기에 파일을 놓으세요" : "포트폴리오 파일 추가"}
                 </span>
                 <span className="text-xs text-gray-400">
-                  클릭하거나 파일을 여기로 드래그하세요
+                  클릭하거나 파일을 드래그하세요 (PDF, DOCX)
                 </span>
               </label>
             </div>
 
             {/* 업로드된 파일 목록 */}
-            {uploadedFiles.length > 0 && (
-              <div className="space-y-2 mt-2">
-                {uploadedFiles.map((file, idx) => (
+            {portfolioFiles.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-gray-700">
+                  첨부된 파일 ({portfolioFiles.length}개)
+                </p>
+                {portfolioFiles.map((file, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center justify-between text-sm bg-gray-100 px-3 py-2 rounded-lg text-gray-700"
+                    className="flex items-center justify-between text-sm bg-blue-50 px-3 py-2 rounded-lg border border-blue-200"
                   >
                     <div className="flex items-center gap-2">
                       <span>📄</span>
-                      <span className="truncate max-w-[200px]">
+                      <span className="truncate max-w-[300px] text-gray-700">
                         {file.name}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        ({(file.size / 1024).toFixed(1)} KB)
                       </span>
                     </div>
                     <button
                       onClick={() => removeFile(idx)}
-                      className="text-red-500 hover:text-red-700 font-bold"
+                      className="text-red-500 hover:text-red-700 font-bold text-lg px-2"
+                      title="파일 제거"
                     >
                       ×
                     </button>
@@ -173,16 +217,16 @@ export default function InterviewSetup({
                 ))}
               </div>
             )}
-            <p className="text-xs text-gray-400 text-right">
-              * 파일은 현재 시뮬레이션으로 처리되며, 실제 텍스트 내용이
-              중요합니다.
+            
+            <p className="text-xs text-gray-400">
+              💡 포트폴리오 파일은 면접 시작 시 AI에게 전달됩니다. (백엔드 API 연동 예정)
             </p>
           </div>
         </section>
 
         <button
           onClick={() => {
-            onStart(portfolioText);
+            onStart(portfolioText, portfolioFiles);
           }}
           disabled={!selectedResumeId || isLoading}
           className={`w-full py-4 text-xl font-bold rounded-xl transition shadow-md ${

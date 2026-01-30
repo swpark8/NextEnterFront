@@ -61,20 +61,21 @@ export default function InterviewChatPage({
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
 
-  // 1. 초기 로드: 이력서 목록이 없으면 로드
+  // 1. 초기 로드: 항상 최신 이력서 목록 로드
   useEffect(() => {
     const loadResumes = async () => {
-      // 이미 resumes가 있고(length > 0) currentResume이 설정되어 있다면 초기값 세팅
-      if (resumes.length > 0) {
-        if (currentResume && !selectedResumeId) {
-          setSelectedResumeId(currentResume.resumeId);
-        }
-        return;
-      }
-
+      console.log("📚 ========== 이력서 목록 로딩 시작 ==========");
+      console.log("👤 사용자 ID:", user?.userId);
+      
       if (user?.userId) {
         try {
+          console.log("🔄 getResumeList API 호출 중...");
           const data = await getResumeList(user.userId);
+          
+          console.log("✅ API 응답 받음:", data);
+          console.log("  - 타입:", Array.isArray(data) ? "배열" : typeof data);
+          console.log("  - 길이:", Array.isArray(data) ? data.length : "N/A");
+          
           if (Array.isArray(data)) {
             const contextResumes = data.map((resume) => ({
               id: resume.resumeId,
@@ -82,31 +83,63 @@ export default function InterviewChatPage({
               industry: resume.jobCategory || "미지정",
               applications: 0,
             }));
+            
+            console.log("📋 변환된 이력서 목록:", contextResumes);
             setResumes(contextResumes);
+            console.log("✅ 이력서 목록 로드 완료:", contextResumes.length, "개");
 
-            // 만약 현재 컨텍스트 이력서가 있다면 자동 선택
-            if (currentResume) {
-              setSelectedResumeId(currentResume.resumeId);
+            // 첫 번째 이력서를 자동 선택 (선택된 이력서가 없을 때만)
+            if (!selectedResumeId && contextResumes.length > 0) {
+              console.log("🎯 첫 번째 이력서 자동 선택:", contextResumes[0]);
+              setSelectedResumeId(contextResumes[0].id);
+            } else if (selectedResumeId) {
+              console.log("🎯 이미 선택된 이력서 ID:", selectedResumeId);
+            } else {
+              console.log("⚠️ 이력서 목록이 비어있음");
             }
+          } else {
+            console.error("❌ 응답이 배열이 아님:", data);
           }
         } catch (error) {
-          console.error("이력서 목록 로드 실패:", error);
+          console.error("❌ 이력서 목록 로드 실패:", error);
+          if (error instanceof Error) {
+            console.error("  - 오류 메시지:", error.message);
+            console.error("  - 오류 스택:", error.stack);
+          }
         }
+      } else {
+        console.log("⚠️ 사용자 ID 없음 - 로그인 필요");
       }
+      
+      console.log("📚 ========== 이력서 목록 로딩 종료 ==========");
     };
     loadResumes();
-  }, [user?.userId, resumes.length, setResumes, currentResume]);
+  }, [user?.userId]); // resumes.length, currentResume 의존성 제거
 
   // 2. 면접 시작 핸들러
-  const handleStartInterview = async (portfolioText: string) => {
+  const handleStartInterview = async (portfolioText: string, portfolioFiles: File[]) => {
+    console.log("🎬 ========== 면접 시작 프로세스 시작 ==========");
+    
+    // 1. 이력서 선택 상태 확인
+    console.log("📋 선택된 이력서 ID:", selectedResumeId);
+    console.log("📚 전체 이력서 목록:", resumes);
+    
     if (!selectedResumeId) {
+      console.error("❌ 이력서가 선택되지 않음");
       alert("이력서를 선택해주세요.");
       return;
     }
+    
+    const selectedResume = resumes.find(r => r.id === selectedResumeId);
+    console.log("✅ 선택된 이력서 정보:", selectedResume);
+    
     if (!user?.userId) {
+      console.error("❌ 사용자 정보 없음");
       alert("로그인 정보가 없습니다.");
       return;
     }
+    
+    console.log("👤 사용자 ID:", user.userId);
 
     setLoading(true);
 
@@ -119,12 +152,33 @@ export default function InterviewChatPage({
         resumeId: selectedResumeId,
         jobCategory: resumes.find(r => r.id === selectedResumeId)?.industry || "backend",
         difficulty: (level === "junior" ? "JUNIOR" : "SENIOR") as "JUNIOR" | "SENIOR",
-        portfolioText: portfolioText, // 사용자 입력 포트폴리오 텍스트만 전달
+        portfolioText: portfolioText,
         totalTurns: totalQuestions,
       };
 
+      console.log("📦 API 요청 Payload:", JSON.stringify(payload, null, 2));
+      console.log("  - resumeId:", payload.resumeId);
+      console.log("  - jobCategory:", payload.jobCategory);
+      console.log("  - difficulty:", payload.difficulty);
+      console.log("  - portfolioText:", portfolioText ? `"${portfolioText.substring(0, 50)}..."` : "(없음)");
+      console.log("  - totalTurns:", payload.totalTurns);
+
+      // TODO: 백엔드 API가 준비되면 portfolioFiles를 함께 전송
+      console.log("📎 포트폴리오 파일:", portfolioFiles.length, "개");
+      portfolioFiles.forEach(file => {
+        console.log("  -", file.name, `(${(file.size / 1024).toFixed(1)} KB)`);
+      });
+
       // (2) API 호출
+      console.log("🚀 면접 시작 API 호출 중...");
       const response = await interviewService.startInterview(userIdNum, payload);
+      
+      console.log("✅ API 응답 받음:", response);
+      console.log("  - interviewId:", response.interviewId);
+      console.log("  - currentTurn:", response.currentTurn);
+      console.log("  - isFinished:", response.isFinished);
+      console.log("  - 첫 질문:", response.question);
+      console.log("  - realtime.next_question:", response.realtime?.next_question);
 
       // (3) 상태 업데이트 및 화면 전환
       setRealInterviewId(response.interviewId);
@@ -138,11 +192,20 @@ export default function InterviewChatPage({
           minute: "2-digit",
         }),
       };
+      
+      console.log("💬 첫 메시지 설정:", welcomeMessage.text);
       setMessages([welcomeMessage]);
       setTurnCount(1);
       setStep("chat");
+      
+      console.log("🎬 ========== 면접 시작 완료 ==========");
     } catch (error) {
-      console.error("면접 시작 오류:", error);
+      console.error("❌ ========== 면접 시작 오류 ==========");
+      console.error("오류 상세:", error);
+      if (error instanceof Error) {
+        console.error("오류 메시지:", error.message);
+        console.error("오류 스택:", error.stack);
+      }
       alert(
         "면접을 시작할 수 없습니다. 이력서 정보를 불러오는데 실패했습니다.",
       );
