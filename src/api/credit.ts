@@ -14,6 +14,25 @@ export interface CreditChargeRequest {
   description?: string;
 }
 
+// ✅ 크레딧 이용 내역 응답 타입 추가
+export interface CreditHistoryItem {
+  creditHistoryId: number;
+  userId: number;
+  transactionType: "CHARGE" | "DEDUCT"; // 충전 또는 차감
+  amount: number;
+  balance: number; // 거래 후 잔액
+  description: string;
+  createdAt: string;
+}
+
+export interface CreditHistoryResponse {
+  content: CreditHistoryItem[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+}
+
 // API 응답 타입
 export interface CreditApiResponse<T> {
   success: boolean;
@@ -32,6 +51,29 @@ export const getCreditBalance = async (
       userId: userId.toString(),
     },
   });
+  return response.data;
+};
+
+/**
+ * ✅ 크레딧 이용 내역 조회
+ */
+export const getCreditHistory = async (
+  userId: number,
+  page: number = 0,
+  size: number = 10
+): Promise<CreditHistoryResponse> => {
+  const response = await api.get<CreditHistoryResponse>(
+    `/api/credit/history`,
+    {
+      params: {
+        page,
+        size,
+      },
+      headers: {
+        userId: userId.toString(),
+      },
+    }
+  );
   return response.data;
 };
 

@@ -122,7 +122,7 @@ export default function ImprovedMyPage({
   const handleClick = (item: string) => {
     switch (item) {
       case "입사 지원 현황":
-        handleMenuClick("application-status");
+        handleMenuClick("mypage-sub-3"); // ✅ 수정: application-status → mypage-sub-3
         break;
       case "모의 면접":
         handleMenuClick("interview-sub-1");
@@ -134,7 +134,7 @@ export default function ImprovedMyPage({
         handleMenuClick("job-sub-2");
         break;
       case "스크랩 현황":
-        handleMenuClick("scrap-status");
+        handleMenuClick("mypage-sub-5"); // ✅ 수정: scrap-status → mypage-sub-5
         break;
       case "관심 기업":
         alert("관심 기업 기능은 준비 중입니다.");
@@ -201,7 +201,7 @@ export default function ImprovedMyPage({
                   </h2>
                 </div>
                 <button
-                  onClick={() => handleMenuClick("application-status")}
+                  onClick={() => handleMenuClick("mypage-sub-3")} // ✅ 수정
                   className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline"
                 >
                   더보기 &gt;
@@ -209,7 +209,11 @@ export default function ImprovedMyPage({
               </div>
               
               <div className="grid grid-cols-4 gap-4">
-                <div className="p-5 text-center transition-all duration-200 bg-white border border-gray-300 rounded-lg hover:shadow-md hover:border-blue-400">
+                {/* ✅ 내 정보 박스 - 클릭 가능하도록 button으로 변경 */}
+                <button
+                  onClick={() => handleMenuClick("mypage-sub-2")}
+                  className="p-5 text-center transition-all duration-200 bg-white border border-gray-300 rounded-lg hover:shadow-md hover:border-blue-400 cursor-pointer"
+                >
                   <div className="flex items-center justify-center mb-3">
                     <div className="flex items-center justify-center w-12 h-12 bg-blue-50 rounded-full">
                       <span className="text-2xl">💚</span>
@@ -217,9 +221,13 @@ export default function ImprovedMyPage({
                   </div>
                   <div className="mb-1 text-sm font-medium text-gray-600">내 정보</div>
                   <div className="text-3xl font-bold text-gray-900">{stats.receivedOffers}</div>
-                </div>
+                </button>
 
-                <div className="p-5 text-center transition-all duration-200 bg-white border border-gray-300 rounded-lg hover:shadow-md hover:border-blue-400">
+                {/* ✅ 지원 현황 박스 - 클릭 가능하도록 button으로 변경 */}
+                <button
+                  onClick={() => handleMenuClick("mypage-sub-3")}
+                  className="p-5 text-center transition-all duration-200 bg-white border border-gray-300 rounded-lg hover:shadow-md hover:border-blue-400 cursor-pointer"
+                >
                   <div className="flex items-center justify-center mb-3">
                     <div className="flex items-center justify-center w-12 h-12 bg-blue-50 rounded-full">
                       <span className="text-2xl">📝</span>
@@ -227,9 +235,13 @@ export default function ImprovedMyPage({
                   </div>
                   <div className="mb-1 text-sm font-medium text-gray-600">지원 현황</div>
                   <div className="text-3xl font-bold text-gray-900">{stats.appliedJobs}</div>
-                </div>
+                </button>
 
-                <div className="p-5 text-center transition-all duration-200 bg-white border border-gray-300 rounded-lg hover:shadow-md hover:border-blue-400">
+                {/* 기업의 요청 박스 */}
+                <button
+                  onClick={() => handleMenuClick("mypage-sub-4")}
+                  className="p-5 text-center transition-all duration-200 bg-white border border-gray-300 rounded-lg hover:shadow-md hover:border-blue-400 cursor-pointer"
+                >
                   <div className="flex items-center justify-center mb-3">
                     <div className="flex items-center justify-center w-12 h-12 bg-blue-50 rounded-full">
                       <span className="text-2xl">👀</span>
@@ -237,9 +249,13 @@ export default function ImprovedMyPage({
                   </div>
                   <div className="mb-1 text-sm font-medium text-gray-600">기업의 요청</div>
                   <div className="text-3xl font-bold text-gray-900">{stats.viewedJobs}</div>
-                </div>
+                </button>
 
-                <div className="p-5 text-center transition-all duration-200 bg-white border border-gray-300 rounded-lg hover:shadow-md hover:border-blue-400">
+                {/* 스크랩 박스 */}
+                <button
+                  onClick={() => handleMenuClick("mypage-sub-5")}
+                  className="p-5 text-center transition-all duration-200 bg-white border border-gray-300 rounded-lg hover:shadow-md hover:border-blue-400 cursor-pointer"
+                >
                   <div className="flex items-center justify-center mb-3">
                     <div className="flex items-center justify-center w-12 h-12 bg-blue-50 rounded-full">
                       <span className="text-2xl">⭐</span>
@@ -247,7 +263,7 @@ export default function ImprovedMyPage({
                   </div>
                   <div className="mb-1 text-sm font-medium text-gray-600">스크랩</div>
                   <div className="text-3xl font-bold text-gray-900">{stats.bookmarkedJobs}</div>
-                </div>
+                </button>
               </div>
             </div>
 

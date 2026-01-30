@@ -6,7 +6,7 @@ import {
   updateCompanyProfile,
   changeCompanyPassword,
 } from "../../api/company";
-import { getCreditBalance } from "../../api/credit"; // ✅ 크레딧 API import 추가
+import { getCreditBalance, getCreditHistory } from "../../api/credit";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
 import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
 import CompanyProfile from "./components/CompanyProfile";
@@ -16,6 +16,14 @@ import NotificationSettings from "./components/NotificationSettings";
 
 interface CompanyMyPageProps {
   initialMenu?: string;
+}
+
+interface CreditHistoryItem {
+  id: number;
+  date: string;
+  type: string;
+  content: string;
+  amount: string;
 }
 
 export default function CompanyMyPage({
@@ -32,10 +40,9 @@ export default function CompanyMyPage({
     initialMenu,
   );
 
-  // ✅ 크레딧 상태 - 실제 API에서 불러오기
   const [currentCredit, setCurrentCredit] = useState<number>(0);
-  const [creditHistory] = useState([]); // ✅ 빈 배열로 초기화 (API 추가 전까지)
-  const [creditLoading, setCreditLoading] = useState(false); // ✅ 크레딧 로딩 상태 추가
+  const [creditHistory, setCreditHistory] = useState<CreditHistoryItem[]>([]);
+  const [creditLoading, setCreditLoading] = useState(false);
 
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,26 +68,75 @@ export default function CompanyMyPage({
   const [newPassword, setNewPassword] = useState<string>("");
   const [confirmPassword, setConfirmPassword] = useState<string>("");
 
-  // ✅ 크레딧 정보 로드
-  useEffect(() => {
-    const loadCreditInfo = async () => {
-      if (!user?.companyId) return;
-      
-      setCreditLoading(true);
-      try {
-        const creditBalance = await getCreditBalance(user.companyId);
-        console.log('✅ 크레딧 잔액 조회 성공:', creditBalance.balance);
-        setCurrentCredit(creditBalance.balance);
-      } catch (error) {
-        console.error('❌ 크레딧 잔액 조회 실패:', error);
-        setCurrentCredit(0);
-      } finally {
-        setCreditLoading(false);
-      }
-    };
+  // ✅ 크레딧 정보 로드 함수 분리
+  const loadCreditInfo = async () => {
+    if (!user?.companyId) {
+      console.log('❌ companyId가 없습니다:', user);
+      return;
+    }
+    
+    console.log('🔄 크레딧 정보 로드 시작 - companyId:', user.companyId);
+    setCreditLoading(true);
+    
+    try {
+      // 크레딧 잔액 조회
+      console.log('📞 크레딧 잔액 API 호출...');
+      const creditBalance = await getCreditBalance(user.companyId);
+      console.log('✅ 크레딧 잔액 조회 성공:', creditBalance);
+      setCurrentCredit(creditBalance.balance);
 
-    loadCreditInfo();
-  }, [user?.companyId, reloadParam]); // ✅ reloadParam 의존성 추가
+      // 크레딧 이용 내역 조회
+      console.log('📞 크레딧 이용 내역 API 호출...');
+      const historyResponse = await getCreditHistory(user.companyId, 0, 20);
+      console.log('✅ 크레딧 이용 내역 조회 성공:', historyResponse);
+      
+      // 백엔드 데이터를 UI 형식으로 변환
+      const formattedHistory: CreditHistoryItem[] = historyResponse.content.map((item) => ({
+        id: item.creditHistoryId,
+        date: new Date(item.createdAt).toLocaleString('ko-KR', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        type: item.transactionType === 'CHARGE' ? '충전' : '사용',
+        content: item.description,
+        amount: item.transactionType === 'CHARGE' 
+          ? `+${item.amount.toLocaleString()} C` 
+          : `-${item.amount.toLocaleString()} C`,
+      }));
+
+      console.log('✅ 포맷된 크레딧 내역:', formattedHistory);
+      setCreditHistory(formattedHistory);
+    } catch (error: any) {
+      console.error('❌ 크레딧 정보 조회 실패:', error);
+      console.error('❌ 에러 상세:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+      });
+      
+      // 404 에러가 아니면 기본값 유지, 404면 빈 배열
+      if (error.response?.status === 404) {
+        console.log('ℹ️ 크레딧 내역이 없습니다 (404)');
+        setCreditHistory([]);
+      } else {
+        // 다른 에러의 경우 사용자에게 알림
+        console.error('크레딧 로드 중 오류 발생');
+      }
+    } finally {
+      setCreditLoading(false);
+    }
+  };
+
+  // ✅ activeMenu가 크레딧 탭으로 변경될 때마다 크레딧 정보 로드
+  useEffect(() => {
+    if (activeMenu === "companyMy-sub-3" && user?.companyId) {
+      console.log('🔄 크레딧 탭 활성화 - 크레딧 정보 로드');
+      loadCreditInfo();
+    }
+  }, [activeMenu, user?.companyId, reloadParam]);
 
   // 초기 데이터 로드
   useEffect(() => {
@@ -116,7 +172,6 @@ export default function CompanyMyPage({
     loadCompanyProfile();
   }, [user?.companyId, reloadParam]);
 
-  // 기업 정보 저장
   const handleSaveCompanyProfile = async () => {
     if (!user?.companyId) return;
     setLoading(true);
@@ -153,7 +208,6 @@ export default function CompanyMyPage({
     }
   };
 
-  // 비밀번호 변경
   const onChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       alert("비밀번호 변경의 모든 칸을 입력해주세요.");
@@ -265,11 +319,15 @@ export default function CompanyMyPage({
                 />
               )}
               {activeMenu === "companyMy-sub-3" && (
-                <PaymentCredits
-                  currentCredit={currentCredit}
-                  creditHistory={creditHistory}
-                  creditLoading={creditLoading} // ✅ 로딩 상태 전달
-                />
+                <>
+                  
+                  
+                  <PaymentCredits
+                    currentCredit={currentCredit}
+                    creditHistory={creditHistory}
+                    creditLoading={creditLoading}
+                  />
+                </>
               )}
               {activeMenu === "companyMy-sub-4" && user?.companyId && (
                 <NotificationSettings
