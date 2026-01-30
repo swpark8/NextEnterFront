@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface CreditHistoryItem {
@@ -11,7 +12,7 @@ interface CreditHistoryItem {
 interface PaymentCreditsProps {
   currentCredit: number;
   creditHistory: CreditHistoryItem[];
-  creditLoading?: boolean; // ✅ 로딩 상태 추가
+  creditLoading?: boolean;
 }
 
 export default function PaymentCredits({
@@ -20,6 +21,16 @@ export default function PaymentCredits({
   creditLoading = false,
 }: PaymentCreditsProps) {
   const navigate = useNavigate();
+
+  // ✅ Props 변경 감지 디버깅
+  useEffect(() => {
+    console.log('📊 PaymentCredits Props 변경:', {
+      currentCredit,
+      creditHistoryLength: creditHistory.length,
+      creditLoading,
+      creditHistory: creditHistory,
+    });
+  }, [currentCredit, creditHistory, creditLoading]);
 
   return (
     <div className="space-y-8">
@@ -72,7 +83,16 @@ export default function PaymentCredits({
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {creditHistory.length === 0 ? (
+              {creditLoading ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-12 text-center">
+                    <div className="flex flex-col items-center">
+                      <div className="w-12 h-12 mb-4 border-4 border-purple-600 rounded-full border-t-transparent animate-spin"></div>
+                      <p className="text-gray-500">크레딧 내역을 불러오는 중...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : creditHistory.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
                     <div className="flex flex-col items-center">
