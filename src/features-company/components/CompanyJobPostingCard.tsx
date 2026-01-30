@@ -84,10 +84,10 @@ export default function CompanyJobPostingCard({
   return (
     <div
       onClick={() => onDetailClick(job.jobId)}
-      className="flex flex-col overflow-hidden transition bg-white border border-gray-300 shadow-sm cursor-pointer rounded-xl hover:shadow-xl hover:border-purple-400"
+      className="flex flex-col overflow-hidden transition bg-white border border-gray-300 shadow-sm cursor-pointer rounded-xl hover:shadow-xl hover:border-purple-400 h-[480px]"
     >
       {/* 로고 영역 */}
-      <div className="flex items-center justify-center h-12 bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="flex items-center justify-center h-16 bg-gradient-to-br from-gray-50 to-gray-100">
         {job.logoUrl ? (
           <img
             src={job.logoUrl}
@@ -108,7 +108,7 @@ export default function CompanyJobPostingCard({
       {/* 내용 영역 */}
       <div className="flex flex-col flex-1 p-5">
         {/* 직무명 */}
-        <h3 className="mb-2 text-lg font-bold text-gray-900 line-clamp-2 hover:text-purple-600">
+        <h3 className="mb-2 text-base font-bold text-gray-900 line-clamp-2 hover:text-purple-600">
           {job.title}
         </h3>
 
@@ -118,12 +118,12 @@ export default function CompanyJobPostingCard({
         </p>
 
         {/* 썸네일 이미지 */}
-        <div className="mb-3 overflow-hidden rounded-lg">
+        <div className="mb-3 overflow-hidden rounded-lg h-32">
           {job.thumbnailUrl ? (
             <img
               src={job.thumbnailUrl}
               alt={`${job.title} 썸네일`}
-              className="object-cover w-full h-50"
+              className="object-cover w-full h-full"
               onError={(e) => {
                 e.currentTarget.src =
                   "https://via.placeholder.com/400x200?text=No+Image";
