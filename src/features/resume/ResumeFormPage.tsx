@@ -15,6 +15,7 @@ import { usePageNavigation } from "../../hooks/usePageNavigation";
 import SchoolSearchInput from "./components/SchoolSearchInput";
 import { useKakaoAddress } from "../../hooks/useKakaoAddress";
 import { setNavigationBlocker } from "../../utils/navigationBlocker";
+import LeftSidebar from "../../components/LeftSidebar";
 
 interface ResumeFormPageProps {
   onBack?: () => void;
@@ -54,11 +55,24 @@ export default function ResumeFormPage({
   const [selectedJob, setSelectedJob] = useState<string>("");
 
   const [educations, setEducations] = useState<EducationForm[]>([
-    { school: "", type: "", subType: "", major: "", startDate: "", endDate: "" },
+    {
+      school: "",
+      type: "",
+      subType: "",
+      major: "",
+      startDate: "",
+      endDate: "",
+    },
   ]);
 
   const [careers, setCareers] = useState<
-    { company: string; position: string; role: string; startDate: string; endDate: string }[]
+    {
+      company: string;
+      position: string;
+      role: string;
+      startDate: string;
+      endDate: string;
+    }[]
   >([{ company: "", position: "", role: "", startDate: "", endDate: "" }]);
 
   // ✅ 파일 업로드(새로 선택한 파일들)
@@ -90,7 +104,11 @@ export default function ResumeFormPage({
   const [error, setError] = useState("");
 
   // ✅ JSON 안전 파서
-  const safeJsonParse = <T,>(value?: string, fallback: T): T => {
+  // ✅ 수정: value를 필수 파라미터로 바꾸되, null/undefined를 허용하도록 타입 변경
+  const safeJsonParse = <T,>(
+    value: string | null | undefined,
+    fallback: T,
+  ): T => {
     if (!value) return fallback;
     try {
       return JSON.parse(value) as T;
@@ -116,11 +134,20 @@ export default function ResumeFormPage({
   // ✅ [핵심] 저장되어 있는 education.school 문자열을 다시 분해해서 수정페이지에 동일하게 표시
   // 저장 포맷(현재 너 코드):
   //   schoolText = `${school} ${type}` + (subType ? ` - ${subType}` : "") + (major ? ` ${major}` : "")
-  const parseEducationSchoolText = (raw: string): { school: string; type: string; subType: string; major: string } => {
+  const parseEducationSchoolText = (
+    raw: string,
+  ): { school: string; type: string; subType: string; major: string } => {
     const types = ["고등학교", "대학교", "대학원"] as const;
 
     const subTypesMap: Record<string, string[]> = {
-      고등학교: ["일반고", "특목고", "특성화고", "마이스터고", "자율고", "영재고"],
+      고등학교: [
+        "일반고",
+        "특목고",
+        "특성화고",
+        "마이스터고",
+        "자율고",
+        "영재고",
+      ],
       대학교: ["2년제", "3년제", "4년제"],
       대학원: ["석사", "박사"],
     };
@@ -137,14 +164,19 @@ export default function ResumeFormPage({
       const foundType = types.find((t) => left.trim().endsWith(t));
       if (foundType) {
         result.type = foundType;
-        result.school = left.trim().slice(0, left.trim().length - foundType.length).trim();
+        result.school = left
+          .trim()
+          .slice(0, left.trim().length - foundType.length)
+          .trim();
       } else {
         // 혹시 타입을 못 찾으면 왼쪽 통으로 school
         result.school = left.trim();
       }
 
       // right에서 subType(앞부분) + major(나머지)
-      const candidates = result.type ? subTypesMap[result.type] : ([] as string[]);
+      const candidates = result.type
+        ? subTypesMap[result.type]
+        : ([] as string[]);
       const foundSub = candidates.find((s) => right.trim().startsWith(s));
       if (foundSub) {
         result.subType = foundSub;
@@ -158,7 +190,9 @@ export default function ResumeFormPage({
 
     // 2) " - "가 없으면: "<학교명> <type> <major?>"
     // type을 찾아서 school / major 분리
-    const foundType = types.find((t) => trimmed.includes(` ${t}`) || trimmed.endsWith(t));
+    const foundType = types.find(
+      (t) => trimmed.includes(` ${t}`) || trimmed.endsWith(t),
+    );
     if (foundType) {
       // 가장 뒤쪽의 type 기준으로 split
       const idx = trimmed.lastIndexOf(foundType);
@@ -187,7 +221,10 @@ export default function ResumeFormPage({
   }, [resumeId, user?.userId]);
 
   useEffect(() => {
-    setNavigationBlocker(true, "작성 중인 내용이 사라집니다. 정말 이동하시겠습니까?");
+    setNavigationBlocker(
+      true,
+      "작성 중인 내용이 사라집니다. 정말 이동하시겠습니까?",
+    );
     return () => setNavigationBlocker(false, "");
   }, []);
 
@@ -211,7 +248,8 @@ export default function ResumeFormPage({
       if (resume.resumeEmail) setEmail(resume.resumeEmail);
       if (resume.resumePhone) setPhone(resume.resumePhone);
       if (resume.resumeAddress) setAddress(resume.resumeAddress);
-      if (resume.resumeDetailAddress) setDetailAddress(resume.resumeDetailAddress);
+      if (resume.resumeDetailAddress)
+        setDetailAddress(resume.resumeDetailAddress);
       if (resume.profileImage) setSelectedImage(resume.profileImage);
 
       // ===== ✅ 새 구조(분리 필드) 먼저 로드 =====
@@ -223,7 +261,11 @@ export default function ResumeFormPage({
         setExperiences(
           expArr.map((exp) => {
             const [start, end] = (exp.period || "").split(" - ");
-            return { title: exp.title || "", startDate: start || "", endDate: end || "" };
+            return {
+              title: exp.title || "",
+              startDate: start || "",
+              endDate: end || "",
+            };
           }),
         );
       }
@@ -233,7 +275,9 @@ export default function ResumeFormPage({
         [],
       );
       if (certArr.length > 0) {
-        setCertificates(certArr.map((c) => ({ title: c.title || "", date: c.date || "" })));
+        setCertificates(
+          certArr.map((c) => ({ title: c.title || "", date: c.date || "" })),
+        );
       }
 
       // ✅ 여기서 학력 파싱 (핵심)
@@ -259,7 +303,12 @@ export default function ResumeFormPage({
       }
 
       const careerArr = safeJsonParse<
-        Array<{ company?: string; position?: string; role?: string; period?: string }>
+        Array<{
+          company?: string;
+          position?: string;
+          role?: string;
+          period?: string;
+        }>
       >(resume.careers, []);
 
       if (careerArr.length > 0) {
@@ -288,11 +337,13 @@ export default function ResumeFormPage({
           // 개인정보 fallback
           if (sections.personalInfo) {
             if (!name) setName(sections.personalInfo.name || "");
-            if (!selectedGender) setSelectedGender(sections.personalInfo.gender || "");
+            if (!selectedGender)
+              setSelectedGender(sections.personalInfo.gender || "");
             if (!birthDate) setBirthDate(sections.personalInfo.birthDate || "");
             if (!email) setEmail(sections.personalInfo.email || "");
             if (!address) setAddress(sections.personalInfo.address || "");
-            if (!selectedImage) setSelectedImage(sections.personalInfo.profileImage || null);
+            if (!selectedImage)
+              setSelectedImage(sections.personalInfo.profileImage || null);
           }
 
           // 경험 fallback
@@ -352,8 +403,10 @@ export default function ResumeFormPage({
 
           // 자기소개서 텍스트 fallback
           if (sections.coverLetter) {
-            if (!coverLetterTitle) setCoverLetterTitle(sections.coverLetter.title || "");
-            if (!coverLetterContent) setCoverLetterContent(sections.coverLetter.content || "");
+            if (!coverLetterTitle)
+              setCoverLetterTitle(sections.coverLetter.title || "");
+            if (!coverLetterContent)
+              setCoverLetterContent(sections.coverLetter.content || "");
           }
         } catch (parseError) {
           console.error("structuredData 파싱 오류:", parseError);
@@ -382,7 +435,14 @@ export default function ResumeFormPage({
   const addEducation = () =>
     setEducations([
       ...educations,
-      { school: "", type: "", subType: "", major: "", startDate: "", endDate: "" },
+      {
+        school: "",
+        type: "",
+        subType: "",
+        major: "",
+        startDate: "",
+        endDate: "",
+      },
     ]);
   const removeEducation = (index: number) =>
     setEducations(educations.filter((_, i) => i !== index));
@@ -395,7 +455,8 @@ export default function ResumeFormPage({
   const removeCareer = (index: number) =>
     setCareers(careers.filter((_, i) => i !== index));
 
-  const addCertificate = () => setCertificates([...certificates, { title: "", date: "" }]);
+  const addCertificate = () =>
+    setCertificates([...certificates, { title: "", date: "" }]);
   const removeCertificate = (index: number) =>
     setCertificates(certificates.filter((_, i) => i !== index));
 
@@ -404,8 +465,11 @@ export default function ResumeFormPage({
   const removeExperience = (index: number) =>
     setExperiences(experiences.filter((_, i) => i !== index));
 
-  const handlePortfolioFileUpload = () => portfolioFileInputRef.current?.click();
-  const handlePortfolioFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePortfolioFileUpload = () =>
+    portfolioFileInputRef.current?.click();
+  const handlePortfolioFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const files = e.target.files;
     if (files && files.length > 0) {
       const newFiles = Array.from(files);
@@ -413,15 +477,19 @@ export default function ResumeFormPage({
         const ext = file.name.split(".").pop()?.toLowerCase();
         return ["pdf", "doc", "docx"].includes(ext || "");
       });
-      if (validFiles.length !== newFiles.length) alert("PDF, Word 파일만 업로드 가능합니다.");
+      if (validFiles.length !== newFiles.length)
+        alert("PDF, Word 파일만 업로드 가능합니다.");
       setPortfolioFiles([...portfolioFiles, ...validFiles]);
     }
   };
   const removePortfolioFile = (index: number) =>
     setPortfolioFiles(portfolioFiles.filter((_, i) => i !== index));
 
-  const handleCoverLetterFileUpload = () => coverLetterFileInputRef.current?.click();
-  const handleCoverLetterFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCoverLetterFileUpload = () =>
+    coverLetterFileInputRef.current?.click();
+  const handleCoverLetterFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const files = e.target.files;
     if (files && files.length > 0) {
       const newFiles = Array.from(files);
@@ -429,7 +497,8 @@ export default function ResumeFormPage({
         const ext = file.name.split(".").pop()?.toLowerCase();
         return ["pdf", "doc", "docx"].includes(ext || "");
       });
-      if (validFiles.length !== newFiles.length) alert("PDF, Word 파일만 업로드 가능합니다.");
+      if (validFiles.length !== newFiles.length)
+        alert("PDF, Word 파일만 업로드 가능합니다.");
       setCoverLetterFiles([...coverLetterFiles, ...validFiles]);
     }
   };
@@ -437,10 +506,12 @@ export default function ResumeFormPage({
     setCoverLetterFiles(coverLetterFiles.filter((_, i) => i !== index));
 
   const toggleSkill = (skill: string) => {
-    if (selectedSkills.includes(skill)) setSelectedSkills(selectedSkills.filter((s) => s !== skill));
+    if (selectedSkills.includes(skill))
+      setSelectedSkills(selectedSkills.filter((s) => s !== skill));
     else setSelectedSkills([...selectedSkills, skill]);
   };
-  const removeSkill = (skill: string) => setSelectedSkills(selectedSkills.filter((s) => s !== skill));
+  const removeSkill = (skill: string) =>
+    setSelectedSkills(selectedSkills.filter((s) => s !== skill));
 
   const handleSubmit = async () => {
     if (!resumeTitle) return alert("이력서 제목을 입력해주세요.");
@@ -455,7 +526,8 @@ export default function ResumeFormPage({
         .filter((e) => e.title && e.title.trim() !== "")
         .map((e) => ({
           title: e.title,
-          period: e.startDate && e.endDate ? `${e.startDate} - ${e.endDate}` : "",
+          period:
+            e.startDate && e.endDate ? `${e.startDate} - ${e.endDate}` : "",
         }));
 
       const certificatesData = certificates
@@ -472,7 +544,8 @@ export default function ResumeFormPage({
           if (e.major) schoolText += ` ${e.major}`;
           return {
             school: schoolText,
-            period: e.startDate && e.endDate ? `${e.startDate} ~ ${e.endDate}` : "",
+            period:
+              e.startDate && e.endDate ? `${e.startDate} ~ ${e.endDate}` : "",
           };
         });
 
@@ -482,7 +555,8 @@ export default function ResumeFormPage({
           company: c.company,
           position: c.position || "",
           role: c.role || "",
-          period: c.startDate && c.endDate ? `${c.startDate} ~ ${c.endDate}` : "",
+          period:
+            c.startDate && c.endDate ? `${c.startDate} ~ ${c.endDate}` : "",
         }));
 
       const resumeData: CreateResumeRequest = {
@@ -498,9 +572,12 @@ export default function ResumeFormPage({
         resumeAddress: address,
         resumeDetailAddress: detailAddress,
         profileImage: selectedImage || undefined,
-        experiences: experiencesData.length > 0 ? JSON.stringify(experiencesData) : "[]",
-        certificates: certificatesData.length > 0 ? JSON.stringify(certificatesData) : "[]",
-        educations: educationsData.length > 0 ? JSON.stringify(educationsData) : "[]",
+        experiences:
+          experiencesData.length > 0 ? JSON.stringify(experiencesData) : "[]",
+        certificates:
+          certificatesData.length > 0 ? JSON.stringify(certificatesData) : "[]",
+        educations:
+          educationsData.length > 0 ? JSON.stringify(educationsData) : "[]",
         careers: careersData.length > 0 ? JSON.stringify(careersData) : "[]",
         status: "COMPLETED",
       };
@@ -525,7 +602,8 @@ export default function ResumeFormPage({
           );
         }
       } else {
-        if (resumeId) response = await updateResume(resumeId, resumeData, user.userId);
+        if (resumeId)
+          response = await updateResume(resumeId, resumeData, user.userId);
         else response = await createResume(resumeData, user.userId);
       }
 
@@ -555,763 +633,891 @@ export default function ResumeFormPage({
   };
 
   const availableSkills = [
-    "JAVA","Python","JavaScript","TypeScript","C++","C#","AWS","Azure","GCP","React","Vue","Angular",
-    "Next.js","Svelte","Node.js","Spring","Django","Flask","Express","MySQL","PostgreSQL","MongoDB",
-    "Redis","Docker","Kubernetes","Jenkins","GitHub Actions","HTML","CSS","SASS","Tailwind","Git","SVN",
-    "Figma","Sketch","Adobe XD",
+    "JAVA",
+    "Python",
+    "JavaScript",
+    "TypeScript",
+    "C++",
+    "C#",
+    "AWS",
+    "Azure",
+    "GCP",
+    "React",
+    "Vue",
+    "Angular",
+    "Next.js",
+    "Svelte",
+    "Node.js",
+    "Spring",
+    "Django",
+    "Flask",
+    "Express",
+    "MySQL",
+    "PostgreSQL",
+    "MongoDB",
+    "Redis",
+    "Docker",
+    "Kubernetes",
+    "Jenkins",
+    "GitHub Actions",
+    "HTML",
+    "CSS",
+    "SASS",
+    "Tailwind",
+    "Git",
+    "SVN",
+    "Figma",
+    "Sketch",
+    "Adobe XD",
   ];
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="px-4 py-8 mx-auto max-w-7xl">
-        <h2 className="inline-block mb-6 text-2xl font-bold">이력서 작성</h2>
+    <div className="px-4 py-8 mx-auto bg-white max-w-7xl">
+      {/* 1. 부모 Flex 컨테이너: items-start 필수 */}
+      <div className="flex items-start gap-6">
+        {/* 2. 왼쪽 고정 영역 (제목 + 사이드바) */}
+        {/* sticky: 고정, top-10: 상단 여백, shrink-0: 찌그러짐 방지 */}
+        <div className="sticky flex flex-col gap-6 top-10 shrink-0">
+          {/* 제목을 여기로 가져오세요 */}
+          <h2 className="px-2 text-2xl font-bold">이력서 작성</h2>
 
-        <div className="flex gap-6">
-          <ResumeSidebar activeMenu={activeMenu} onMenuClick={handleMenuClick} />
+          {/* 사이드바 컴포넌트 */}
+          <LeftSidebar activeMenu={activeMenu} onMenuClick={handleMenuClick} />
+        </div>
 
-          <div className="flex-1 space-y-8">
-            {error && (
-              <div className="p-4 border border-red-200 rounded-lg bg-red-50">
-                <p className="text-sm text-red-600">{error}</p>
-              </div>
-            )}
+        {/* 3. 오른쪽 컨텐츠 영역 */}
+        <div className="flex-1 space-y-8">
+          {error && (
+            <div className="p-4 border border-red-200 rounded-lg bg-red-50">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
 
-            {/* ===== 이력서 제목/공개설정 ===== */}
-            <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
-              <h2 className="mb-6 text-2xl font-bold">이력서 제목</h2>
-              <input
-                type="text"
-                value={resumeTitle}
-                onChange={(e) => setResumeTitle(e.target.value)}
-                placeholder="예: 프론트엔드 개발자 이력서"
-                className="w-full p-4 mb-6 border-2 border-gray-300 rounded-lg outline-none focus:border-blue-500"
-              />
-            </section>
+          {/* ===== 이력서 제목/공개설정 ===== */}
+          <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
+            <h2 className="mb-6 text-2xl font-bold">이력서 제목</h2>
+            <input
+              type="text"
+              value={resumeTitle}
+              onChange={(e) => setResumeTitle(e.target.value)}
+              placeholder="예: 프론트엔드 개발자 이력서"
+              className="w-full p-4 mb-6 border-2 border-gray-300 rounded-lg outline-none focus:border-blue-500"
+            />
+          </section>
 
-            {/* ===== 인적사항/직무/스킬/경험/자격증 ===== */}
-            <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold">{resumeId ? "인적사항" : "인적사항"}</h2>
-                <button
-                  onClick={handleCancel}
-                  className="px-6 py-2 text-gray-700 transition bg-gray-200 rounded-lg hover:bg-gray-300"
-                >
-                  목록으로
-                </button>
-              </div>
+          {/* ===== 인적사항/직무/스킬/경험/자격증 ===== */}
+          <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">
+                {resumeId ? "인적사항" : "인적사항"}
+              </h2>
+              <button
+                onClick={handleCancel}
+                className="px-6 py-2 text-gray-700 transition bg-gray-200 rounded-lg hover:bg-gray-300"
+              >
+                목록으로
+              </button>
+            </div>
 
-              {/* 사진 업로드 */}
-              <div className="mb-6">
-                <div className="flex gap-4">
-                  <div>
+            {/* 사진 업로드 */}
+            <div className="mb-6">
+              <div className="flex gap-4">
+                <div>
+                  <input
+                    type="file"
+                    id="profile-image"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="profile-image"
+                    className="flex items-center justify-center w-40 h-48 transition border-2 border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50"
+                  >
+                    {selectedImage ? (
+                      <img
+                        src={selectedImage}
+                        alt="Profile"
+                        className="object-cover w-full h-full rounded-lg"
+                      />
+                    ) : (
+                      <span className="text-4xl text-gray-400">+</span>
+                    )}
+                  </label>
+                </div>
+
+                <div className="flex-1">
+                  <div className="grid grid-cols-4 gap-0 mb-4 overflow-hidden border-2 border-gray-300 rounded-lg">
+                    <div className="p-3 font-medium text-center border-r border-gray-300 bg-gray-50">
+                      이름
+                    </div>
                     <input
-                      type="file"
-                      id="profile-image"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="p-3 border-r border-gray-300 outline-none"
                     />
-                    <label
-                      htmlFor="profile-image"
-                      className="flex items-center justify-center w-40 h-48 transition border-2 border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50"
+                    <div className="p-3 font-medium text-center border-r border-gray-300 bg-gray-50">
+                      성별
+                    </div>
+                    <select
+                      value={selectedGender}
+                      onChange={(e) => handleGenderSelect(e.target.value)}
+                      className="p-3 bg-white outline-none cursor-pointer"
                     >
-                      {selectedImage ? (
-                        <img
-                          src={selectedImage}
-                          alt="Profile"
-                          className="object-cover w-full h-full rounded-lg"
-                        />
-                      ) : (
-                        <span className="text-4xl text-gray-400">+</span>
-                      )}
-                    </label>
+                      <option value="">선택</option>
+                      <option value="MALE">남성</option>
+                      <option value="FEMALE">여성</option>
+                    </select>
                   </div>
 
-                  <div className="flex-1">
-                    <div className="grid grid-cols-4 gap-0 mb-4 overflow-hidden border-2 border-gray-300 rounded-lg">
-                      <div className="p-3 font-medium text-center border-r border-gray-300 bg-gray-50">
-                        이름
+                  <div className="grid grid-cols-4 gap-0 mb-4 overflow-hidden border-2 border-gray-300 rounded-lg">
+                    <div className="p-3 font-medium text-center border-r border-gray-300 bg-gray-50">
+                      생년월일
+                    </div>
+                    <input
+                      type="date"
+                      value={birthDate}
+                      onChange={(e) => setBirthDate(e.target.value)}
+                      className="col-span-3 p-3 outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-0 mb-4 overflow-hidden border-2 border-gray-300 rounded-lg">
+                    <div className="p-3 font-medium text-center border-r border-gray-300 bg-gray-50">
+                      이메일
+                    </div>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="col-span-3 p-3 outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-0 mb-4 overflow-hidden border-2 border-gray-300 rounded-lg">
+                    <div className="p-3 font-medium text-center border-r border-gray-300 bg-gray-50">
+                      연락처
+                    </div>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="col-span-3 p-3 outline-none"
+                      placeholder="010-0000-0000"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-0 overflow-hidden border-2 border-gray-300 rounded-lg">
+                    <div className="flex items-center justify-center p-3 font-medium text-center border-r border-gray-300 bg-gray-50">
+                      주소
+                    </div>
+                    <div className="col-span-3 p-3">
+                      <div className="flex gap-2 mb-2">
+                        <input
+                          type="text"
+                          value={address}
+                          readOnly
+                          placeholder="주소 찾기 버튼을 클릭하세요"
+                          className="flex-1 outline-none cursor-not-allowed bg-gray-50"
+                        />
+                        <button
+                          type="button"
+                          onClick={openPostcode}
+                          className="px-4 py-1 text-sm text-white transition bg-blue-600 rounded hover:bg-blue-700"
+                        >
+                          주소 찾기
+                        </button>
                       </div>
                       <input
                         type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="p-3 border-r border-gray-300 outline-none"
+                        value={detailAddress}
+                        onChange={(e) => setDetailAddress(e.target.value)}
+                        placeholder="상세 주소를 입력하세요 (예: 3층)"
+                        className="w-full pt-2 mt-2 border-t border-gray-200 outline-none"
                       />
-                      <div className="p-3 font-medium text-center border-r border-gray-300 bg-gray-50">
-                        성별
-                      </div>
-                      <select
-                        value={selectedGender}
-                        onChange={(e) => handleGenderSelect(e.target.value)}
-                        className="p-3 bg-white outline-none cursor-pointer"
-                      >
-                        <option value="">선택</option>
-                        <option value="MALE">남성</option>
-                        <option value="FEMALE">여성</option>
-                      </select>
-                    </div>
-
-                    <div className="grid grid-cols-4 gap-0 mb-4 overflow-hidden border-2 border-gray-300 rounded-lg">
-                      <div className="p-3 font-medium text-center border-r border-gray-300 bg-gray-50">
-                        생년월일
-                      </div>
-                      <input
-                        type="date"
-                        value={birthDate}
-                        onChange={(e) => setBirthDate(e.target.value)}
-                        className="col-span-3 p-3 outline-none"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-4 gap-0 mb-4 overflow-hidden border-2 border-gray-300 rounded-lg">
-                      <div className="p-3 font-medium text-center border-r border-gray-300 bg-gray-50">
-                        이메일
-                      </div>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="col-span-3 p-3 outline-none"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-4 gap-0 mb-4 overflow-hidden border-2 border-gray-300 rounded-lg">
-                      <div className="p-3 font-medium text-center border-r border-gray-300 bg-gray-50">
-                        연락처
-                      </div>
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="col-span-3 p-3 outline-none"
-                        placeholder="010-0000-0000"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-4 gap-0 overflow-hidden border-2 border-gray-300 rounded-lg">
-                      <div className="flex items-center justify-center p-3 font-medium text-center border-r border-gray-300 bg-gray-50">
-                        주소
-                      </div>
-                      <div className="col-span-3 p-3">
-                        <div className="flex gap-2 mb-2">
-                          <input
-                            type="text"
-                            value={address}
-                            readOnly
-                            placeholder="주소 찾기 버튼을 클릭하세요"
-                            className="flex-1 outline-none cursor-not-allowed bg-gray-50"
-                          />
-                          <button
-                            type="button"
-                            onClick={openPostcode}
-                            className="px-4 py-1 text-sm text-white transition bg-blue-600 rounded hover:bg-blue-700"
-                          >
-                            주소 찾기
-                          </button>
-                        </div>
-                        <input
-                          type="text"
-                          value={detailAddress}
-                          onChange={(e) => setDetailAddress(e.target.value)}
-                          placeholder="상세 주소를 입력하세요 (예: 3층)"
-                          className="w-full pt-2 mt-2 outline-none border-t border-gray-200"
-                        />
-                      </div>
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* 직무 */}
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-lg font-bold">직무</h3>
-                </div>
-
-                <div className="grid grid-cols-6 gap-4 mb-6">
-                  {["프론트엔드", "백엔드", "풀스택", "PM", "데이터 분석가", "디자이너"].map((job) => (
-                    <button
-                      key={job}
-                      onClick={() => handleJobSelect(job)}
-                      className={`p-3 text-center border-2 rounded-lg cursor-pointer transition ${
-                        selectedJob === job
-                          ? "border-blue-500 bg-blue-50 font-semibold"
-                          : "border-gray-300 hover:bg-gray-50"
-                      }`}
-                    >
-                      {job === "프론트엔드" ? "프론트" : job}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="mb-4">
-                  <h4 className="mb-3 font-semibold">스킬 선택</h4>
-                  <div className="p-4 overflow-y-auto border-2 border-gray-200 rounded-lg max-h-60">
-                    <div className="flex flex-wrap gap-2">
-                      {availableSkills.map((skill) => (
-                        <button
-                          key={skill}
-                          onClick={() => toggleSkill(skill)}
-                          className={`px-4 py-2 rounded-full text-sm transition ${
-                            selectedSkills.includes(skill)
-                              ? "bg-blue-600 text-white font-semibold"
-                              : "bg-gray-200 hover:bg-gray-300"
-                          }`}
-                        >
-                          {skill}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {selectedSkills.length > 0 && (
-                  <div>
-                    <h4 className="mb-3 font-semibold">선택된 스킬</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedSkills.map((skill) => (
-                        <button
-                          key={skill}
-                          onClick={() => removeSkill(skill)}
-                          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 transition bg-blue-100 rounded-full hover:bg-blue-200"
-                        >
-                          <span>✕</span>
-                          <span>{skill}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+            {/* 직무 */}
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <h3 className="text-lg font-bold">직무</h3>
               </div>
 
-              {/* 경험/활동/교육 */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold">경험/활동/교육</h3>
-                  <button onClick={addExperience} className="font-semibold text-blue-600 hover:text-blue-700">
-                    + 추가
+              <div className="grid grid-cols-6 gap-4 mb-6">
+                {[
+                  "프론트엔드",
+                  "백엔드",
+                  "풀스택",
+                  "PM",
+                  "데이터 분석가",
+                  "디자이너",
+                ].map((job) => (
+                  <button
+                    key={job}
+                    onClick={() => handleJobSelect(job)}
+                    className={`p-3 text-center border-2 rounded-lg cursor-pointer transition ${
+                      selectedJob === job
+                        ? "border-blue-500 bg-blue-50 font-semibold"
+                        : "border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    {job === "프론트엔드" ? "프론트" : job}
                   </button>
-                </div>
+                ))}
+              </div>
 
-                <div className="space-y-4">
-                  {experiences.map((experience, index) => (
-                    <div key={index} className="p-4 border-2 border-gray-300 rounded-lg">
-                      <div className="mb-3">
-                        <label className="block mb-2 text-sm font-medium text-gray-700">내용</label>
+              <div className="mb-4">
+                <h4 className="mb-3 font-semibold">스킬 선택</h4>
+                <div className="p-4 overflow-y-auto border-2 border-gray-200 rounded-lg max-h-60">
+                  <div className="flex flex-wrap gap-2">
+                    {availableSkills.map((skill) => (
+                      <button
+                        key={skill}
+                        onClick={() => toggleSkill(skill)}
+                        className={`px-4 py-2 rounded-full text-sm transition ${
+                          selectedSkills.includes(skill)
+                            ? "bg-blue-600 text-white font-semibold"
+                            : "bg-gray-200 hover:bg-gray-300"
+                        }`}
+                      >
+                        {skill}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {selectedSkills.length > 0 && (
+                <div>
+                  <h4 className="mb-3 font-semibold">선택된 스킬</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedSkills.map((skill) => (
+                      <button
+                        key={skill}
+                        onClick={() => removeSkill(skill)}
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 transition bg-blue-100 rounded-full hover:bg-blue-200"
+                      >
+                        <span>✕</span>
+                        <span>{skill}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 경험/활동/교육 */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold">경험/활동/교육</h3>
+                <button
+                  onClick={addExperience}
+                  className="font-semibold text-blue-600 hover:text-blue-700"
+                >
+                  + 추가
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {experiences.map((experience, index) => (
+                  <div
+                    key={index}
+                    className="p-4 border-2 border-gray-300 rounded-lg"
+                  >
+                    <div className="mb-3">
+                      <label className="block mb-2 text-sm font-medium text-gray-700">
+                        내용
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="예: 프로젝트 1차"
+                        value={experience.title}
+                        onChange={(e) => {
+                          const newExperiences = [...experiences];
+                          newExperiences[index].title = e.target.value;
+                          setExperiences(newExperiences);
+                        }}
+                        className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mb-3">
+                      <div>
+                        <label className="block mb-2 text-sm font-medium text-gray-700">
+                          시작일
+                        </label>
                         <input
-                          type="text"
-                          placeholder="예: 프로젝트 1차"
-                          value={experience.title}
+                          type="date"
+                          value={experience.startDate}
                           onChange={(e) => {
                             const newExperiences = [...experiences];
-                            newExperiences[index].title = e.target.value;
+                            newExperiences[index].startDate = e.target.value;
                             setExperiences(newExperiences);
                           }}
                           className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
                         />
                       </div>
-
-                      <div className="grid grid-cols-2 gap-4 mb-3">
-                        <div>
-                          <label className="block mb-2 text-sm font-medium text-gray-700">시작일</label>
-                          <input
-                            type="date"
-                            value={experience.startDate}
-                            onChange={(e) => {
-                              const newExperiences = [...experiences];
-                              newExperiences[index].startDate = e.target.value;
-                              setExperiences(newExperiences);
-                            }}
-                            className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="block mb-2 text-sm font-medium text-gray-700">종료일</label>
-                          <input
-                            type="date"
-                            value={experience.endDate}
-                            onChange={(e) => {
-                              const newExperiences = [...experiences];
-                              newExperiences[index].endDate = e.target.value;
-                              setExperiences(newExperiences);
-                            }}
-                            className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex justify-end">
-                        <button
-                          onClick={() => removeExperience(index)}
-                          className="px-4 py-2 text-sm font-medium text-red-600 transition border-2 border-red-300 rounded-lg hover:bg-red-50"
-                        >
-                          삭제
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* 자격증/어학/수상 */}
-              <div className="mt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold">자격증/어학/수상</h3>
-                  <button onClick={addCertificate} className="font-semibold text-blue-600 hover:text-blue-700">
-                    + 추가
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  {certificates.map((certificate, index) => (
-                    <div key={index} className="p-4 border-2 border-gray-300 rounded-lg">
-                      <div className="mb-3">
-                        <label className="block mb-2 text-sm font-medium text-gray-700">내용</label>
-                        <input
-                          type="text"
-                          placeholder="예: 정보처리기사 1급"
-                          value={certificate.title}
-                          onChange={(e) => {
-                            const newCertificates = [...certificates];
-                            newCertificates[index].title = e.target.value;
-                            setCertificates(newCertificates);
-                          }}
-                          className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
-                        />
-                      </div>
-
-                      <div className="mb-3">
-                        <label className="block mb-2 text-sm font-medium text-gray-700">취득일</label>
+                      <div>
+                        <label className="block mb-2 text-sm font-medium text-gray-700">
+                          종료일
+                        </label>
                         <input
                           type="date"
-                          value={certificate.date}
+                          value={experience.endDate}
                           onChange={(e) => {
-                            const newCertificates = [...certificates];
-                            newCertificates[index].date = e.target.value;
-                            setCertificates(newCertificates);
+                            const newExperiences = [...experiences];
+                            newExperiences[index].endDate = e.target.value;
+                            setExperiences(newExperiences);
                           }}
                           className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
                         />
                       </div>
-
-                      <div className="flex justify-end">
-                        <button
-                          onClick={() => removeCertificate(index)}
-                          className="px-4 py-2 text-sm font-medium text-red-600 transition border-2 border-red-300 rounded-lg hover:bg-red-50"
-                        >
-                          삭제
-                        </button>
-                      </div>
                     </div>
-                  ))}
-                </div>
+
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => removeExperience(index)}
+                        className="px-4 py-2 text-sm font-medium text-red-600 transition border-2 border-red-300 rounded-lg hover:bg-red-50"
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </section>
+            </div>
 
-            {/* ===== 학력/경력/포트폴리오/자기소개서 ===== */}
-            <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
-              {/* 학력 */}
-              <div className="mb-8">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold">학력</h3>
-                  <button onClick={addEducation} className="font-semibold text-blue-600 hover:text-blue-700">
-                    + 추가
-                  </button>
-                </div>
+            {/* 자격증/어학/수상 */}
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold">자격증/어학/수상</h3>
+                <button
+                  onClick={addCertificate}
+                  className="font-semibold text-blue-600 hover:text-blue-700"
+                >
+                  + 추가
+                </button>
+              </div>
 
-                <div className="space-y-4">
-                  {educations.map((education, index) => (
-                    <div key={index} className="p-4 border-2 border-gray-300 rounded-lg">
-                      <div className="grid grid-cols-3 gap-4 mb-3">
-                        <div>
-                          <label className="block mb-2 text-sm font-medium text-gray-700">학교 이름</label>
-                          <SchoolSearchInput
-                            value={education.school}
-                            onChange={(value) => {
-                              const newEducations = [...educations];
-                              newEducations[index].school = value;
-                              setEducations(newEducations);
-                            }}
-                            schoolLevel={
-                              education.type === "고등학교"
-                                ? "high"
-                                : education.type === "대학교"
-                                  ? "college"
-                                  : education.type === "대학원"
-                                    ? "graduate"
-                                    : undefined
-                            }
-                            placeholder={`예: ${
-                              education.type === "고등학교"
-                                ? "서울고등학교"
-                                : education.type === "대학교"
-                                  ? "서울대학교"
-                                  : education.type === "대학원"
-                                    ? "서울대학교 대학원"
-                                    : "학교 이름을 입력하세요"
-                            }`}
-                          />
-                        </div>
+              <div className="space-y-3">
+                {certificates.map((certificate, index) => (
+                  <div
+                    key={index}
+                    className="p-4 border-2 border-gray-300 rounded-lg"
+                  >
+                    <div className="mb-3">
+                      <label className="block mb-2 text-sm font-medium text-gray-700">
+                        내용
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="예: 정보처리기사 1급"
+                        value={certificate.title}
+                        onChange={(e) => {
+                          const newCertificates = [...certificates];
+                          newCertificates[index].title = e.target.value;
+                          setCertificates(newCertificates);
+                        }}
+                        className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
+                      />
+                    </div>
 
-                        <div>
-                          <label className="block mb-2 text-sm font-medium text-gray-700">학교 종류</label>
-                          <select
-                            value={education.type}
-                            onChange={(e) => {
-                              const newEducations = [...educations];
-                              newEducations[index].type = e.target.value;
-                              newEducations[index].subType = "";
-                              setEducations(newEducations);
-                            }}
-                            className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
-                          >
-                            <option value="">선택</option>
-                            <option value="고등학교">고등학교</option>
-                            <option value="대학교">대학교</option>
-                            <option value="대학원">대학원</option>
-                          </select>
-                        </div>
+                    <div className="mb-3">
+                      <label className="block mb-2 text-sm font-medium text-gray-700">
+                        취득일
+                      </label>
+                      <input
+                        type="date"
+                        value={certificate.date}
+                        onChange={(e) => {
+                          const newCertificates = [...certificates];
+                          newCertificates[index].date = e.target.value;
+                          setCertificates(newCertificates);
+                        }}
+                        className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
+                      />
+                    </div>
 
-                        <div>
-                          <label className="block mb-2 text-sm font-medium text-gray-700">세부 종류</label>
-                          <select
-                            value={education.subType}
-                            onChange={(e) => {
-                              const newEducations = [...educations];
-                              newEducations[index].subType = e.target.value;
-                              setEducations(newEducations);
-                            }}
-                            disabled={!education.type}
-                            className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 disabled:bg-gray-100"
-                          >
-                            <option value="">선택</option>
-                            {education.type === "고등학교" && (
-                              <>
-                                <option value="일반고">일반고</option>
-                                <option value="특목고">특목고</option>
-                                <option value="특성화고">특성화고</option>
-                                <option value="마이스터고">마이스터고</option>
-                                <option value="자율고">자율고</option>
-                                <option value="영재고">영재고</option>
-                              </>
-                            )}
-                            {education.type === "대학교" && (
-                              <>
-                                <option value="2년제">2년제</option>
-                                <option value="3년제">3년제</option>
-                                <option value="4년제">4년제</option>
-                              </>
-                            )}
-                            {education.type === "대학원" && (
-                              <>
-                                <option value="석사">석사</option>
-                                <option value="박사">박사</option>
-                              </>
-                            )}
-                          </select>
-                        </div>
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => removeCertificate(index)}
+                        className="px-4 py-2 text-sm font-medium text-red-600 transition border-2 border-red-300 rounded-lg hover:bg-red-50"
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ===== 학력/경력/포트폴리오/자기소개서 ===== */}
+          <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
+            {/* 학력 */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold">학력</h3>
+                <button
+                  onClick={addEducation}
+                  className="font-semibold text-blue-600 hover:text-blue-700"
+                >
+                  + 추가
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {educations.map((education, index) => (
+                  <div
+                    key={index}
+                    className="p-4 border-2 border-gray-300 rounded-lg"
+                  >
+                    <div className="grid grid-cols-3 gap-4 mb-3">
+                      <div>
+                        <label className="block mb-2 text-sm font-medium text-gray-700">
+                          학교 이름
+                        </label>
+                        <SchoolSearchInput
+                          value={education.school}
+                          onChange={(value) => {
+                            const newEducations = [...educations];
+                            newEducations[index].school = value;
+                            setEducations(newEducations);
+                          }}
+                          schoolLevel={
+                            education.type === "고등학교"
+                              ? "high"
+                              : education.type === "대학교"
+                                ? "college"
+                                : education.type === "대학원"
+                                  ? "graduate"
+                                  : undefined
+                          }
+                          placeholder={`예: ${
+                            education.type === "고등학교"
+                              ? "서울고등학교"
+                              : education.type === "대학교"
+                                ? "서울대학교"
+                                : education.type === "대학원"
+                                  ? "서울대학교 대학원"
+                                  : "학교 이름을 입력하세요"
+                          }`}
+                        />
                       </div>
 
-                      <div className="mb-3">
-                        <label className="block mb-2 text-sm font-medium text-gray-700">학과</label>
-                        <input
-                          type="text"
-                          placeholder="예: 컴퓨터공학과"
-                          value={education.major}
+                      <div>
+                        <label className="block mb-2 text-sm font-medium text-gray-700">
+                          학교 종류
+                        </label>
+                        <select
+                          value={education.type}
                           onChange={(e) => {
                             const newEducations = [...educations];
-                            newEducations[index].major = e.target.value;
+                            newEducations[index].type = e.target.value;
+                            newEducations[index].subType = "";
+                            setEducations(newEducations);
+                          }}
+                          className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
+                        >
+                          <option value="">선택</option>
+                          <option value="고등학교">고등학교</option>
+                          <option value="대학교">대학교</option>
+                          <option value="대학원">대학원</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block mb-2 text-sm font-medium text-gray-700">
+                          세부 종류
+                        </label>
+                        <select
+                          value={education.subType}
+                          onChange={(e) => {
+                            const newEducations = [...educations];
+                            newEducations[index].subType = e.target.value;
+                            setEducations(newEducations);
+                          }}
+                          disabled={!education.type}
+                          className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500 disabled:bg-gray-100"
+                        >
+                          <option value="">선택</option>
+                          {education.type === "고등학교" && (
+                            <>
+                              <option value="일반고">일반고</option>
+                              <option value="특목고">특목고</option>
+                              <option value="특성화고">특성화고</option>
+                              <option value="마이스터고">마이스터고</option>
+                              <option value="자율고">자율고</option>
+                              <option value="영재고">영재고</option>
+                            </>
+                          )}
+                          {education.type === "대학교" && (
+                            <>
+                              <option value="2년제">2년제</option>
+                              <option value="3년제">3년제</option>
+                              <option value="4년제">4년제</option>
+                            </>
+                          )}
+                          {education.type === "대학원" && (
+                            <>
+                              <option value="석사">석사</option>
+                              <option value="박사">박사</option>
+                            </>
+                          )}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="mb-3">
+                      <label className="block mb-2 text-sm font-medium text-gray-700">
+                        학과
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="예: 컴퓨터공학과"
+                        value={education.major}
+                        onChange={(e) => {
+                          const newEducations = [...educations];
+                          newEducations[index].major = e.target.value;
+                          setEducations(newEducations);
+                        }}
+                        className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mb-3">
+                      <div>
+                        <label className="block mb-2 text-sm font-medium text-gray-700">
+                          입학일
+                        </label>
+                        <input
+                          type="date"
+                          value={education.startDate}
+                          onChange={(e) => {
+                            const newEducations = [...educations];
+                            newEducations[index].startDate = e.target.value;
                             setEducations(newEducations);
                           }}
                           className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
                         />
                       </div>
-
-                      <div className="grid grid-cols-2 gap-4 mb-3">
-                        <div>
-                          <label className="block mb-2 text-sm font-medium text-gray-700">입학일</label>
-                          <input
-                            type="date"
-                            value={education.startDate}
-                            onChange={(e) => {
-                              const newEducations = [...educations];
-                              newEducations[index].startDate = e.target.value;
-                              setEducations(newEducations);
-                            }}
-                            className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="block mb-2 text-sm font-medium text-gray-700">졸업일</label>
-                          <input
-                            type="date"
-                            value={education.endDate}
-                            onChange={(e) => {
-                              const newEducations = [...educations];
-                              newEducations[index].endDate = e.target.value;
-                              setEducations(newEducations);
-                            }}
-                            className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex justify-end">
-                        <button
-                          onClick={() => removeEducation(index)}
-                          className="px-4 py-2 text-sm font-medium text-red-600 transition border-2 border-red-300 rounded-lg hover:bg-red-50"
-                        >
-                          삭제
-                        </button>
+                      <div>
+                        <label className="block mb-2 text-sm font-medium text-gray-700">
+                          졸업일
+                        </label>
+                        <input
+                          type="date"
+                          value={education.endDate}
+                          onChange={(e) => {
+                            const newEducations = [...educations];
+                            newEducations[index].endDate = e.target.value;
+                            setEducations(newEducations);
+                          }}
+                          className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
+                        />
                       </div>
                     </div>
-                  ))}
-                </div>
+
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => removeEducation(index)}
+                        className="px-4 py-2 text-sm font-medium text-red-600 transition border-2 border-red-300 rounded-lg hover:bg-red-50"
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 경력 */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold">경력</h3>
+                <button
+                  onClick={addCareer}
+                  className="font-semibold text-blue-600 hover:text-blue-700"
+                >
+                  + 추가
+                </button>
               </div>
 
-              {/* 경력 */}
-              <div className="mb-8">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold">경력</h3>
-                  <button onClick={addCareer} className="font-semibold text-blue-600 hover:text-blue-700">
-                    + 추가
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  {careers.map((career, index) => (
-                    <div key={index} className="p-4 border-2 border-gray-300 rounded-lg">
-                      <div className="grid grid-cols-2 gap-4 mb-3">
-                        <div>
-                          <label className="block mb-2 text-sm font-medium text-gray-700">시작일</label>
-                          <input
-                            type="date"
-                            value={career.startDate}
-                            onChange={(e) => {
-                              const newCareers = [...careers];
-                              newCareers[index].startDate = e.target.value;
-                              setCareers(newCareers);
-                            }}
-                            className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="block mb-2 text-sm font-medium text-gray-700">퇴사일</label>
-                          <input
-                            type="date"
-                            value={career.endDate}
-                            onChange={(e) => {
-                              const newCareers = [...careers];
-                              newCareers[index].endDate = e.target.value;
-                              setCareers(newCareers);
-                            }}
-                            className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4 mb-3">
-                        <div>
-                          <label className="block mb-2 text-sm font-medium text-gray-700">회사명</label>
-                          <input
-                            type="text"
-                            placeholder="예: 네이버"
-                            value={career.company}
-                            onChange={(e) => {
-                              const newCareers = [...careers];
-                              newCareers[index].company = e.target.value;
-                              setCareers(newCareers);
-                            }}
-                            className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block mb-2 text-sm font-medium text-gray-700">직책</label>
-                          <input
-                            type="text"
-                            placeholder="예: 대리, 팀장"
-                            value={career.position}
-                            onChange={(e) => {
-                              const newCareers = [...careers];
-                              newCareers[index].position = e.target.value;
-                              setCareers(newCareers);
-                            }}
-                            className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="mb-3">
-                        <label className="block mb-2 text-sm font-medium text-gray-700">직무</label>
-                        <textarea
-                          placeholder="담당했던 업무 및 직무를 자세히 작성해주세요"
-                          value={career.role}
+              <div className="space-y-4">
+                {careers.map((career, index) => (
+                  <div
+                    key={index}
+                    className="p-4 border-2 border-gray-300 rounded-lg"
+                  >
+                    <div className="grid grid-cols-2 gap-4 mb-3">
+                      <div>
+                        <label className="block mb-2 text-sm font-medium text-gray-700">
+                          시작일
+                        </label>
+                        <input
+                          type="date"
+                          value={career.startDate}
                           onChange={(e) => {
                             const newCareers = [...careers];
-                            newCareers[index].role = e.target.value;
+                            newCareers[index].startDate = e.target.value;
                             setCareers(newCareers);
                           }}
-                          rows={4}
-                          className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none resize-none focus:border-blue-500"
+                          className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block mb-2 text-sm font-medium text-gray-700">
+                          퇴사일
+                        </label>
+                        <input
+                          type="date"
+                          value={career.endDate}
+                          onChange={(e) => {
+                            const newCareers = [...careers];
+                            newCareers[index].endDate = e.target.value;
+                            setCareers(newCareers);
+                          }}
+                          className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mb-3">
+                      <div>
+                        <label className="block mb-2 text-sm font-medium text-gray-700">
+                          회사명
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="예: 네이버"
+                          value={career.company}
+                          onChange={(e) => {
+                            const newCareers = [...careers];
+                            newCareers[index].company = e.target.value;
+                            setCareers(newCareers);
+                          }}
+                          className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
                         />
                       </div>
 
-                      <div className="flex justify-end">
-                        <button
-                          onClick={() => removeCareer(index)}
-                          className="px-4 py-2 text-sm font-medium text-red-600 transition border-2 border-red-300 rounded-lg hover:bg-red-50"
-                        >
-                          삭제
-                        </button>
+                      <div>
+                        <label className="block mb-2 text-sm font-medium text-gray-700">
+                          직책
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="예: 대리, 팀장"
+                          value={career.position}
+                          onChange={(e) => {
+                            const newCareers = [...careers];
+                            newCareers[index].position = e.target.value;
+                            setCareers(newCareers);
+                          }}
+                          className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-blue-500"
+                        />
                       </div>
+                    </div>
+
+                    <div className="mb-3">
+                      <label className="block mb-2 text-sm font-medium text-gray-700">
+                        직무
+                      </label>
+                      <textarea
+                        placeholder="담당했던 업무 및 직무를 자세히 작성해주세요"
+                        value={career.role}
+                        onChange={(e) => {
+                          const newCareers = [...careers];
+                          newCareers[index].role = e.target.value;
+                          setCareers(newCareers);
+                        }}
+                        rows={4}
+                        className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none resize-none focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => removeCareer(index)}
+                        className="px-4 py-2 text-sm font-medium text-red-600 transition border-2 border-red-300 rounded-lg hover:bg-red-50"
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 포트폴리오 */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold">포트폴리오</h3>
+                <button
+                  onClick={handlePortfolioFileUpload}
+                  className="font-semibold text-blue-600 hover:text-blue-700"
+                >
+                  + 파일 업로드
+                </button>
+              </div>
+
+              <input
+                type="file"
+                ref={portfolioFileInputRef}
+                onChange={handlePortfolioFileChange}
+                accept=".pdf,.doc,.docx"
+                multiple
+                className="hidden"
+              />
+
+              {portfolioFiles.length > 0 ? (
+                <div className="space-y-3">
+                  {portfolioFiles.map((file, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-4 border-2 border-gray-300 rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">
+                          {file.name.endsWith(".pdf") ? "📄" : "📃"}
+                        </span>
+                        <div>
+                          <p className="font-medium">{file.name}</p>
+                          <p className="text-sm text-gray-500">
+                            {(file.size / 1024).toFixed(2)} KB
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => removePortfolioFile(index)}
+                        className="px-4 py-2 text-sm font-medium text-red-600 transition border-2 border-red-300 rounded-lg hover:bg-red-50"
+                      >
+                        삭제
+                      </button>
                     </div>
                   ))}
                 </div>
+              ) : (
+                <div className="p-8 text-center border-2 border-gray-300 border-dashed rounded-lg">
+                  <p className="text-gray-500">
+                    포트폴리오 파일을 업로드해주세요 (PDF, Word)
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* 자기소개서 */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold">자기소개서</h3>
+                <button
+                  onClick={handleCoverLetterFileUpload}
+                  className="font-semibold text-blue-600 hover:text-blue-700"
+                >
+                  + 파일 업로드
+                </button>
               </div>
 
-              {/* 포트폴리오 */}
-              <div className="mb-8">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold">포트폴리오</h3>
-                  <button onClick={handlePortfolioFileUpload} className="font-semibold text-blue-600 hover:text-blue-700">
-                    + 파일 업로드
-                  </button>
-                </div>
+              <input
+                type="file"
+                ref={coverLetterFileInputRef}
+                onChange={handleCoverLetterFileChange}
+                accept=".pdf,.doc,.docx"
+                multiple
+                className="hidden"
+              />
 
-                <input
-                  type="file"
-                  ref={portfolioFileInputRef}
-                  onChange={handlePortfolioFileChange}
-                  accept=".pdf,.doc,.docx"
-                  multiple
-                  className="hidden"
-                />
-
-                {portfolioFiles.length > 0 ? (
-                  <div className="space-y-3">
-                    {portfolioFiles.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between p-4 border-2 border-gray-300 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">{file.name.endsWith(".pdf") ? "📄" : "📃"}</span>
-                          <div>
-                            <p className="font-medium">{file.name}</p>
-                            <p className="text-sm text-gray-500">{(file.size / 1024).toFixed(2)} KB</p>
-                          </div>
+              {coverLetterFiles.length > 0 && (
+                <div className="mb-4 space-y-3">
+                  {coverLetterFiles.map((file, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-4 border-2 border-gray-300 rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">
+                          {file.name.endsWith(".pdf") ? "📄" : "📃"}
+                        </span>
+                        <div>
+                          <p className="font-medium">{file.name}</p>
+                          <p className="text-sm text-gray-500">
+                            {(file.size / 1024).toFixed(2)} KB
+                          </p>
                         </div>
-                        <button
-                          onClick={() => removePortfolioFile(index)}
-                          className="px-4 py-2 text-sm font-medium text-red-600 transition border-2 border-red-300 rounded-lg hover:bg-red-50"
-                        >
-                          삭제
-                        </button>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-8 text-center border-2 border-gray-300 border-dashed rounded-lg">
-                    <p className="text-gray-500">포트폴리오 파일을 업로드해주세요 (PDF, Word)</p>
-                  </div>
-                )}
-              </div>
-
-              {/* 자기소개서 */}
-              <div className="mb-8">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold">자기소개서</h3>
-                  <button onClick={handleCoverLetterFileUpload} className="font-semibold text-blue-600 hover:text-blue-700">
-                    + 파일 업로드
-                  </button>
+                      <button
+                        onClick={() => removeCoverLetterFile(index)}
+                        className="px-4 py-2 text-sm font-medium text-red-600 transition border-2 border-red-300 rounded-lg hover:bg-red-50"
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  ))}
                 </div>
+              )}
 
-                <input
-                  type="file"
-                  ref={coverLetterFileInputRef}
-                  onChange={handleCoverLetterFileChange}
-                  accept=".pdf,.doc,.docx"
-                  multiple
-                  className="hidden"
-                />
-
-                {coverLetterFiles.length > 0 && (
-                  <div className="mb-4 space-y-3">
-                    {coverLetterFiles.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between p-4 border-2 border-gray-300 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">{file.name.endsWith(".pdf") ? "📄" : "📃"}</span>
-                          <div>
-                            <p className="font-medium">{file.name}</p>
-                            <p className="text-sm text-gray-500">{(file.size / 1024).toFixed(2)} KB</p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => removeCoverLetterFile(index)}
-                          className="px-4 py-2 text-sm font-medium text-red-600 transition border-2 border-red-300 rounded-lg hover:bg-red-50"
-                        >
-                          삭제
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="space-y-4">
-                  <div className="p-4 border-2 border-gray-300 rounded-lg">
-                    <input
-                      type="text"
-                      value={coverLetterTitle}
-                      onChange={(e) => setCoverLetterTitle(e.target.value)}
-                      placeholder="자소서 제목"
-                      className="w-full mb-2 font-medium outline-none"
-                    />
-                  </div>
-                  <textarea
-                    value={coverLetterContent}
-                    onChange={(e) => setCoverLetterContent(e.target.value)}
-                    placeholder="내용입력"
-                    rows={6}
-                    className="w-full p-4 border-2 border-gray-300 rounded-lg outline-none resize-none"
+              <div className="space-y-4">
+                <div className="p-4 border-2 border-gray-300 rounded-lg">
+                  <input
+                    type="text"
+                    value={coverLetterTitle}
+                    onChange={(e) => setCoverLetterTitle(e.target.value)}
+                    placeholder="자소서 제목"
+                    className="w-full mb-2 font-medium outline-none"
                   />
                 </div>
+                <textarea
+                  value={coverLetterContent}
+                  onChange={(e) => setCoverLetterContent(e.target.value)}
+                  placeholder="내용입력"
+                  rows={6}
+                  className="w-full p-4 border-2 border-gray-300 rounded-lg outline-none resize-none"
+                />
               </div>
-              <div className="flex items-end justify-between gap-10">
-                <div className="flex-1">
-                  <h3 className="mb-4 text-lg font-bold">공개 설정</h3>
-                  <div className="flex gap-4">
-                    <button
-                      onClick={() => setVisibility("PUBLIC")}
-                      className={`flex-1 p-4 text-center border-2 rounded-lg transition ${
-                        visibility === "PUBLIC"
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-300 hover:bg-gray-50"
-                      }`}
-                    >
-                      <div className="mb-2 text-2xl">🌐</div>
-                      <div className="font-bold">공개</div>
-                      <div className="mt-1 text-sm text-gray-600">
-                        기업 인재 검색에 표시됩니다
-                      </div>
-                    </button>
+            </div>
+            <div className="flex items-end justify-between gap-10">
+              <div className="flex-1">
+                <h3 className="mb-4 text-lg font-bold">공개 설정</h3>
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setVisibility("PUBLIC")}
+                    className={`flex-1 p-4 text-center border-2 rounded-lg transition ${
+                      visibility === "PUBLIC"
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="mb-2 text-2xl">🌐</div>
+                    <div className="font-bold">공개</div>
+                    <div className="mt-1 text-sm text-gray-600">
+                      기업 인재 검색에 표시됩니다
+                    </div>
+                  </button>
 
-                    <button
-                      onClick={() => setVisibility("PRIVATE")}
-                      className={`flex-1 p-4 text-center border-2 rounded-lg transition ${
-                        visibility === "PRIVATE"
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-300 hover:bg-gray-50"
-                      }`}
-                    >
-                      <div className="mb-2 text-2xl">🔒</div>
-                      <div className="font-bold">비공개</div>
-                      <div className="mt-1 text-sm text-gray-600">나만 볼 수 있습니다</div>
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setVisibility("PRIVATE")}
+                    className={`flex-1 p-4 text-center border-2 rounded-lg transition ${
+                      visibility === "PRIVATE"
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="mb-2 text-2xl">🔒</div>
+                    <div className="font-bold">비공개</div>
+                    <div className="mt-1 text-sm text-gray-600">
+                      나만 볼 수 있습니다
+                    </div>
+                  </button>
                 </div>
               </div>
-              
-              <div>
-              <div className="mt-10 flex justify-end gap-6">
+            </div>
+
+            <div>
+              <div className="flex justify-end gap-6 mt-10">
                 <button
                   onClick={handleCancel}
                   className="px-8 py-3 font-semibold text-gray-700 transition bg-gray-200 rounded-full hover:bg-gray-300"
@@ -1332,9 +1538,8 @@ export default function ResumeFormPage({
                       : "등록"}
                 </button>
               </div>
-              </div>
-            </section>
-          </div>
+            </div>
+          </section>
         </div>
       </div>
     </div>

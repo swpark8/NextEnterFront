@@ -117,7 +117,7 @@ export default function BusinessCreditPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa]">
+    <div className="min-h-screen bg-white">
       <div className="flex px-6 py-10 mx-auto max-w-7xl">
         <CompanyLeftSidebar
           activeMenu={activeMenu}

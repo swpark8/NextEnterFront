@@ -2,60 +2,57 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useApp } from "../../context/AppContext";
-import { getResumeList, deleteResume, ResumeListItem } from "../../api/resume";
+import { getResumeList, deleteResume } from "../../api/resume";
 import ResumeSidebar from "./components/ResumeSidebar";
 import ResumeFormPage from "./ResumeFormPage";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
+
+export interface ResumeListItem {
+  resumeId: number;
+  title: string;
+  jobCategory?: string;
+  isMain: boolean;
+  visibility: string;
+  viewCount: number;
+  status?: string;
+  isIncomplete?: boolean;
+  createdAt: string;
+}
 
 export default function ResumePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { setResumes: setContextResumes } = useApp();
 
-  // 쿼리 파라미터에서 메뉴 상태 읽기 (기본값: resume-sub-1)
   const { activeMenu, handleMenuClick } = usePageNavigation(
     "resume",
-    "resume-sub-1"
+    "resume-sub-1",
   );
 
   const [isCreating, setIsCreating] = useState(false);
   const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 삭제 관련 상태
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
-
-  // ✅ 공개/비공개 드롭다운 오픈 상태 (resumeId별)
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [hoveredId, setHoveredId] = useState<number | null>(null);
   const [openVisibilityDropdownId, setOpenVisibilityDropdownId] = useState<
     number | null
   >(null);
 
-  // 실제 이력서 목록 상태
   const [resumes, setResumes] = useState<ResumeListItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // ✅ loadResumes 함수를 useCallback으로 감싸서 안정화
   const loadResumes = useCallback(async () => {
     if (!user?.userId) return;
-
     setIsLoading(true);
     setError("");
-
     try {
       const data = await getResumeList(user.userId);
       if (Array.isArray(data)) {
-        setResumes(data);
-
-        // ✅ AppContext에도 저장 (매칭 페이지에서 사용할 수 있도록)
-        const contextResumes = data.map((resume) => ({
-          id: resume.resumeId,
-          title: resume.title,
-          industry: resume.jobCategory || "미지정",
-          applications: 0, // API에서 제공하지 않으므로 0으로 설정
-        }));
-        setContextResumes(contextResumes);
+        const typedData = data as unknown as ResumeListItem[];
+        setResumes(typedData);
+        setContextResumes(typedData as any);
       } else {
         setError("잘못된 응답 형식입니다.");
       }
@@ -65,19 +62,15 @@ export default function ResumePage() {
     } finally {
       setIsLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.userId]); // ✅ setContextResumes는 의도적으로 제외 (무한 루프 방지)
+  }, [user?.userId, setContextResumes]);
 
-  // 이력서 목록 불러오기
   useEffect(() => {
     loadResumes();
-  }, [loadResumes]); // ✅ user?.userId 체크 제거 (loadResumes에 이미 포함)
+  }, [loadResumes]);
 
-  // ✅ 바깥 클릭 시 드롭다운 닫기
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      // 드롭다운 내부 클릭이면 무시 (data-visibility-dropdown 속성으로 구분)
       if (target.closest("[data-visibility-dropdown='true']")) return;
       setOpenVisibilityDropdownId(null);
     };
@@ -85,54 +78,11 @@ export default function ResumePage() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const handleFileUpload = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      console.log("파일 업로드됨:", file.name);
-    }
-  };
-
-  const handleEdit = (id: number) => {
-    setSelectedResumeId(id);
-    setIsCreating(true);
-  };
-
-  const handleDelete = (id: number) => {
-    setDeleteTargetId(id);
-    setShowDeleteConfirm(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (deleteTargetId !== null && user?.userId) {
-      setIsLoading(true);
-      try {
-        const response = await deleteResume(deleteTargetId, user.userId);
-        if (response.message === "deleted") {
-          setResumes(resumes.filter((r) => r.resumeId !== deleteTargetId));
-        } else {
-          alert("이력서 삭제에 실패했습니다.");
-        }
-      } catch (err: any) {
-        console.error("이력서 삭제 오류:", err);
-        alert("이력서 삭제 중 오류가 발생했습니다.");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    setShowDeleteConfirm(false);
-    setDeleteTargetId(null);
-  };
-
-  const handleCancelDelete = () => {
-    setShowDeleteConfirm(false);
-    setDeleteTargetId(null);
-  };
-
   const handleCreateResume = () => {
+    if (resumes.length >= 5) {
+      alert("이력서는 최대 5개까지만 작성할 수 있습니다.");
+      return;
+    }
     setSelectedResumeId(null);
     setIsCreating(true);
   };
@@ -143,37 +93,91 @@ export default function ResumePage() {
     loadResumes();
   };
 
-  const handleApplicationClick = (resumeId: number) => {
-    handleMenuClick("mypage-sub-3");
+  const handleDeleteClick = async (resumeId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user?.userId) return;
+    if (window.confirm("정말 이 이력서를 삭제하시겠습니까?")) {
+      try {
+        await deleteResume(resumeId, user.userId);
+        alert("삭제되었습니다.");
+        loadResumes();
+        setSelectedIds((prev) => prev.filter((id) => id !== resumeId));
+      } catch (err) {
+        console.error("삭제 실패:", err);
+        alert("삭제 중 오류가 발생했습니다.");
+      }
+    }
   };
 
-  // ✅ 공개/비공개 설정 (현재는 UI만 + 로컬 상태 즉시 반영)
-  // 서버 반영 API가 있다면 여기에서 호출하면 됩니다.
+  const handleBulkDelete = async () => {
+    if (!user?.userId || selectedIds.length === 0) return;
+    if (
+      window.confirm(
+        `선택한 ${selectedIds.length}개의 이력서를 삭제하시겠습니까?`,
+      )
+    ) {
+      try {
+        for (const id of selectedIds) {
+          await deleteResume(id, user.userId);
+        }
+        alert("선택한 이력서가 삭제되었습니다.");
+        setSelectedIds([]);
+        loadResumes();
+      } catch (err) {
+        console.error("일괄 삭제 실패:", err);
+        alert("삭제 중 오류가 발생했습니다.");
+      }
+    }
+  };
+
+  const toggleSelect = (resumeId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedIds((prev) =>
+      prev.includes(resumeId)
+        ? prev.filter((id) => id !== resumeId)
+        : [...prev, resumeId],
+    );
+  };
+
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      const allIds = resumes.map((r) => r.resumeId);
+      setSelectedIds(allIds);
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
   const handleChangeVisibility = async (
     resumeId: number,
-    visibility: "PUBLIC" | "PRIVATE"
+    visibility: "PUBLIC" | "PRIVATE",
   ) => {
-    // 1) 즉시 UI 반영
     setResumes((prev) =>
-      prev.map((r) => (r.resumeId === resumeId ? { ...r, visibility } : r))
+      prev.map((r) => (r.resumeId === resumeId ? { ...r, visibility } : r)),
     );
-
-    // 2) 드롭다운 닫기
     setOpenVisibilityDropdownId(null);
-
-    // 3) TODO: 서버 API 호출
-    // try {
-    //   await updateResumeVisibility(resumeId, user!.userId, visibility);
-    // } catch (e) {
-    //   // 실패 시 롤백하려면 기존 visibility를 저장해뒀다가 되돌리기
-    // }
   };
 
-  // 이력서 작성/수정 페이지 표시
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}. ${month}. ${day}`;
+  };
+
+  const handleFileUpload = () => fileInputRef.current?.click();
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) console.log("파일 업로드됨:", file.name);
+  };
+
   if (isCreating) {
     return (
       <ResumeFormPage
         onBack={handleBackToList}
+        // @ts-ignore
         resumeId={selectedResumeId}
         initialMenu={activeMenu}
       />
@@ -181,290 +185,309 @@ export default function ResumePage() {
   }
 
   return (
-    <>
-      {/* 삭제 확인 다이얼로그 */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-full max-w-md p-8 mx-4 bg-white shadow-2xl rounded-2xl">
-            <div className="mb-6 text-center">
-              <div className="mb-4 text-5xl">⚠️</div>
-              <h3 className="mb-4 text-2xl font-bold">
-                이력서를 삭제하시겠습니까?
+    <div className="px-4 py-8 mx-auto bg-white max-w-7xl">
+      {/* ❌ 여기에 있던 <h2 className="mb-6...">이력서</h2> 삭제함 */}
+
+      <div className="flex items-start gap-6">
+        {/* ✅ [수정] 제목 + 사이드바를 하나로 묶고 Sticky 적용 */}
+        <div className="sticky flex flex-col gap-6 top-10 shrink-0">
+          <h2 className="px-2 text-2xl font-bold">이력서</h2>
+          <ResumeSidebar
+            activeMenu={activeMenu}
+            onMenuClick={handleMenuClick}
+          />
+        </div>
+
+        {/* 메인 컨텐츠 */}
+        <div className="flex-1 space-y-8">
+          {/* 1. 파일 업로드 영역 */}
+          <div className="px-6 py-5 border-2 border-blue-300 border-dashed rounded-2xl bg-blue-50">
+            <div className="text-center">
+              <div className="mb-2 text-3xl">📁</div>
+              <h3 className="mb-1 text-base font-bold">
+                파일을 드래그 하거나 클릭하여 업로드
               </h3>
-              <p className="mt-2 text-gray-500">
-                삭제된 이력서는 복구할 수 없습니다.
+              <p className="mb-2 text-xs text-gray-600">
+                지원 형식: PDF, WORD, HWP, EXCEL (최대 10MB)
               </p>
-            </div>
-            <div className="flex gap-3">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept=".pdf,.doc,.docx,.hwp,.xls,.xlsx"
+                className="hidden"
+              />
               <button
-                onClick={handleCancelDelete}
-                className="flex-1 px-6 py-3 font-semibold text-gray-700 transition bg-gray-200 rounded-lg hover:bg-gray-300"
+                onClick={handleFileUpload}
+                className="px-5 py-1.5 text-xs font-semibold text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
               >
-                취소
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                disabled={isLoading}
-                className="flex-1 px-6 py-3 font-semibold text-white transition bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
-              >
-                {isLoading ? "삭제 중..." : "삭제"}
+                파일선택
               </button>
             </div>
           </div>
-        </div>
-      )}
 
-      <div className="min-h-screen bg-white">
-        <div className="px-4 py-8 mx-auto max-w-7xl">
-          <h1 className="mb-6 text-2xl font-bold">이력서</h1>
-          <div className="flex gap-6">
-            {/* 왼쪽 사이드바 */}
-            <ResumeSidebar
-              activeMenu={activeMenu}
-              onMenuClick={handleMenuClick}
-            />
+          {/* 2. 안내문 영역 */}
+          <div className="p-5 mt-2 border border-gray-200 bg-gray-50 rounded-xl">
+            <h4 className="mb-4 text-sm font-bold text-gray-800">
+              업로드 후 자동으로 전환됩니다
+            </h4>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center flex-shrink-0 w-6 h-6 text-xs font-bold text-white bg-blue-500 rounded-full">
+                  1
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-gray-900">
+                    텍스트 추출
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    파일 텍스트 자동 추출
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center flex-shrink-0 w-6 h-6 text-xs font-bold text-white bg-blue-500 rounded-full">
+                  2
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-gray-900">
+                    AI 구조화
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    항목별 내용 자동 분류
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center flex-shrink-0 w-6 h-6 text-xs font-bold text-white bg-blue-500 rounded-full">
+                  3
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-gray-900">
+                    점수 추정
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    논문 기반 등급 측정
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-            {/* 메인 컨텐츠 */}
-            <div className="flex-1 space-y-8">
-              <section className="p-8 bg-white border-2 border-gray-200 rounded-2xl">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold">이력서 관리</h2>
+          {/* 3. 리스트 컨테이너 */}
+          <section className="bg-white border border-gray-200 rounded-xl flex flex-col overflow-hidden min-h-[400px] shadow-sm mt-8">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-4">
+                  <h3 className="text-lg font-bold text-blue-600">
+                    내 이력서 관리{" "}
+                    <span className="ml-2 text-sm font-normal text-gray-500">
+                      총 {resumes.length}건 / 최대 5개
+                    </span>
+                  </h3>
+                  {selectedIds.length > 0 && (
+                    <button
+                      onClick={handleBulkDelete}
+                      className="px-3 py-1 text-sm font-medium text-gray-600 transition-all bg-white border border-gray-300 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                    >
+                      선택 삭제 ({selectedIds.length})
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  {resumes.length > 0 && (
+                    <label className="flex items-center gap-1.5 cursor-pointer select-none mr-2">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded cursor-pointer focus:ring-blue-500"
+                        checked={
+                          resumes.length > 0 &&
+                          resumes.every((r) => selectedIds.includes(r.resumeId))
+                        }
+                        onChange={handleSelectAll}
+                      />
+                      <span className="text-sm font-medium text-gray-600 hover:text-gray-900">
+                        전체 선택
+                      </span>
+                    </label>
+                  )}
+
                   <button
                     onClick={handleCreateResume}
-                    className="px-6 py-2 text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
+                    className={`px-4 py-1.5 text-xs font-bold text-white transition rounded hover:shadow-md ${
+                      resumes.length >= 5
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-blue-600 hover:bg-blue-700"
+                    }`}
                   >
-                    이력서 작성
+                    {resumes.length >= 5 ? "작성한도 초과" : "+ 이력서 작성"}
                   </button>
                 </div>
-
-                {error && (
-                  <div className="p-4 mb-6 border border-red-200 rounded-lg bg-red-50">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-red-600">{error}</p>
-                      <button
-                        onClick={loadResumes}
-                        className="px-4 py-2 text-sm font-medium text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
-                      >
-                        재시도
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                <div className="mb-6">
-                  <div className="mb-2 text-sm text-gray-600">
-                    총 {resumes.length}건
-                  </div>
-
-                  {isLoading && resumes.length === 0 ? (
-                    <div className="p-12 text-center text-gray-500">
-                      <div className="mb-4 text-4xl">⏳</div>
-                      <p>이력서 목록을 불러오는 중...</p>
-                    </div>
-                  ) : resumes.length === 0 && !error ? (
-                    <div className="p-12 text-center text-gray-500">
-                      <div className="mb-4 text-4xl">📄</div>
-                      <p className="mb-4">등록된 이력서가 없습니다.</p>
-                      <button
-                        onClick={handleCreateResume}
-                        className="px-6 py-2 text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
-                      >
-                        첫 이력서 작성하기
-                      </button>
-                    </div>
-                  ) : resumes.length > 0 ? (
-                    <div className="p-2 space-y-3 overflow-y-auto max-h-96">
-                      {resumes.map((resume) => {
-                        const isOpen =
-                          openVisibilityDropdownId === resume.resumeId;
-                        const isPublic = resume.visibility === "PUBLIC";
-
-                        return (
-                          <div
-                            key={resume.resumeId}
-                            onClick={() =>
-                              navigate(`/user/resume/${resume.resumeId}`)
-                            }
-                            className="relative p-6 transition bg-white border-2 border-gray-300 rounded-lg cursor-pointer hover:shadow-md hover:border-blue-400"
-                          >
-                            <div className="flex items-center justify-between mb-4">
-                              <div className="flex items-center gap-3">
-                                <h3 className="text-lg font-bold">
-                                  {resume.title}
-                                </h3>
-
-                                {isPublic ? (
-                                  <span className="px-3 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-full">
-                                    공개
-                                  </span>
-                                ) : (
-                                  <span className="px-3 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded-full">
-                                    비공개
-                                  </span>
-                                )}
-                              </div>
-
-                              {/* ✅ 우측 상단 공개/비공개 드롭다운 */}
-                              <div
-                                className="relative"
-                                data-visibility-dropdown="true"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setOpenVisibilityDropdownId((prev) =>
-                                      prev === resume.resumeId
-                                        ? null
-                                        : resume.resumeId
-                                    )
-                                  }
-                                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 transition bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                                >
-                                  <span>{isPublic ? "공개" : "비공개"}</span>
-                                  <span className="text-xs">▾</span>
-                                </button>
-
-                                {isOpen && (
-                                  <div className="absolute right-0 z-10 w-32 mt-2 overflow-hidden bg-white border border-gray-200 rounded-lg shadow-lg">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleChangeVisibility(
-                                          resume.resumeId,
-                                          "PUBLIC"
-                                        )
-                                      }
-                                      className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 ${
-                                        isPublic
-                                          ? "font-semibold text-green-700"
-                                          : "text-gray-700"
-                                      }`}
-                                    >
-                                      공개
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleChangeVisibility(
-                                          resume.resumeId,
-                                          "PRIVATE"
-                                        )
-                                      }
-                                      className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 ${
-                                        !isPublic
-                                          ? "font-semibold text-gray-900"
-                                          : "text-gray-700"
-                                      }`}
-                                    >
-                                      비공개
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-4 text-sm">
-                              <div>
-                                <span className="text-gray-600">직무:</span>
-                                <span className="ml-2 font-medium">
-                                  {resume.jobCategory || "미지정"}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-gray-600">상태:</span>
-                                <span className="ml-2 font-medium">
-                                  {resume.status === "COMPLETED"
-                                    ? "완료"
-                                    : "작성중"}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-gray-600">조회수:</span>
-                                <span className="ml-2 font-medium">
-                                  {resume.viewCount}회
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : null}
-                </div>
-
-                <div className="p-12 border-2 border-blue-300 border-dashed rounded-2xl bg-blue-50">
-                  <div className="text-center">
-                    <div className="mb-4 text-6xl">📁</div>
-                    <h3 className="mb-2 text-lg font-bold">
-                      파일을 드래그 하거나 클릭하여 업로드
-                    </h3>
-                    <p className="mb-4 text-gray-600">
-                      지원 형식: PDF, WORD, HWP, EXCEL
-                      <br />
-                      (최대 10MB)
-                    </p>
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleFileChange}
-                      accept=".pdf,.doc,.docx,.hwp,.xls,.xlsx"
-                      className="hidden"
-                    />
-                    <button
-                      onClick={handleFileUpload}
-                      className="px-8 py-3 font-semibold text-white transition bg-blue-600 rounded-full hover:bg-blue-700"
-                    >
-                      파일선택
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-4 mt-6 border-l-4 border-red-400 bg-red-50">
-                  <h4 className="mb-2 font-bold">
-                    업로드 후 자동으로 전환됩니다
-                  </h4>
-                  <div className="space-y-2 text-sm text-gray-700">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center justify-center w-8 h-8 font-bold text-white bg-blue-600 rounded-full">
-                        1
-                      </div>
-                      <div>
-                        <div className="font-semibold">텍스트 추출</div>
-                        <div className="text-xs text-gray-600">
-                          파일에서 텍스트를 자동으로 추출합니다
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center justify-center w-8 h-8 font-bold text-white bg-blue-600 rounded-full">
-                        2
-                      </div>
-                      <div>
-                        <div className="font-semibold">AI 구조화</div>
-                        <div className="text-xs text-gray-600">
-                          학력, 경력, 프로젝트 스킬 등을 자동 분류
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center justify-center w-8 h-8 font-bold text-white bg-blue-600 rounded-full">
-                        3
-                      </div>
-                      <div>
-                        <div className="font-semibold">점수 추정</div>
-                        <div className="text-xs text-gray-600">
-                          다수 논문 기반 점수 등급 측정
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </section>
+              </div>
             </div>
-          </div>
+
+            <div className="flex-1 divide-y divide-gray-100">
+              {isLoading ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="text-gray-500">로딩 중...</div>
+                </div>
+              ) : resumes.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-24 text-gray-500">
+                  <div className="mb-4 text-4xl">📄</div>
+                  <p className="mb-2">등록된 이력서가 없습니다.</p>
+                  <button
+                    onClick={handleCreateResume}
+                    className="px-6 py-2 text-sm font-bold text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50"
+                  >
+                    첫 이력서 작성하기
+                  </button>
+                </div>
+              ) : (
+                resumes.map((resume) => {
+                  const isOpen = openVisibilityDropdownId === resume.resumeId;
+                  const isPublic = resume.visibility === "PUBLIC";
+
+                  return (
+                    <div
+                      key={resume.resumeId}
+                      onClick={() =>
+                        navigate(`/user/resume/${resume.resumeId}`)
+                      }
+                      onMouseEnter={() => setHoveredId(resume.resumeId)}
+                      onMouseLeave={() => setHoveredId(null)}
+                      className={`group flex items-center px-5 py-4 cursor-pointer transition-all duration-200 ${
+                        hoveredId === resume.resumeId
+                          ? "bg-blue-50/50"
+                          : "hover:bg-gray-50"
+                      }`}
+                    >
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center pr-5"
+                      >
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded cursor-pointer focus:ring-blue-500"
+                          checked={selectedIds.includes(resume.resumeId)}
+                          onChange={(e) =>
+                            toggleSelect(resume.resumeId, e as any)
+                          }
+                        />
+                      </div>
+
+                      <div className="flex-shrink-0 w-20">
+                        <span
+                          className={`inline-flex items-center justify-center w-full px-2.5 py-1 text-xs font-medium rounded-md border whitespace-nowrap ${
+                            isPublic
+                              ? "text-green-700 bg-green-50 border-green-200"
+                              : "text-gray-700 bg-gray-100 border-gray-200"
+                          }`}
+                        >
+                          {isPublic ? "공개" : "비공개"}
+                        </span>
+                      </div>
+
+                      <div className="flex-1 min-w-0 ml-6">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          {resume.isIncomplete && (
+                            <span className="px-1.5 py-0.5 text-[10px] font-bold text-orange-700 bg-orange-100 rounded border border-orange-200 whitespace-nowrap">
+                              작성중
+                            </span>
+                          )}
+                          <h3 className="text-base font-bold text-gray-900 truncate group-hover:text-blue-700">
+                            {resume.title}
+                          </h3>
+                          {resume.isMain && (
+                            <span className="px-1.5 py-0.5 text-[10px] font-bold text-blue-600 bg-blue-50 rounded border border-blue-100 whitespace-nowrap">
+                              대표
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <span>{resume.jobCategory || "직무 미정"}</span>
+                          <span className="w-0.5 h-0.5 bg-gray-400 rounded-full"></span>
+                          <span>{formatDate(resume.createdAt)}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4 ml-4">
+                        <div
+                          className="relative"
+                          data-visibility-dropdown="true"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setOpenVisibilityDropdownId((prev) =>
+                                prev === resume.resumeId
+                                  ? null
+                                  : resume.resumeId,
+                              )
+                            }
+                            className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-700 transition bg-white border border-gray-300 rounded hover:bg-gray-50"
+                          >
+                            <span>설정</span>
+                            <span className="text-[10px]">▾</span>
+                          </button>
+
+                          {isOpen && (
+                            <div className="absolute right-0 z-10 w-24 mt-1 overflow-hidden bg-white border border-gray-200 rounded shadow-lg">
+                              <button
+                                onClick={() =>
+                                  handleChangeVisibility(
+                                    resume.resumeId,
+                                    "PUBLIC",
+                                  )
+                                }
+                                className="w-full px-3 py-2 text-xs font-medium text-left text-green-700 hover:bg-gray-50"
+                              >
+                                공개
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleChangeVisibility(
+                                    resume.resumeId,
+                                    "PRIVATE",
+                                  )
+                                }
+                                className="w-full px-3 py-2 text-xs text-left text-gray-700 hover:bg-gray-50"
+                              >
+                                비공개
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={(e) => handleDeleteClick(resume.resumeId, e)}
+                          className="p-2 text-gray-300 transition-all rounded-full hover:text-red-600 hover:bg-red-50"
+                          title="삭제"
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={1.5}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </section>
         </div>
       </div>
-    </>
+    </div>
   );
 }

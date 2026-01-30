@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import ResumeSidebar from "./components/ResumeSidebar";
+import LeftSidebar from "../../components/LeftSidebar";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 import {
   getResumeDetail,
@@ -30,8 +31,8 @@ export default function ResumeDetailPage() {
   // ✅ 목록에서 변경 후 곧바로 상세로 들어오면(서버 반영 지연/레이스) 대비:
   // 1) location.state로 기대 visibility를 전달받으면 그 값과 서버 응답이 다를 때 재조회
   // 2) (옵션) localStorage override를 쓰는 경우도 대응 (키: resume_visibility_override_map)
-  const expectedVisibilityFromNav =
-    (location.state as any)?.expectedVisibility as Visibility | undefined;
+  const expectedVisibilityFromNav = (location.state as any)
+    ?.expectedVisibility as Visibility | undefined;
 
   const refetchTimerRef = useRef<number | null>(null);
   const attemptRef = useRef(0);
@@ -101,22 +102,25 @@ export default function ResumeDetailPage() {
         ) {
           attemptRef.current += 1;
           clearRefetchTimer();
-          refetchTimerRef.current = window.setTimeout(async () => {
-            try {
-              const again = await getResumeDetail(rid, user.userId);
-              const mergedAgain: ResumeResponse = {
-                ...again,
-                visibility: expected, // 화면은 기대값 유지 (서버 반영 지연 동안 UX 보호)
-              };
-              setResume(mergedAgain);
+          refetchTimerRef.current = window.setTimeout(
+            async () => {
+              try {
+                const again = await getResumeDetail(rid, user.userId);
+                const mergedAgain: ResumeResponse = {
+                  ...again,
+                  visibility: expected, // 화면은 기대값 유지 (서버 반영 지연 동안 UX 보호)
+                };
+                setResume(mergedAgain);
 
-              // 서버가 따라오면(다시 조회했는데 서버 값도 expected가 되면) 기대값 강제 유지 불필요
-              // -> 다음 렌더부터는 서버값을 보여주고 싶으면 아래처럼 처리 가능:
-              // if (again.visibility === expected) setResume(again);
-            } catch (e) {
-              // 재조회 실패는 조용히 무시 (기본 데이터는 이미 있음)
-            }
-          }, attemptRef.current === 1 ? 400 : 1200);
+                // 서버가 따라오면(다시 조회했는데 서버 값도 expected가 되면) 기대값 강제 유지 불필요
+                // -> 다음 렌더부터는 서버값을 보여주고 싶으면 아래처럼 처리 가능:
+                // if (again.visibility === expected) setResume(again);
+              } catch (e) {
+                // 재조회 실패는 조용히 무시 (기본 데이터는 이미 있음)
+              }
+            },
+            attemptRef.current === 1 ? 400 : 1200,
+          );
         }
       } catch (error: any) {
         console.error("이력서 상세 조회 실패:", error);
@@ -229,12 +233,15 @@ export default function ResumeDetailPage() {
 
     if (coverLetterId) {
       try {
-        const response = await api.get(`/api/coverletters/${coverLetterId}/file`, {
-          params: {
-            userId: user.userId,
+        const response = await api.get(
+          `/api/coverletters/${coverLetterId}/file`,
+          {
+            params: {
+              userId: user.userId,
+            },
+            responseType: "blob",
           },
-          responseType: "blob",
-        });
+        );
 
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement("a");
@@ -332,15 +339,9 @@ export default function ResumeDetailPage() {
   };
 
   // ✅ 공통 라벨 행(“회사명: 카카오” 스타일) 컴포넌트
-  const LabelRow = ({
-    label,
-    value,
-  }: {
-    label: string;
-    value?: string;
-  }) => (
+  const LabelRow = ({ label, value }: { label: string; value?: string }) => (
     <div className="flex gap-3 text-sm leading-6">
-      <div className="w-20 shrink-0 text-gray-600">{label}</div>
+      <div className="w-20 text-gray-600 shrink-0">{label}</div>
       <div className="flex-1 text-gray-900 whitespace-pre-wrap">
         {value && value.trim() ? value : "-"}
       </div>
@@ -430,13 +431,24 @@ export default function ResumeDetailPage() {
       )}
 
       <div className="min-h-screen bg-white">
-        <div className="px-4 py-8 mx-auto max-w-7xl">
-          <h2 className="mb-6 text-2xl font-bold">이력서 상세</h2>
+        <div className="px-4 py-8 mx-auto bg-white max-w-7xl">
+          {/* 1. 부모 Flex 컨테이너: items-start 필수 */}
+          <div className="flex items-start gap-6">
+            {/* 2. 왼쪽 고정 영역 (제목 + 사이드바) */}
+            {/* sticky: 고정, top-10: 상단 여백, shrink-0: 찌그러짐 방지 */}
+            <div className="sticky flex flex-col gap-6 top-10 shrink-0">
+              {/* 제목을 여기로 가져오세요 */}
+              <h2 className="px-2 text-2xl font-bold">이력서 상세</h2>
 
-          <div className="flex gap-6">
-            <ResumeSidebar activeMenu={activeMenu} onMenuClick={handleMenuClick} />
+              {/* 사이드바 컴포넌트 */}
+              <ResumeSidebar
+                activeMenu={activeMenu}
+                onMenuClick={handleMenuClick}
+              />
+            </div>
 
-            <div className="flex-1 min-w-0">
+            {/* 3. 오른쪽 컨텐츠 영역 */}
+            <div className="flex-1 space-y-8">
               <div className="p-8 bg-white border border-gray-300 rounded-2xl">
                 {/* 상단 버튼 영역 */}
                 <div className="flex items-center justify-between mb-6">
@@ -601,9 +613,16 @@ export default function ResumeDetailPage() {
                   <Section title="경험/활동/교육">
                     <div className="space-y-3">
                       {experiences.map((exp: any, idx: number) => (
-                        <div key={idx} className="p-4 border border-gray-400 rounded-lg">
-                          <div className="font-semibold text-gray-900">{exp.title}</div>
-                          <div className="mt-1 text-sm text-gray-600">{exp.period}</div>
+                        <div
+                          key={idx}
+                          className="p-4 border border-gray-400 rounded-lg"
+                        >
+                          <div className="font-semibold text-gray-900">
+                            {exp.title}
+                          </div>
+                          <div className="mt-1 text-sm text-gray-600">
+                            {exp.period}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -615,9 +634,16 @@ export default function ResumeDetailPage() {
                   <Section title="자격증/어학/수상">
                     <div className="space-y-3">
                       {certificates.map((cert: any, idx: number) => (
-                        <div key={idx} className="p-4 border border-gray-400 rounded-lg">
-                          <div className="font-semibold text-gray-900">{cert.title}</div>
-                          <div className="mt-1 text-sm text-gray-600">{cert.date}</div>
+                        <div
+                          key={idx}
+                          className="p-4 border border-gray-400 rounded-lg"
+                        >
+                          <div className="font-semibold text-gray-900">
+                            {cert.title}
+                          </div>
+                          <div className="mt-1 text-sm text-gray-600">
+                            {cert.date}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -629,9 +655,16 @@ export default function ResumeDetailPage() {
                   <Section title="학력">
                     <div className="space-y-3">
                       {educations.map((edu: any, idx: number) => (
-                        <div key={idx} className="p-4 border border-gray-400 rounded-lg">
-                          <div className="font-semibold text-gray-900">{edu.school}</div>
-                          <div className="mt-1 text-sm text-gray-600">{edu.period}</div>
+                        <div
+                          key={idx}
+                          className="p-4 border border-gray-400 rounded-lg"
+                        >
+                          <div className="font-semibold text-gray-900">
+                            {edu.school}
+                          </div>
+                          <div className="mt-1 text-sm text-gray-600">
+                            {edu.period}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -643,7 +676,10 @@ export default function ResumeDetailPage() {
                   <Section title="경력">
                     <div className="space-y-3">
                       {careers.map((career: any, idx: number) => (
-                        <div key={idx} className="p-4 border border-gray-400 rounded-lg">
+                        <div
+                          key={idx}
+                          className="p-4 border border-gray-400 rounded-lg"
+                        >
                           <LabelRow label="회사명" value={career.company} />
                           <div className="mt-2" />
                           <LabelRow label="직급" value={career.position} />
@@ -692,27 +728,33 @@ export default function ResumeDetailPage() {
                   structuredData.portfolios.length > 0 && (
                     <Section title="포트폴리오">
                       <div className="space-y-3">
-                        {structuredData.portfolios.map((portfolio: any, idx: number) => (
-                          <div
-                            key={idx}
-                            className="flex items-center justify-between p-4 border border-gray-400 rounded-lg"
-                          >
-                            <div className="min-w-0">
-                              <p className="font-semibold text-gray-900 truncate">
-                                {portfolio.filename}
-                              </p>
-                              <p className="mt-1 text-sm text-gray-600">
-                                {portfolio.portfolioId ? "다운로드 가능" : "파일명만 저장됨"}
-                              </p>
-                            </div>
-                            <button
-                              onClick={() => handlePortfolioDownload(portfolio)}
-                              className="px-4 py-2 text-sm font-semibold text-gray-900 border border-gray-400 rounded-lg hover:bg-gray-50"
+                        {structuredData.portfolios.map(
+                          (portfolio: any, idx: number) => (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between p-4 border border-gray-400 rounded-lg"
                             >
-                              다운로드
-                            </button>
-                          </div>
-                        ))}
+                              <div className="min-w-0">
+                                <p className="font-semibold text-gray-900 truncate">
+                                  {portfolio.filename}
+                                </p>
+                                <p className="mt-1 text-sm text-gray-600">
+                                  {portfolio.portfolioId
+                                    ? "다운로드 가능"
+                                    : "파일명만 저장됨"}
+                                </p>
+                              </div>
+                              <button
+                                onClick={() =>
+                                  handlePortfolioDownload(portfolio)
+                                }
+                                className="px-4 py-2 text-sm font-semibold text-gray-900 border border-gray-400 rounded-lg hover:bg-gray-50"
+                              >
+                                다운로드
+                              </button>
+                            </div>
+                          ),
+                        )}
                       </div>
                     </Section>
                   )}
@@ -721,41 +763,48 @@ export default function ResumeDetailPage() {
                 {resume.coverLetters && resume.coverLetters.length > 0 && (
                   <Section title="자기소개서">
                     <div className="space-y-4">
-                      {resume.coverLetters.map((coverLetter: any, idx: number) => (
-                        <div key={idx} className="p-4 border border-gray-400 rounded-lg">
-                          {coverLetter.filePath && (
-                            <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-400">
-                              <div className="min-w-0">
-                                <p className="font-semibold text-gray-900 truncate">
-                                  {coverLetter.title}
-                                </p>
-                                <p className="mt-1 text-sm text-gray-600">
-                                  파일 다운로드 가능
+                      {resume.coverLetters.map(
+                        (coverLetter: any, idx: number) => (
+                          <div
+                            key={idx}
+                            className="p-4 border border-gray-400 rounded-lg"
+                          >
+                            {coverLetter.filePath && (
+                              <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-400">
+                                <div className="min-w-0">
+                                  <p className="font-semibold text-gray-900 truncate">
+                                    {coverLetter.title}
+                                  </p>
+                                  <p className="mt-1 text-sm text-gray-600">
+                                    파일 다운로드 가능
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={() =>
+                                    handleCoverLetterDownload(coverLetter)
+                                  }
+                                  className="px-4 py-2 text-sm font-semibold text-gray-900 border border-gray-400 rounded-lg hover:bg-gray-50"
+                                >
+                                  다운로드
+                                </button>
+                              </div>
+                            )}
+
+                            {coverLetter.content && (
+                              <div>
+                                {coverLetter.title && !coverLetter.filePath && (
+                                  <h3 className="mb-3 text-base font-bold text-gray-900">
+                                    {coverLetter.title}
+                                  </h3>
+                                )}
+                                <p className="leading-relaxed text-gray-900 whitespace-pre-wrap">
+                                  {coverLetter.content}
                                 </p>
                               </div>
-                              <button
-                                onClick={() => handleCoverLetterDownload(coverLetter)}
-                                className="px-4 py-2 text-sm font-semibold text-gray-900 border border-gray-400 rounded-lg hover:bg-gray-50"
-                              >
-                                다운로드
-                              </button>
-                            </div>
-                          )}
-
-                          {coverLetter.content && (
-                            <div>
-                              {coverLetter.title && !coverLetter.filePath && (
-                                <h3 className="mb-3 text-base font-bold text-gray-900">
-                                  {coverLetter.title}
-                                </h3>
-                              )}
-                              <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">
-                                {coverLetter.content}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                            )}
+                          </div>
+                        ),
+                      )}
                     </div>
                   </Section>
                 )}
@@ -767,53 +816,64 @@ export default function ResumeDetailPage() {
                       structuredData.coverLetter.files.length > 0 && (
                         <Section title="자기소개서 파일">
                           <div className="space-y-3">
-                            {structuredData.coverLetter.files.map((file: any, idx: number) => {
-                              const filename =
-                                typeof file === "string" ? file : file.filename;
-                              const coverLetterId =
-                                typeof file === "object" ? file.coverLetterId : null;
+                            {structuredData.coverLetter.files.map(
+                              (file: any, idx: number) => {
+                                const filename =
+                                  typeof file === "string"
+                                    ? file
+                                    : file.filename;
+                                const coverLetterId =
+                                  typeof file === "object"
+                                    ? file.coverLetterId
+                                    : null;
 
-                              return (
-                                <div
-                                  key={idx}
-                                  className="flex items-center justify-between p-4 border border-gray-400 rounded-lg"
-                                >
-                                  <div className="min-w-0">
-                                    <p className="font-semibold text-gray-900 truncate">
-                                      {filename}
-                                    </p>
-                                    <p className="mt-1 text-sm text-gray-600">
-                                      {coverLetterId ? "다운로드 가능" : "파일명만 저장됨"}
-                                    </p>
-                                  </div>
-                                  <button
-                                    onClick={() => handleCoverLetterDownload(file)}
-                                    className="px-4 py-2 text-sm font-semibold text-gray-900 border border-gray-400 rounded-lg hover:bg-gray-50"
+                                return (
+                                  <div
+                                    key={idx}
+                                    className="flex items-center justify-between p-4 border border-gray-400 rounded-lg"
                                   >
-                                    다운로드
-                                  </button>
-                                </div>
-                              );
-                            })}
+                                    <div className="min-w-0">
+                                      <p className="font-semibold text-gray-900 truncate">
+                                        {filename}
+                                      </p>
+                                      <p className="mt-1 text-sm text-gray-600">
+                                        {coverLetterId
+                                          ? "다운로드 가능"
+                                          : "파일명만 저장됨"}
+                                      </p>
+                                    </div>
+                                    <button
+                                      onClick={() =>
+                                        handleCoverLetterDownload(file)
+                                      }
+                                      className="px-4 py-2 text-sm font-semibold text-gray-900 border border-gray-400 rounded-lg hover:bg-gray-50"
+                                    >
+                                      다운로드
+                                    </button>
+                                  </div>
+                                );
+                              },
+                            )}
                           </div>
                         </Section>
                       )}
 
-                    {structuredData?.coverLetter && structuredData.coverLetter.content && (
-                      <Section
-                        title={
-                          structuredData.coverLetter.title
-                            ? `자기소개서 - ${structuredData.coverLetter.title}`
-                            : "자기소개서"
-                        }
-                      >
-                        <div className="p-4 border border-gray-400 rounded-lg">
-                          <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">
-                            {structuredData.coverLetter.content}
-                          </p>
-                        </div>
-                      </Section>
-                    )}
+                    {structuredData?.coverLetter &&
+                      structuredData.coverLetter.content && (
+                        <Section
+                          title={
+                            structuredData.coverLetter.title
+                              ? `자기소개서 - ${structuredData.coverLetter.title}`
+                              : "자기소개서"
+                          }
+                        >
+                          <div className="p-4 border border-gray-400 rounded-lg">
+                            <p className="leading-relaxed text-gray-900 whitespace-pre-wrap">
+                              {structuredData.coverLetter.content}
+                            </p>
+                          </div>
+                        </Section>
+                      )}
                   </>
                 )}
 

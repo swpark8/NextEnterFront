@@ -103,7 +103,7 @@ export default function CompanyHomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* 메인 배너 */}
       <div className="py-8 text-white bg-gradient-to-r from-purple-600 to-blue-500">
         <div className="px-4 mx-auto text-center max-w-7xl">

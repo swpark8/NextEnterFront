@@ -20,9 +20,9 @@ export default function OfferPage({ initialMenu, onNavigate }: OfferPageProps) {
   const { activeMenu, handleMenuClick } = usePageNavigation(
     "offer",
     initialMenu || "offer-sub-1",
-    onNavigate
+    onNavigate,
   );
-  
+
   // AppContext에서 포지션 제안 데이터 가져오기
   const { positionOffers, deletePositionOffer } = useApp();
 
@@ -76,8 +76,8 @@ export default function OfferPage({ initialMenu, onNavigate }: OfferPageProps) {
 
   // 세부 내용 렌더링
   if (selectedOffer !== null) {
-    const detail = positionOffers.find(o => o.id === selectedOffer);
-    
+    const detail = positionOffers.find((o) => o.id === selectedOffer);
+
     // 해당 ID의 데이터가 없으면(삭제됨 등) 목록으로 복귀
     if (!detail) {
       handleBack();
@@ -248,7 +248,7 @@ export default function OfferPage({ initialMenu, onNavigate }: OfferPageProps) {
     <div className="px-4 py-8 mx-auto max-w-7xl">
       <h2 className="inline-block mb-6 text-2xl font-bold">제안 현황</h2>
 
-      <div className="flex gap-6">
+      <div className="flex items-start gap-6">
         {/* 왼쪽 사이드바 */}
         <OfferSidebar activeMenu={activeMenu} onMenuClick={handleMenuClick} />
 

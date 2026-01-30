@@ -141,6 +141,7 @@ export interface ResumeListItem {
   visibility: string;
   viewCount: number;
   status: string;
+  isIncomplete?: boolean;  // ✅ 미완성 여부
   createdAt: string;
 }
 

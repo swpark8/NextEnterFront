@@ -208,7 +208,7 @@ export default function CompanyMyPage({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <div className="px-4 py-8 mx-auto max-w-7xl">
         <h1 className="mb-6 text-2xl font-bold">기업 마이페이지</h1>
         <div className="flex gap-6">

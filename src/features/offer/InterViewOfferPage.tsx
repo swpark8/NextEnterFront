@@ -403,7 +403,7 @@ export default function InterviewOfferPage({
                     <br />
                     {selectedOffer.offerType === "FROM_APPLICATION"
                       ? "지원해주신 내역을 검토한 결과, 긍정적인 평가를 받아 면접을 요청드립니다."
-                      : "저희가 찾고 있는 인재상과 부합하여 먼저 제안을 드립니다."}
+                      : "저희가 찾고 있는 인재상과 부합하여 기업의 제안을 드립니다."}
                   </p>
                 </div>
 
@@ -947,7 +947,7 @@ export default function InterviewOfferPage({
                                   <span>
                                     {offer.offerType === "FROM_APPLICATION"
                                       ? "지원 후 제안"
-                                      : "먼저 제안"}
+                                      : "기업의 제안"}
                                   </span>
                                 </div>
                               </div>

@@ -149,7 +149,7 @@ export default function CompanyNotificationsPage() {
   };
 
   return (
-    <div className="min-h-screen py-8 bg-gray-50">
+    <div className="min-h-screen py-8 bg-white">
       <div className="max-w-4xl px-4 mx-auto">
         {/* 헤더 */}
         <div className="p-6 mb-6 bg-white rounded-lg shadow-sm">

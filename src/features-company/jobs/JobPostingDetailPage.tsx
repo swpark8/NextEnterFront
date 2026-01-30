@@ -1,39 +1,27 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getJobPosting, type JobPostingResponse } from "../../api/job";
-import {
-  createApply,
-  getMyApplies,
-  type ApplyCreateRequest,
-} from "../../api/apply";
-import { toggleBookmark, checkBookmark } from "../../api/bookmark";
-import { useApp } from "../../context/AppContext";
 import { useAuth } from "../../context/AuthContext";
+import {
+  getJobPosting,
+  deleteJobPosting,
+  type JobPostingResponse,
+} from "../../api/job";
 
-export default function UserJobDetailPage() {
+export default function JobPostingDetailPage() {
   const navigate = useNavigate();
   const { jobId } = useParams<{ jobId: string }>();
-  const { user } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [job, setJob] = useState<JobPostingResponse | null>(null);
-  const [showResumeModal, setShowResumeModal] = useState(false);
-  const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
-  const [isBookmarked, setIsBookmarked] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [isApplied, setIsApplied] = useState(false);
-  const [resumesLoading, setResumesLoading] = useState(false);
-  const [localResumes, setLocalResumes] = useState<any[]>([]);
-
-  const { addJobApplication } = useApp();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // 공고 데이터 로드
   useEffect(() => {
     const loadJobPosting = async () => {
       if (!jobId) {
-        console.error("jobId가 없습니다:", jobId);
         alert("잘못된 접근입니다.");
-        navigate("/user/jobs/all");
+        navigate("/company/jobs");
         return;
       }
 
@@ -41,169 +29,68 @@ export default function UserJobDetailPage() {
         setLoading(true);
         const jobData = await getJobPosting(parseInt(jobId));
         setJob(jobData);
-
-        // 로그인한 경우에만 지원 여부와 북마크 확인
-        if (user?.userId) {
-          try {
-            const applies = await getMyApplies(user.userId);
-            const appliedJobIds = new Set(applies.map((apply) => apply.jobId));
-            setIsApplied(appliedJobIds.has(jobData.jobId));
-
-            const bookmarkStatus = await checkBookmark(
-              user.userId,
-              jobData.jobId,
-            );
-            setIsBookmarked(bookmarkStatus.isBookmarked);
-          } catch (subError: any) {
-            console.error("지원/북마크 조회 실패 (무시할 수 있음):", subError);
-          }
-        }
       } catch (error: any) {
         console.error("공고 조회 실패:", error);
-        let errorMessage = "공고를 불러오는데 실패했습니다.";
-        if (error.response?.status === 404) {
-          errorMessage = "해당 공고를 찾을 수 없습니다.";
-        }
-        alert(errorMessage);
-        navigate("/user/jobs/all");
+        alert(
+          error.response?.data?.message || "공고를 불러오는데 실패했습니다.",
+        );
+        navigate("/company/jobs");
       } finally {
         setLoading(false);
       }
     };
 
     loadJobPosting();
-  }, [jobId, navigate, user?.userId]);
+  }, [jobId, navigate]);
 
-  // 모달이 열릴 때 이력서 목록 로드
-  useEffect(() => {
-    if (showResumeModal) {
-      const fetchResumes = () => {
-        setResumesLoading(true);
-        try {
-          const savedResumes = localStorage.getItem("nextenter_resumes");
-          if (savedResumes) {
-            setLocalResumes(JSON.parse(savedResumes));
-          } else {
-            setLocalResumes([]);
-          }
-        } catch (error) {
-          console.error("이력서 로드 실패:", error);
-          setLocalResumes([]);
-        } finally {
-          setTimeout(() => {
-            setResumesLoading(false);
-          }, 300);
-        }
-      };
-      fetchResumes();
+  const handleApplicantsClick = () => {
+    if (job?.jobId) {
+      // 해당 공고의 지원자 목록으로 이동
+      navigate(
+        `/company/applicants?jobId=${job.jobId}&jobTitle=${encodeURIComponent(job.title)}`,
+      );
     }
-  }, [showResumeModal]);
+  };
 
   const handleBackClick = () => {
-    navigate("/user/jobs/all");
+    navigate("/company/jobs");
   };
 
-  const handleApplyClick = () => {
-    setShowResumeModal(true);
+  // 헤더 삭제로 인해 사용되지 않지만 인터페이스 유지를 위해 남겨둠
+  const handleLogoClick = () => {
+    navigate("/company");
   };
 
-  const handleResumeSelect = (resumeId: number) => {
-    setSelectedResumeId(resumeId);
-  };
-
-  const handleFinalSubmit = async () => {
-    if (!selectedResumeId || !job) {
-      alert("이력서를 선택해주세요.");
-      return;
+  const handleEditClick = () => {
+    if (jobId) {
+      navigate(`/company/jobs/edit/${jobId}`);
     }
+  };
 
-    if (!user?.userId) {
-      alert("로그인이 필요합니다.");
-      navigate("/user/login");
-      return;
-    }
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
 
-    const selectedResume = localResumes.find((r) => r.id === selectedResumeId);
-
-    if (!confirm(`"${selectedResume?.title}"로 지원하시겠습니까?`)) {
+  const handleConfirmDelete = async () => {
+    if (!jobId || !user?.companyId) {
+      alert("삭제 권한이 없습니다.");
       return;
     }
 
     try {
-      setSubmitting(true);
-
-      const applyRequest: ApplyCreateRequest = {
-        jobId: job.jobId,
-        resumeId: selectedResumeId,
-      };
-
-      await createApply(user.userId, applyRequest);
-
-      const today = new Date();
-      const applicationId = Date.now();
-
-      addJobApplication({
-        id: applicationId,
-        jobId: job.jobId,
-        resumeId: selectedResumeId,
-        date: today.toISOString().split("T")[0].replace(/-/g, "."),
-        company: job.companyName,
-        position: job.title,
-        jobType: "정규직",
-        location: job.location,
-        deadline: job.deadline,
-        viewed: false,
-        status: "지원완료",
-        canCancel: true,
-      });
-
-      alert("지원이 완료되었습니다!");
-      setShowResumeModal(false);
-      setSelectedResumeId(null);
-      setIsApplied(true);
+      await deleteJobPosting(parseInt(jobId), user.companyId);
+      alert("공고가 삭제되었습니다.");
+      setShowDeleteConfirm(false);
+      navigate("/company/jobs");
     } catch (error: any) {
-      console.error("지원 실패:", error);
-      if (
-        error.response?.status === 409 ||
-        error.response?.data?.message?.includes("이미 지원")
-      ) {
-        alert("이미 지원한 공고입니다.");
-      } else {
-        alert(error.response?.data?.message || "지원에 실패했습니다.");
-      }
-    } finally {
-      setSubmitting(false);
+      console.error("공고 삭제 실패:", error);
+      alert(error.response?.data?.message || "공고 삭제에 실패했습니다.");
+      setShowDeleteConfirm(false);
     }
   };
 
-  const handleCancelResume = () => {
-    setShowResumeModal(false);
-    setSelectedResumeId(null);
-  };
-
-  const handleBookmarkToggle = async () => {
-    if (!user?.userId || !job) {
-      alert("로그인이 필요합니다.");
-      navigate("/user/login");
-      return;
-    }
-
-    try {
-      const result = await toggleBookmark(user.userId, job.jobId);
-      setIsBookmarked(result.isBookmarked);
-
-      const updatedJob = await getJobPosting(job.jobId);
-      setJob(updatedJob);
-
-      if (result.isBookmarked) {
-        alert("스크랩한 공고에 추가되었습니다.");
-      } else {
-        alert("스크랩한 공고에서 제거되었습니다.");
-      }
-    } catch (error: any) {
-      console.error("북마크 토글 실패:", error);
-      alert(error.response?.data?.message || "북마크 처리에 실패했습니다.");
-    }
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false);
   };
 
   const getStatusText = (status: string) => {
@@ -232,13 +119,6 @@ export default function UserJobDetailPage() {
     }
   };
 
-  // ✅ [수정됨] 날짜 포맷팅 함수 추가
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "-";
-    // T를 기준으로 자르고 . 으로 연결 (예: 2026-01-29T... -> 2026. 01. 29)
-    return dateString.split("T")[0].replace(/-/g, ". ");
-  };
-
   const formatExperience = (min?: number, max?: number) => {
     if (min === undefined && max === undefined) return "경력무관";
     if (min === 0) return "신입";
@@ -254,7 +134,7 @@ export default function UserJobDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="text-xl font-semibold text-gray-600">로딩 중...</div>
       </div>
     );
@@ -262,7 +142,7 @@ export default function UserJobDetailPage() {
 
   if (!job) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="text-xl font-semibold text-gray-600">
           공고를 찾을 수 없습니다.
         </div>
@@ -272,74 +152,30 @@ export default function UserJobDetailPage() {
 
   return (
     <>
-      {/* 이력서 선택 모달 */}
-      {showResumeModal && (
+      {/* 삭제 확인 모달 */}
+      {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
-            <h3 className="mb-6 text-2xl font-bold text-gray-900">
-              지원할 이력서를 선택해주세요
-            </h3>
-            {resumesLoading ? (
-              <div className="p-8 text-center">
-                <div className="mb-4 text-xl font-semibold text-gray-600">
-                  로딩 중...
-                </div>
-                <div className="text-sm text-gray-500">
-                  이력서 목록을 불러오고 있습니다
-                </div>
-              </div>
-            ) : localResumes.length === 0 ? (
-              <div className="p-8 text-center">
-                <p className="mb-4 text-gray-600">등록된 이력서가 없습니다.</p>
-                <button
-                  onClick={() => {
-                    setShowResumeModal(false);
-                    navigate("/user/resume");
-                  }}
-                  className="px-6 py-2 text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
-                >
-                  이력서 작성하기
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="mb-6 space-y-4 ">
-                  {localResumes.map((resume) => (
-                    <div
-                      key={resume.id}
-                      onClick={() => handleResumeSelect(resume.id)}
-                      className={`p-5 border-2 rounded-lg cursor-pointer transition ${
-                        selectedResumeId === resume.id
-                          ? "border-blue-600 bg-blue-50"
-                          : "border-gray-200 hover:border-blue-300 bg-white"
-                      }`}
-                    >
-                      <h4 className="text-lg font-bold text-gray-900">
-                        {resume.title}
-                      </h4>
-                      <p className="text-sm text-gray-600">
-                        산업: {resume.industry}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex space-x-4">
-                  <button
-                    onClick={handleCancelResume}
-                    className="flex-1 px-6 py-3 font-medium text-gray-700 transition bg-gray-100 rounded-lg hover:bg-gray-200"
-                  >
-                    취소
-                  </button>
-                  <button
-                    onClick={handleFinalSubmit}
-                    disabled={submitting}
-                    className="flex-1 px-6 py-3 font-medium text-white transition bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                  >
-                    {submitting ? "지원 중..." : "지원하기"}
-                  </button>
-                </div>
-              </>
-            )}
+          <div className="w-full max-w-md p-6 mx-4 bg-white rounded-lg">
+            <h3 className="mb-2 text-lg font-bold text-gray-900">공고 삭제</h3>
+            <p className="mb-6 text-gray-600">
+              정말로 이 공고를 삭제하시겠습니까?
+              <br />
+              공고 상태가 "마감"으로 변경되며, 이 작업은 되돌릴 수 없습니다.
+            </p>
+            <div className="flex space-x-3">
+              <button
+                onClick={handleCancelDelete}
+                className="flex-1 px-4 py-2 text-gray-700 transition bg-gray-100 rounded-lg hover:bg-gray-200"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="flex-1 px-4 py-2 text-white transition bg-red-600 rounded-lg hover:bg-red-700"
+              >
+                삭제
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -368,7 +204,7 @@ export default function UserJobDetailPage() {
           </button>
 
           {/* 헤더 카드 */}
-          <div className="p-8 mb-6 bg-white shadow-2xl rounded-3xl">
+          <div className="p-8 mb-6 bg-white shadow-lg rounded-3xl">
             <div className="flex items-start justify-between mb-6">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-4">
@@ -400,16 +236,12 @@ export default function UserJobDetailPage() {
               </div>
               <div className="flex gap-3">
                 <button
-                  onClick={handleBookmarkToggle}
-                  className={`flex items-center gap-2 px-6 py-3 font-semibold transition rounded-xl shadow-lg ${
-                    isBookmarked
-                      ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700"
-                      : "bg-white text-orange-600 border-2 border-orange-500 hover:bg-orange-50"
-                  }`}
+                  onClick={handleEditClick}
+                  className="flex items-center gap-2 px-6 py-3 font-semibold text-white transition shadow-lg rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
                 >
                   <svg
                     className="w-5 h-5"
-                    fill={isBookmarked ? "currentColor" : "none"}
+                    fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
@@ -417,18 +249,18 @@ export default function UserJobDetailPage() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                     />
                   </svg>
-                  {isBookmarked ? "스크랩한 공고" : "스크랩"}
+                  수정
                 </button>
                 <button
-                  onClick={handleApplyClick}
-                  disabled={job.status !== "ACTIVE" || isApplied}
-                  className={`flex items-center gap-2 px-8 py-3 font-bold transition rounded-xl shadow-lg ${
-                    job.status !== "ACTIVE" || isApplied
+                  onClick={handleDeleteClick}
+                  disabled={job.status === "CLOSED" || job.status === "EXPIRED"}
+                  className={`flex items-center gap-2 px-6 py-3 font-semibold transition rounded-xl shadow-lg ${
+                    job.status === "CLOSED" || job.status === "EXPIRED"
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transform hover:scale-105"
+                      : "bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800"
                   }`}
                 >
                   <svg
@@ -441,10 +273,10 @@ export default function UserJobDetailPage() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                     />
                   </svg>
-                  {isApplied ? "지원완료" : "입사지원"}
+                  삭제
                 </button>
               </div>
             </div>
@@ -477,13 +309,16 @@ export default function UserJobDetailPage() {
                   </svg>
                 </div>
                 <div className="text-3xl font-bold text-blue-700">
-                  {job.viewCount.toLocaleString()}
+                  {job.viewCount}
                 </div>
               </div>
-              <div className="p-6 transition bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl hover:shadow-md">
+              <button
+                onClick={handleApplicantsClick}
+                className="p-6 text-left transition bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl hover:shadow-md hover:from-purple-100 hover:to-purple-150"
+              >
                 <div className="flex items-center justify-between mb-2">
                   <div className="text-sm font-medium text-purple-700">
-                    지원자
+                    지원자 클릭 시 목록보기
                   </div>
                   <svg
                     className="w-5 h-5 text-purple-500"
@@ -500,9 +335,9 @@ export default function UserJobDetailPage() {
                   </svg>
                 </div>
                 <div className="text-3xl font-bold text-purple-700">
-                  {job.applicantCount.toLocaleString()}
+                  {job.applicantCount}
                 </div>
-              </div>
+              </button>
               <div className="p-6 transition bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-xl hover:shadow-md">
                 <div className="flex items-center justify-between mb-2">
                   <div className="text-sm font-medium text-orange-700">
@@ -517,14 +352,14 @@ export default function UserJobDetailPage() {
                   </svg>
                 </div>
                 <div className="text-3xl font-bold text-orange-700">
-                  {job.bookmarkCount.toLocaleString()}
+                  {job.bookmarkCount}
                 </div>
               </div>
             </div>
           </div>
 
           {/* 공고 기본 정보 */}
-          <div className="p-8 mb-6 bg-white shadow-xl rounded-3xl">
+          <div className="p-8 mb-6 bg-white shadow-md rounded-3xl">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-3 bg-purple-100 rounded-xl">
                 <svg
@@ -695,9 +530,8 @@ export default function UserJobDetailPage() {
                   <div className="mb-1 text-sm font-medium text-gray-500">
                     등록일 / 마감일
                   </div>
-                  {/* ✅ [수정됨] 날짜 포맷팅 함수 적용 */}
                   <div className="text-lg font-semibold text-gray-900">
-                    {formatDate(job.createdAt)} ~ {job.deadline}
+                    {job.createdAt} ~ {job.deadline}
                   </div>
                 </div>
               </div>
@@ -706,7 +540,7 @@ export default function UserJobDetailPage() {
 
           {/* 공고 설명 */}
           {job.description && (
-            <div className="p-8 mb-6 bg-white shadow-xl rounded-3xl">
+            <div className="p-8 mb-6 bg-white shadow-md rounded-3xl">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-3 bg-blue-100 rounded-xl">
                   <svg
@@ -735,7 +569,7 @@ export default function UserJobDetailPage() {
 
           {/* 홍보 이미지 */}
           {job.detailImageUrl && (
-            <div className="p-8 mb-6 bg-white shadow-xl rounded-3xl">
+            <div className="p-8 mb-6 bg-white shadow-md rounded-3xl">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-3 bg-purple-100 rounded-xl">
                   <svg
@@ -772,7 +606,7 @@ export default function UserJobDetailPage() {
 
           {/* 필수 스킬 */}
           {job.requiredSkills && (
-            <div className="p-8 mb-6 bg-white shadow-xl rounded-3xl">
+            <div className="p-8 mb-6 bg-white shadow-md rounded-3xl">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-3 bg-red-100 rounded-xl">
                   <svg
@@ -804,7 +638,7 @@ export default function UserJobDetailPage() {
 
           {/* 우대 스킬 */}
           {job.preferredSkills && (
-            <div className="p-8 bg-white shadow-xl rounded-3xl">
+            <div className="p-8 bg-white shadow-md rounded-3xl">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-3 bg-green-100 rounded-xl">
                   <svg

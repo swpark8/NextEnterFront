@@ -90,12 +90,13 @@ export default function JobManagementPage() {
   const reloadParam = searchParams.get("reload");
 
   const [selectedStatus, setSelectedStatus] = useState("전체");
-  const [selectedRegion, setSelectedRegion] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
 
   const [jobs, setJobs] = useState<JobPostingListResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [hoveredId, setHoveredId] = useState<number | null>(null);
 
   // 목록 로드
   useEffect(() => {
@@ -126,7 +127,9 @@ export default function JobManagementPage() {
           response = await getJobPostings({ page: 0, size: 1000 });
         }
 
-        const all = Array.isArray(response) ? response : response.content ?? [];
+        const all = Array.isArray(response)
+          ? response
+          : (response.content ?? []);
         const myServerJobs = all.filter(
           (job: JobPostingListResponse) => job.companyId === companyId,
         );
@@ -204,7 +207,8 @@ export default function JobManagementPage() {
    * ✅ 삭제: state 제거 + 캐시 제거 + tombstone(삭제 목록) 저장
    * - 서버가 실제로 삭제가 아니라 CLOSED로 바꾸더라도, 프론트에서는 "완전 삭제처럼" 안 보이게 유지 가능
    */
-  const handleDelete = async (jobId: number) => {
+  const handleDelete = async (jobId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!user?.companyId) return;
     const companyId = user.companyId;
 
@@ -234,6 +238,57 @@ export default function JobManagementPage() {
     } catch (err: any) {
       console.error("공고 삭제 실패:", err);
       alert(err.response?.data?.message || "공고 삭제에 실패했습니다.");
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!user?.companyId || selectedIds.length === 0) return;
+    const companyId = user.companyId;
+
+    const ok = window.confirm(
+      `선택한 ${selectedIds.length}개의 공고를 삭제하시겠습니까?\n\n삭제 후 목록에서 완전히 사라집니다.`,
+    );
+    if (!ok) return;
+
+    try {
+      for (const jobId of selectedIds) {
+        await deleteJobPosting(jobId, companyId);
+      }
+
+      const prevDeleted = loadDeletedIds(companyId);
+      const nextDeleted = Array.from(new Set([...prevDeleted, ...selectedIds]));
+      saveDeletedIds(companyId, nextDeleted);
+
+      setJobs((prev) => {
+        const next = prev.filter((j) => !selectedIds.includes(j.jobId));
+        saveCachedJobs(companyId, next);
+        return next;
+      });
+
+      setSelectedIds([]);
+      alert("선택한 공고가 삭제되었습니다.");
+    } catch (err: any) {
+      console.error("공고 삭제 실패:", err);
+      alert(err.response?.data?.message || "공고 삭제에 실패했습니다.");
+    }
+  };
+
+  const toggleSelect = (jobId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedIds((prev) =>
+      prev.includes(jobId)
+        ? prev.filter((id) => id !== jobId)
+        : [...prev, jobId],
+    );
+  };
+
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      const currentIds = filteredJobs.map((j) => j.jobId);
+      setSelectedIds(Array.from(new Set([...selectedIds, ...currentIds])));
+    } else {
+      const currentIds = filteredJobs.map((j) => j.jobId);
+      setSelectedIds((prev) => prev.filter((id) => !currentIds.includes(id)));
     }
   };
 
@@ -284,18 +339,13 @@ export default function JobManagementPage() {
         (selectedStatus === "마감" && job.status === "CLOSED") ||
         (selectedStatus === "기간만료" && job.status === "EXPIRED");
 
-      const regionMatch =
-        selectedRegion === "전체" ||
-        (selectedRegion === "서울 전체" && job.location.startsWith("서울")) ||
-        job.location === selectedRegion;
-
       const searchMatch =
         searchQuery.trim() === "" ||
         job.title.toLowerCase().includes(searchQuery.toLowerCase());
 
-      return statusMatch && regionMatch && searchMatch;
+      return statusMatch && searchMatch;
     });
-  }, [jobs, selectedStatus, selectedRegion, searchQuery]);
+  }, [jobs, selectedStatus, searchQuery]);
 
   if (loading) {
     return (
@@ -306,7 +356,7 @@ export default function JobManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <div className="flex px-4 py-8 mx-auto max-w-7xl">
         <CompanyLeftSidebar
           activeMenu={activeMenu}
@@ -314,226 +364,260 @@ export default function JobManagementPage() {
         />
 
         <div className="flex-1 pl-6">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold">내 공고 관리</h1>
-            <button
-              onClick={handleNewJob}
-              className="px-6 py-2 text-white transition bg-purple-600 rounded-lg hover:bg-purple-700"
-            >
-              + 새 공고 등록
-            </button>
-          </div>
-
           {error && (
             <div className="p-4 mb-6 text-red-700 bg-red-100 rounded-lg">
               {error}
             </div>
           )}
 
-          <div className="grid grid-cols-3 gap-4 mb-8">
-            <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700">
-                상태
-              </label>
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
-              >
-                <option value="전체">전체</option>
-                <option value="진행중">진행중</option>
-                <option value="마감">마감</option>
-                <option value="기간만료">기간만료</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700">
-                지역
-              </label>
-              <select
-                value={selectedRegion}
-                onChange={(e) => setSelectedRegion(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
-              >
-                <option value="전체">전체</option>
-                <option value="서울 전체">서울 전체</option>
-                <option value="서울 강남구">서울 강남구</option>
-                <option value="서울 강동구">서울 강동구</option>
-                <option value="서울 강북구">서울 강북구</option>
-                <option value="서울 강서구">서울 강서구</option>
-                <option value="서울 관악구">서울 관악구</option>
-                <option value="서울 광진구">서울 광진구</option>
-                <option value="서울 구로구">서울 구로구</option>
-                <option value="서울 금천구">서울 금천구</option>
-                <option value="서울 노원구">서울 노원구</option>
-                <option value="서울 도봉구">서울 도봉구</option>
-                <option value="서울 동대문구">서울 동대문구</option>
-                <option value="서울 동작구">서울 동작구</option>
-                <option value="서울 마포구">서울 마포구</option>
-                <option value="서울 서대문구">서울 서대문구</option>
-                <option value="서울 서초구">서울 서초구</option>
-                <option value="서울 성동구">서울 성동구</option>
-                <option value="서울 성북구">서울 성북구</option>
-                <option value="서울 송파구">서울 송파구</option>
-                <option value="서울 양천구">서울 양천구</option>
-                <option value="서울 영등포구">서울 영등포구</option>
-                <option value="서울 용산구">서울 용산구</option>
-                <option value="서울 은평구">서울 은평구</option>
-                <option value="서울 종로구">서울 종로구</option>
-                <option value="서울 중구">서울 중구</option>
-                <option value="서울 중랑구">서울 중랑구</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700">
-                검색
-              </label>
-              <input
-                type="text"
-                placeholder="공고명으로 검색"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {filteredJobs.map((job) => {
-              const isInactive = job.status === "CLOSED" || job.status === "EXPIRED";
-
-              return (
-                <div
-                  key={job.jobId}
-                  onClick={() => handleJobClick(job.jobId)}
-                  className={[
-                    "p-5 transition border rounded-lg shadow-sm cursor-pointer",
-                    isInactive
-                      ? "bg-gray-100 border-gray-200 opacity-80 hover:shadow-md"
-                      : "bg-white border-gray-300 hover:shadow-lg hover:border-purple-400",
-                  ].join(" ")}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center flex-1 gap-6">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-bold text-gray-900 truncate">
-                            {job.title}
-                          </h3>
-                          <span
-                            className={`px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${getStatusColor(
-                              job.status,
-                            )}`}
-                          >
-                            {getStatusText(job.status)}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <span className="flex items-center gap-1">
-                            {job.location}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            {formatExperience(job.experienceMin, job.experienceMax)}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            {formatSalary(job.salaryMin, job.salaryMax)}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            {new Date(job.createdAt).toLocaleDateString("ko-KR")}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-6 px-6 py-3 border-l border-r border-gray-200">
-                        <button
-                          onClick={(e) => handleApplicantsClick(e, job)}
-                          className="text-center transition group hover:scale-105"
-                        >
-                          <div className="text-2xl font-bold text-purple-600 group-hover:text-purple-700">
-                            {job.applicantCount || 0}
-                          </div>
-                          <div className="text-xs text-gray-500 group-hover:text-purple-600">
-                            지원자 →
-                          </div>
-                        </button>
-
-                        <div className="text-center">
-                          <div className="text-xl font-bold text-gray-700">
-                            {job.viewCount || 0}
-                          </div>
-                          <div className="text-xs text-gray-500">조회수</div>
-                        </div>
-
-                        <div className="text-center">
-                          <div className="text-xl font-bold text-gray-700">
-                            {job.bookmarkCount || 0}
-                          </div>
-                          <div className="text-xs text-gray-500">북마크</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEdit(job.jobId);
-                        }}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 transition bg-gray-100 rounded-lg hover:bg-gray-200"
-                      >
-                        수정
-                      </button>
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleClose(job.jobId);
-                        }}
-                        disabled={isInactive}
-                        className={`px-4 py-2 text-sm font-medium text-white transition rounded-lg ${
-                          isInactive
-                            ? "bg-gray-300 cursor-not-allowed"
-                            : "bg-red-500 hover:bg-red-600"
-                        }`}
-                      >
-                        {isInactive ? "마감됨" : "마감"}
-                      </button>
-
-                      {/* ✅ 삭제 버튼 추가 */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(job.jobId);
-                        }}
-                        className="px-4 py-2 text-sm font-medium text-white transition bg-black rounded-lg hover:bg-gray-800"
-                      >
-                        삭제
-                      </button>
-                    </div>
-                  </div>
+          {/* 목록 컨테이너 */}
+          <section className="bg-white border border-gray-200 rounded-xl flex flex-col overflow-hidden min-h-[600px] shadow-sm">
+            {/* 상단 헤더 */}
+            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-4">
+                  <h3 className="text-lg font-bold text-purple-600">
+                    내 공고 관리{" "}
+                    <span className="ml-2 text-sm font-normal text-gray-500">
+                      총 {filteredJobs.length}건
+                    </span>
+                  </h3>
+                  {selectedIds.length > 0 && (
+                    <button
+                      onClick={handleBulkDelete}
+                      className="px-3 py-1 text-sm font-medium text-gray-600 transition-all bg-white border border-gray-300 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                    >
+                      선택 삭제 ({selectedIds.length})
+                    </button>
+                  )}
                 </div>
-              );
-            })}
-          </div>
 
-          {filteredJobs.length === 0 && !loading && (
-            <div className="py-20 text-center text-gray-500">
-              <div className="mb-4 text-4xl">📭</div>
-              <div className="text-lg font-medium">
-                {jobs.length === 0
-                  ? "등록된 공고가 없습니다"
-                  : "검색 결과가 없습니다"}
-              </div>
-              <div className="text-sm">
-                {jobs.length === 0
-                  ? "새 공고를 등록해주세요"
-                  : "다른 조건으로 검색해보세요"}
+                <div className="flex items-center gap-3">
+                  {filteredJobs.length > 0 && (
+                    <label className="flex items-center gap-1.5 cursor-pointer select-none mr-2">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 text-purple-600 border-gray-300 rounded cursor-pointer focus:ring-purple-500"
+                        checked={
+                          filteredJobs.length > 0 &&
+                          filteredJobs.every((j) =>
+                            selectedIds.includes(j.jobId),
+                          )
+                        }
+                        onChange={handleSelectAll}
+                      />
+                      <span className="text-sm font-medium text-gray-600 hover:text-gray-900">
+                        전체 선택
+                      </span>
+                    </label>
+                  )}
+                  <input
+                    type="text"
+                    placeholder="공고명 검색"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded hover:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 transition-colors w-40"
+                  />
+                  <select
+                    value={selectedStatus}
+                    onChange={(e) => setSelectedStatus(e.target.value)}
+                    className="px-2 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded hover:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 transition-colors"
+                  >
+                    <option value="전체">전체 상태</option>
+                    <option value="진행중">진행중</option>
+                    <option value="마감">마감</option>
+                    <option value="기간만료">기간만료</option>
+                  </select>
+
+                  {/* ✅ [추가됨] 새 공고 등록 버튼을 여기로 이동 */}
+                  <button
+                    onClick={handleNewJob}
+                    className="px-4 py-1.5 text-xs font-bold text-white transition bg-purple-600 rounded hover:bg-purple-700 shadow-sm whitespace-nowrap"
+                  >
+                    + 새 공고 등록
+                  </button>
+                </div>
               </div>
             </div>
-          )}
+
+            {/* 목록 */}
+            <div className="flex-1 divide-y divide-gray-100">
+              {filteredJobs.length === 0 ? (
+                <div className="py-24 text-center">
+                  <div className="mb-4 text-4xl">📭</div>
+                  <p className="text-lg font-medium text-gray-500">
+                    {jobs.length === 0
+                      ? "등록된 공고가 없습니다"
+                      : "검색 결과가 없습니다"}
+                  </p>
+                  <p className="text-sm text-gray-400">
+                    {jobs.length === 0
+                      ? "새 공고를 등록해주세요"
+                      : "다른 조건으로 검색해보세요"}
+                  </p>
+                </div>
+              ) : (
+                filteredJobs.map((job) => {
+                  const isInactive =
+                    job.status === "CLOSED" || job.status === "EXPIRED";
+
+                  return (
+                    <div
+                      key={job.jobId}
+                      onClick={() => handleJobClick(job.jobId)}
+                      onMouseEnter={() => setHoveredId(job.jobId)}
+                      onMouseLeave={() => setHoveredId(null)}
+                      className={`group flex items-center px-5 py-4 cursor-pointer transition-all duration-200 ${
+                        hoveredId === job.jobId
+                          ? "bg-purple-50/50"
+                          : "hover:bg-gray-50"
+                      }`}
+                    >
+                      {/* 체크박스 */}
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center pr-5"
+                      >
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 text-purple-600 border-gray-300 rounded cursor-pointer focus:ring-purple-500"
+                          checked={selectedIds.includes(job.jobId)}
+                          onChange={(e) => toggleSelect(job.jobId, e as any)}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between flex-1 min-w-0">
+                        <div className="flex items-center flex-1 min-w-0 gap-6">
+                          {/* 상태 배지 */}
+                          <div className="flex-shrink-0 w-20">
+                            <span
+                              className={`inline-flex items-center justify-center w-full px-2.5 py-1 text-xs font-medium rounded-md border whitespace-nowrap ${
+                                job.status === "ACTIVE"
+                                  ? "text-green-700 bg-green-50 border-green-200"
+                                  : job.status === "CLOSED"
+                                    ? "text-gray-700 bg-gray-100 border-gray-200"
+                                    : "text-red-700 bg-red-50 border-red-200"
+                              }`}
+                            >
+                              {getStatusText(job.status)}
+                            </span>
+                          </div>
+
+                          {/* 공고 정보 */}
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className="text-base font-bold text-gray-900 truncate transition-colors group-hover:text-purple-700">
+                                {job.title}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                              <span>{job.location}</span>
+                              <span className="w-0.5 h-0.5 bg-gray-400 rounded-full"></span>
+                              <span>
+                                {formatExperience(
+                                  job.experienceMin,
+                                  job.experienceMax,
+                                )}
+                              </span>
+                              <span className="w-0.5 h-0.5 bg-gray-400 rounded-full"></span>
+                              <span>
+                                {formatSalary(job.salaryMin, job.salaryMax)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 오른쪽: 통계 + 버튼 */}
+                        <div className="flex items-center gap-6 ml-4">
+                          {/* 통계 정보 */}
+                          <div className="flex items-center gap-4 text-sm">
+                            <button
+                              onClick={(e) => handleApplicantsClick(e, job)}
+                              className="text-center transition group/stat hover:scale-105"
+                            >
+                              <div className="font-bold text-purple-600 group-hover/stat:text-purple-700">
+                                {job.applicantCount || 0}
+                              </div>
+                              <div className="text-xs text-gray-500 group-hover/stat:text-purple-600">
+                                지원자 →
+                              </div>
+                            </button>
+
+                            <div className="text-center">
+                              <div className="font-bold text-gray-700">
+                                {job.viewCount || 0}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                조회수
+                              </div>
+                            </div>
+
+                            <div className="text-center">
+                              <div className="font-bold text-gray-700">
+                                {job.bookmarkCount || 0}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                북마크
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 액션 버튼 */}
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEdit(job.jobId);
+                              }}
+                              className="px-3 py-1.5 text-xs font-medium text-gray-700 transition bg-gray-100 rounded hover:bg-gray-200"
+                            >
+                              수정
+                            </button>
+
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleClose(job.jobId);
+                              }}
+                              disabled={isInactive}
+                              className={`px-3 py-1.5 text-xs font-medium text-white transition rounded ${
+                                isInactive
+                                  ? "bg-gray-300 cursor-not-allowed"
+                                  : "bg-red-500 hover:bg-red-600"
+                              }`}
+                            >
+                              마감
+                            </button>
+
+                            {/* 휴지통 아이콘 */}
+                            <button
+                              onClick={(e) => handleDelete(job.jobId, e)}
+                              className="p-2 text-gray-300 transition-all rounded-full hover:text-red-600 hover:bg-red-50"
+                              title="삭제"
+                            >
+                              <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={1.5}
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </section>
         </div>
       </div>
     </div>

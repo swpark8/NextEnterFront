@@ -227,7 +227,7 @@ export default function ApplicantManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <div className="flex gap-10 px-6 py-8 mx-auto max-w-screen-2xl">
         {/* 왼쪽 사이드바 */}
         <aside className="flex-shrink-0 hidden w-64 lg:block">

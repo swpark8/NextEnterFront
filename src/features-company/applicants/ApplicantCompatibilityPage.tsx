@@ -222,7 +222,7 @@ export default function ApplicantCompatibilityPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* ✅ 화면 폭 확장 및 레이아웃 수정 */}
       <div className="flex gap-10 px-6 py-8 mx-auto max-w-screen-2xl">
         {/* 왼쪽 사이드바 */}

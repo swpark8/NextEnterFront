@@ -20,7 +20,7 @@ export default function PaymentCompletePage() {
   const { creditBalance, setCreditBalance } = useApp();
   const { activeMenu, handleMenuClick } = usePageNavigation(
     "credit",
-    "credit-sub-1"
+    "credit-sub-1",
   );
 
   // ✅ location.state에서 결제 정보 가져오기
@@ -40,7 +40,10 @@ export default function PaymentCompletePage() {
         try {
           const balance = await getCreditBalance(user.userId);
           setCreditBalance(balance.balance);
-          localStorage.setItem('nextenter_credit_balance', balance.balance.toString());
+          localStorage.setItem(
+            "nextenter_credit_balance",
+            balance.balance.toString(),
+          );
           console.log("최신 크레딧 잔액:", balance.balance);
         } catch (error) {
           console.error("크레딧 잔액 조회 실패:", error);

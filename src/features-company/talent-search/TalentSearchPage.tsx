@@ -231,7 +231,7 @@ export default function TalentSearchPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <div className="flex gap-6 px-4 py-8 mx-auto max-w-7xl">
         <CompanyLeftSidebar
           activeMenu={activeMenu}

@@ -26,7 +26,7 @@ const transformedMenuItems: MenuItem[] = Object.values(navigationMenuData).map(
       id: sub.id,
       label: sub.label,
     })),
-  })
+  }),
 );
 
 export default function LeftSidebar({
@@ -41,7 +41,7 @@ export default function LeftSidebar({
     const parentMenu = menuItems.find(
       (item) =>
         item.id === activeMenu ||
-        item.submenu?.some((sub) => sub.id === activeMenu)
+        item.submenu?.some((sub) => sub.id === activeMenu),
     );
 
     if (parentMenu) {
@@ -56,7 +56,7 @@ export default function LeftSidebar({
     setExpandedMenuIds((prev) =>
       prev.includes(menuId)
         ? prev.filter((id) => id !== menuId)
-        : [...prev, menuId]
+        : [...prev, menuId],
     );
   };
 
@@ -65,7 +65,7 @@ export default function LeftSidebar({
     if (item.hasSubmenu) {
       // 하위 메뉴가 있으면 펼치기
       toggleMenu(item.id);
-      
+
       // 첫 번째 하위 메뉴로 이동
       if (item.submenu && item.submenu.length > 0) {
         onMenuClick(item.submenu[0].id);
@@ -77,7 +77,7 @@ export default function LeftSidebar({
   };
 
   return (
-    <aside className="w-64 min-h-screen p-4 space-y-2 bg-white border-r border-gray-200">
+    <aside className="sticky w-64 p-4 space-y-2 bg-white border-r border-gray-200 top-24 h-fit">
       {menuItems.map((item) => {
         const isExpanded = expandedMenuIds.includes(item.id);
 
