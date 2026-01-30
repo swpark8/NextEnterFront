@@ -298,6 +298,7 @@ export const updateResume = async (
 export const createResumeWithFiles = async (
   data: CreateResumeRequest,
   userId: number,
+  resumeFiles: File[],
   portfolioFiles: File[],
   coverLetterFiles: File[],
 ): Promise<ResumeResponse> => {
@@ -337,6 +338,11 @@ export const createResumeWithFiles = async (
 
   formData.append("request", jsonBlob);
 
+  // 이력서 파일 추가
+  resumeFiles.forEach((file) => {
+    formData.append("resumeFiles", file);
+  });
+
   // 포트폴리오 파일 추가
   portfolioFiles.forEach((file) => {
     formData.append("portfolioFiles", file);
@@ -349,6 +355,7 @@ export const createResumeWithFiles = async (
 
   console.log("🚀 [API] 파일 포함 이력서 생성 요청");
   console.log("📤 skills (변환됨):", skillsString);
+  console.log("📤 이력서 파일 개수:", resumeFiles.length);
   console.log("📤 포트폴리오 파일 개수:", portfolioFiles.length);
   console.log("📤 자기소개서 파일 개수:", coverLetterFiles.length);
 
@@ -372,6 +379,7 @@ export const updateResumeWithFiles = async (
   resumeId: number,
   data: CreateResumeRequest,
   userId: number,
+  resumeFiles: File[],
   portfolioFiles: File[],
   coverLetterFiles: File[],
 ): Promise<ResumeResponse> => {
@@ -411,6 +419,11 @@ export const updateResumeWithFiles = async (
 
   formData.append("request", jsonBlob);
 
+  // 이력서 파일 추가
+  resumeFiles.forEach((file) => {
+    formData.append("resumeFiles", file);
+  });
+
   // 포트폴리오 파일 추가
   portfolioFiles.forEach((file) => {
     formData.append("portfolioFiles", file);
@@ -423,6 +436,7 @@ export const updateResumeWithFiles = async (
 
   console.log("🔄 [API] 파일 포함 이력서 수정 요청 (ID:", resumeId, ")");
   console.log("📤 skills (변환됨):", skillsString);
+  console.log("📤 이력서 파일 개수:", resumeFiles.length);
   console.log("📤 포트폴리오 파일 개수:", portfolioFiles.length);
   console.log("📤 자기소개서 파일 개수:", coverLetterFiles.length);
 

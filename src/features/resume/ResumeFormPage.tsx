@@ -11,7 +11,6 @@ import {
   CreateResumeRequest,
   ResumeSections,
 } from "../../api/resume";
-import ResumeSidebar from "./components/ResumeSidebar";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 import SchoolSearchInput from "./components/SchoolSearchInput";
 import { useKakaoAddress } from "../../hooks/useKakaoAddress";
@@ -77,6 +76,8 @@ export default function ResumeFormPage({
   >([{ company: "", position: "", role: "", startDate: "", endDate: "" }]);
 
   // ✅ 파일 업로드(새로 선택한 파일들)
+  const [resumeFiles, setResumeFiles] = useState<File[]>([]);
+  const resumeFileInputRef = useRef<HTMLInputElement>(null);
   const [portfolioFiles, setPortfolioFiles] = useState<File[]>([]);
   const portfolioFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -103,6 +104,11 @@ export default function ResumeFormPage({
   const [visibility, setVisibility] = useState("PUBLIC");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // ✅ 드래그 상태 관리
+  const [isResumeDragging, setIsResumeDragging] = useState(false);
+  const [isPortfolioDragging, setIsPortfolioDragging] = useState(false);
+  const [isCoverLetterDragging, setIsCoverLetterDragging] = useState(false);
 
   // ✅ JSON 안전 파서
   // ✅ 수정: value를 필수 파라미터로 바꾸되, null/undefined를 허용하도록 타입 변경
@@ -466,45 +472,73 @@ export default function ResumeFormPage({
   const removeExperience = (index: number) =>
     setExperiences(experiences.filter((_, i) => i !== index));
 
+  const handleResumeFileUpload = () =>
+    resumeFileInputRef.current?.click();
+
+  const removeResumeFile = (index: number) =>
+    setResumeFiles(resumeFiles.filter((_, i) => i !== index));
+
   const handlePortfolioFileUpload = () =>
     portfolioFileInputRef.current?.click();
-  const handlePortfolioFileChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      const newFiles = Array.from(files);
-      const validFiles = newFiles.filter((file) => {
-        const ext = file.name.split(".").pop()?.toLowerCase();
-        return ["pdf", "doc", "docx"].includes(ext || "");
-      });
-      if (validFiles.length !== newFiles.length)
-        alert("PDF, Word 파일만 업로드 가능합니다.");
-      setPortfolioFiles([...portfolioFiles, ...validFiles]);
-    }
-  };
+
   const removePortfolioFile = (index: number) =>
     setPortfolioFiles(portfolioFiles.filter((_, i) => i !== index));
 
   const handleCoverLetterFileUpload = () =>
     coverLetterFileInputRef.current?.click();
-  const handleCoverLetterFileChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const files = e.target.files;
+
+  const removeCoverLetterFile = (index: number) =>
+    setCoverLetterFiles(coverLetterFiles.filter((_, i) => i !== index));
+
+  // ✅ 드래그 앤 드롭 핸들러
+  const processFiles = (files: FileList | null, type: "resume" | "portfolio" | "coverLetter") => {
     if (files && files.length > 0) {
       const newFiles = Array.from(files);
       const validFiles = newFiles.filter((file) => {
         const ext = file.name.split(".").pop()?.toLowerCase();
-        return ["pdf", "doc", "docx"].includes(ext || "");
+        return ["pdf", "docx"].includes(ext || "");
       });
-      if (validFiles.length !== newFiles.length)
-        alert("PDF, Word 파일만 업로드 가능합니다.");
-      setCoverLetterFiles([...coverLetterFiles, ...validFiles]);
+
+      if (validFiles.length !== newFiles.length) {
+        alert("PDF, DOCX 파일만 업로드 가능합니다.");
+      }
+
+      if (type === "resume") {
+        setResumeFiles((prev) => [...prev, ...validFiles]);
+      } else if (type === "portfolio") {
+        setPortfolioFiles((prev) => [...prev, ...validFiles]);
+      } else {
+        setCoverLetterFiles((prev) => [...prev, ...validFiles]);
+      }
     }
   };
-  const removeCoverLetterFile = (index: number) =>
-    setCoverLetterFiles(coverLetterFiles.filter((_, i) => i !== index));
+
+  const handleDragOver = (e: React.DragEvent, type: "resume" | "portfolio" | "coverLetter") => {
+    e.preventDefault();
+    if (type === "resume") setIsResumeDragging(true);
+    else if (type === "portfolio") setIsPortfolioDragging(true);
+    else setIsCoverLetterDragging(true);
+  };
+
+  const handleDragLeave = (type: "resume" | "portfolio" | "coverLetter") => {
+    if (type === "resume") setIsResumeDragging(false);
+    else if (type === "portfolio") setIsPortfolioDragging(false);
+    else setIsCoverLetterDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent, type: "resume" | "portfolio" | "coverLetter") => {
+    e.preventDefault();
+    if (type === "resume") {
+      setIsResumeDragging(false);
+      processFiles(e.dataTransfer.files, "resume");
+    } else if (type === "portfolio") {
+      setIsPortfolioDragging(false);
+      processFiles(e.dataTransfer.files, "portfolio");
+    } else {
+      setIsCoverLetterDragging(false);
+      processFiles(e.dataTransfer.files, "coverLetter");
+    }
+  };
 
   const toggleSkill = (skill: string) => {
     if (selectedSkills.includes(skill))
@@ -585,12 +619,17 @@ export default function ResumeFormPage({
 
       let response: any;
 
-      if (portfolioFiles.length > 0 || coverLetterFiles.length > 0) {
+      if (
+        resumeFiles.length > 0 ||
+        portfolioFiles.length > 0 ||
+        coverLetterFiles.length > 0
+      ) {
         if (resumeId) {
           response = await updateResumeWithFiles(
             resumeId,
             resumeData,
             user.userId,
+            resumeFiles,
             portfolioFiles,
             coverLetterFiles,
           );
@@ -598,6 +637,7 @@ export default function ResumeFormPage({
           response = await createResumeWithFiles(
             resumeData,
             user.userId,
+            resumeFiles,
             portfolioFiles,
             coverLetterFiles,
           );
@@ -1310,6 +1350,82 @@ export default function ResumeFormPage({
               </div>
             </div>
 
+            {/* 이력서 파일 */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold">이력서 파일</h3>
+                <button
+                  onClick={handleResumeFileUpload}
+                  className="font-semibold text-blue-600 hover:text-blue-700"
+                >
+                  + 파일 업로드
+                </button>
+              </div>
+
+              <input
+                type="file"
+                ref={resumeFileInputRef}
+                onChange={(e) => processFiles(e.target.files, "resume")}
+                accept=".pdf,.docx"
+                multiple
+                className="hidden"
+              />
+
+              <div
+                onDragOver={(e) => handleDragOver(e, "resume")}
+                onDragLeave={() => handleDragLeave("resume")}
+                onDrop={(e) => handleDrop(e, "resume")}
+                className={`transition-all duration-200 ${
+                  isResumeDragging ? "border-blue-500 bg-blue-50" : ""
+                }`}
+              >
+                {resumeFiles.length > 0 ? (
+                  <div className="space-y-3">
+                    {resumeFiles.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-4 bg-white border-2 border-gray-300 rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">
+                            {file.name.endsWith(".pdf") ? "📄" : "📃"}
+                          </span>
+                          <div>
+                            <p className="font-medium">{file.name}</p>
+                            <p className="text-sm text-gray-500">
+                              {(file.size / 1024).toFixed(2)} KB
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeResumeFile(index);
+                          }}
+                          className="px-4 py-2 text-sm font-medium text-red-600 transition border-2 border-red-300 rounded-lg hover:bg-red-50"
+                        >
+                          삭제
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    className={`p-8 text-center border-2 border-gray-300 border-dashed rounded-lg ${
+                      isResumeDragging ? "border-blue-500 bg-blue-50" : ""
+                    }`}
+                  >
+                    <p className="text-gray-500">
+                      이력서 파일을 업로드해주세요 (PDF, DOCX)
+                    </p>
+                    <p className="mt-1 text-xs text-blue-500">
+                      드래그 앤 드롭 가능
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* 포트폴리오 */}
             <div className="mb-8">
               <div className="flex items-center justify-between mb-4">
@@ -1325,46 +1441,59 @@ export default function ResumeFormPage({
               <input
                 type="file"
                 ref={portfolioFileInputRef}
-                onChange={handlePortfolioFileChange}
-                accept=".pdf,.doc,.docx"
+                onChange={(e) => processFiles(e.target.files, "portfolio")}
+                accept=".pdf,.docx"
                 multiple
                 className="hidden"
               />
 
-              {portfolioFiles.length > 0 ? (
-                <div className="space-y-3">
-                  {portfolioFiles.map((file, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-4 border-2 border-gray-300 rounded-lg"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">
-                          {file.name.endsWith(".pdf") ? "📄" : "📃"}
-                        </span>
-                        <div>
-                          <p className="font-medium">{file.name}</p>
-                          <p className="text-sm text-gray-500">
-                            {(file.size / 1024).toFixed(2)} KB
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => removePortfolioFile(index)}
-                        className="px-4 py-2 text-sm font-medium text-red-600 transition border-2 border-red-300 rounded-lg hover:bg-red-50"
+              <div
+                onDragOver={(e) => handleDragOver(e, "portfolio")}
+                onDragLeave={() => handleDragLeave("portfolio")}
+                onDrop={(e) => handleDrop(e, "portfolio")}
+                className={`transition-all duration-200 ${
+                  isPortfolioDragging ? "border-blue-500 bg-blue-50" : ""
+                }`}
+              >
+                {portfolioFiles.length > 0 ? (
+                  <div className="space-y-3">
+                    {portfolioFiles.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-4 bg-white border-2 border-gray-300 rounded-lg"
                       >
-                        삭제
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-8 text-center border-2 border-gray-300 border-dashed rounded-lg">
-                  <p className="text-gray-500">
-                    포트폴리오 파일을 업로드해주세요 (PDF, Word)
-                  </p>
-                </div>
-              )}
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">
+                            {file.name.endsWith(".pdf") ? "📄" : "📃"}
+                          </span>
+                          <div>
+                            <p className="font-medium">{file.name}</p>
+                            <p className="text-sm text-gray-500">
+                              {(file.size / 1024).toFixed(2)} KB
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removePortfolioFile(index);
+                          }}
+                          className="px-4 py-2 text-sm font-medium text-red-600 transition border-2 border-red-300 rounded-lg hover:bg-red-50"
+                        >
+                          삭제
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className={`p-8 text-center border-2 border-gray-300 border-dashed rounded-lg ${isPortfolioDragging ? 'border-blue-500 bg-blue-50' : ''}`}>
+                    <p className="text-gray-500">
+                      포트폴리오 파일을 업로드해주세요 (PDF, DOCX)
+                    </p>
+                    <p className="mt-1 text-xs text-blue-500">드래그 앤 드롭 가능</p>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* 자기소개서 */}
@@ -1382,40 +1511,59 @@ export default function ResumeFormPage({
               <input
                 type="file"
                 ref={coverLetterFileInputRef}
-                onChange={handleCoverLetterFileChange}
-                accept=".pdf,.doc,.docx"
+                onChange={(e) => processFiles(e.target.files, "coverLetter")}
+                accept=".pdf,.docx"
                 multiple
                 className="hidden"
               />
 
-              {coverLetterFiles.length > 0 && (
-                <div className="mb-4 space-y-3">
-                  {coverLetterFiles.map((file, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-4 border-2 border-gray-300 rounded-lg"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">
-                          {file.name.endsWith(".pdf") ? "📄" : "📃"}
-                        </span>
-                        <div>
-                          <p className="font-medium">{file.name}</p>
-                          <p className="text-sm text-gray-500">
-                            {(file.size / 1024).toFixed(2)} KB
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => removeCoverLetterFile(index)}
-                        className="px-4 py-2 text-sm font-medium text-red-600 transition border-2 border-red-300 rounded-lg hover:bg-red-50"
+              <div
+                onDragOver={(e) => handleDragOver(e, "coverLetter")}
+                onDragLeave={() => handleDragLeave("coverLetter")}
+                onDrop={(e) => handleDrop(e, "coverLetter")}
+                className={`transition-all duration-200 rounded-lg mb-4 ${
+                  isCoverLetterDragging ? "border-blue-500 bg-blue-50" : ""
+                }`}
+              >
+                {coverLetterFiles.length > 0 ? (
+                  <div className="space-y-3">
+                    {coverLetterFiles.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-4 bg-white border-2 border-gray-300 rounded-lg"
                       >
-                        삭제
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">
+                            {file.name.endsWith(".pdf") ? "📄" : "📃"}
+                          </span>
+                          <div>
+                            <p className="font-medium">{file.name}</p>
+                            <p className="text-sm text-gray-500">
+                              {(file.size / 1024).toFixed(2)} KB
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeCoverLetterFile(index);
+                          }}
+                          className="px-4 py-2 text-sm font-medium text-red-600 transition border-2 border-red-300 rounded-lg hover:bg-red-50"
+                        >
+                          삭제
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className={`p-8 text-center border-2 border-gray-300 border-dashed rounded-lg ${isCoverLetterDragging ? 'border-blue-500 bg-blue-50' : ''}`}>
+                    <p className="text-gray-500">
+                      자기소개서 파일을 업로드해주세요 (PDF, DOCX)
+                    </p>
+                    <p className="mt-1 text-xs text-blue-500">드래그 앤 드롭 가능</p>
+                  </div>
+                )}
+              </div>
 
               <div className="space-y-4">
                 <div className="p-4 border-2 border-gray-300 rounded-lg">
