@@ -49,11 +49,16 @@ export default function LoginPage({
     setIsLoading(true);
 
     try {
+      // 🔍 디버깅용 로그
+      console.log(`🚀 [로그인 시도] 타입: ${accountType}, 이메일: ${email}`);
+
       // 개인회원 로그인
       if (accountType === "personal") {
         const response = await loginApi({ email, password });
+        console.log("✅ [로그인 응답 데이터]:", response);
 
-        if (response.success && response.data) {
+        // data가 존재하면 success 필드가 없더라도 로그인 성공으로 간주 (임시 DB 대응)
+        if (response.data && (response.success || response.data.token)) {
           const { userId, token, email: userEmail, name } = response.data;
 
           authLogin(
@@ -61,8 +66,10 @@ export default function LoginPage({
             token
           );
 
+          console.log("🎉 [로그인 성공] 사용자 페이지로 이동");
           navigate("/user", { replace: true });
         } else {
+          console.warn("⚠️ [로그인 실패] 서버 메시지:", response.message);
           setError(response.message || "로그인에 실패했습니다.");
         }
       }
@@ -73,8 +80,13 @@ export default function LoginPage({
           password,
           businessNumber,
         });
+        console.log("✅ [기업 로그인 응답 데이터]:", response);
 
-        if (response.success && response.data) {
+        // data가 존재하면 success 필드가 없더라도 로그인 성공으로 간주
+        const actualData = response.data || response;
+        const isSuccess = response.success || actualData.token;
+
+        if (isSuccess && actualData) {
           const {
             companyId,
             token,
@@ -82,7 +94,7 @@ export default function LoginPage({
             name,
             companyName,
             businessNumber: bn,
-          } = response.data;
+          } = actualData;
 
           authLogin(
             {
@@ -90,21 +102,28 @@ export default function LoginPage({
               email: userEmail,
               name,
               userType: "company",
-              companyId, // ✅ companyId 추가
+              companyId,
               companyName,
               businessNumber: bn,
             },
             token
           );
 
+          console.log("🎉 [기업 로그인 성공] 기업 페이지로 이동");
           navigate("/company", { replace: true });
         } else {
+          console.warn("⚠️ [기업 로그인 실패] 서버 메시지:", response.message);
           setError(response.message || "로그인에 실패했습니다.");
         }
       }
     } catch (err: any) {
-      console.error("로그인 오류:", err);
-      setError(err.response?.data?.message || "로그인 중 오류가 발생했습니다.");
+      console.error("❌ [로그인 오류 상세]:", err);
+      
+      if (err.code === "ERR_NETWORK") {
+        setError("서버에 연결할 수 없습니다. (localhost:8080 서버가 켜져 있는지 확인해 주세요)");
+      } else {
+        setError(err.response?.data?.message || "로그인 중 오류가 발생했습니다.");
+      }
     } finally {
       setIsLoading(false);
     }

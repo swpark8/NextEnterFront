@@ -41,11 +41,29 @@ export interface ApiResponse<T> {
 export const login = async (
   loginData: LoginRequest
 ): Promise<ApiResponse<LoginResponse>> => {
-  const response = await api.post<ApiResponse<LoginResponse>>(
-    "/api/auth/login",
-    loginData
-  );
-  return response.data;
+  try {
+    const response = await api.post<any>(
+      "/api/auth/login",
+      loginData
+    );
+    
+    // 🔍 디버깅용 로그
+    console.log("📄 [API] 로그인 응답 원본:", response);
+
+    // ✅ 백엔드 응답이 ApiResponse { success, message, data } 형식이 아닌 경우 처리
+    if (response.data && response.data.userId && response.data.token) {
+      return {
+        success: true,
+        message: "로그인 성공",
+        data: response.data
+      };
+    }
+
+    return response.data;
+  } catch (error: any) {
+    console.error("❌ [API] 로그인 요청 실패:", error);
+    throw error;
+  }
 };
 
 // 로그아웃
@@ -58,9 +76,26 @@ export const logout = async (): Promise<ApiResponse<null>> => {
 export const signup = async (
   signupData: SignupRequest
 ): Promise<ApiResponse<SignupResponse>> => {
-  const response = await api.post<ApiResponse<SignupResponse>>(
-    "/api/auth/signup",
-    signupData
-  );
-  return response.data;
+  try {
+    const response = await api.post<any>(
+      "/api/auth/signup",
+      signupData
+    );
+
+    // 🔍 디버깅용 로그
+    console.log("📄 [API] 회원가입 응답 원본:", response);
+
+    if (response.data && response.data.userId) {
+      return {
+        success: true,
+        message: "회원가입 성공",
+        data: response.data
+      };
+    }
+
+    return response.data;
+  } catch (error: any) {
+    console.error("❌ [API] 회원가입 요청 실패:", error);
+    throw error;
+  }
 };

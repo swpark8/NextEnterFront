@@ -123,7 +123,7 @@ export default function NotificationPopup({
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            {notifications.length > 0 && (
+            {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllAsRead}
                 className="text-sm text-blue-600 hover:text-blue-800 font-medium"

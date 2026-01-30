@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { JOB_CATEGORIES } from "../../../constants/jobConstants";
 
 export interface SearchFilters {
   keyword: string;
@@ -398,14 +399,7 @@ export default function JobSearchFilter({
               </button>
             </div>
             <div className="flex flex-wrap justify-center gap-6 py-4">
-              {[
-                "프론트엔드 개발자",
-                "백엔드 개발자",
-                "풀스택 개발자",
-                "PM",
-                "데이터 분석가",
-                "디자이너",
-              ].map((category) => (
+              {JOB_CATEGORIES.map((category) => (
                 <button
                   key={category}
                   onClick={() => handleCategoryToggle(category)}

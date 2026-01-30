@@ -252,7 +252,7 @@ export default function UserNotificationsPage() {
                 개
               </p>
             </div>
-            {notifications.length > 0 && (
+            {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllAsRead}
                 className="px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition"

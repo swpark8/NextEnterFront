@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { getResumeList, getResumeDetail, ResumeSections } from "../../api/resume";
+import { getResumeList } from "../../api/resume";
 import { getJobPostings } from "../../api/job";
 import { getAiRecommendation, CompanyInfo, AiRecommendRequest } from "../../api/ai";
-import { generateResumeText } from "../../utils/resumeMapper";
 
 import MatchingSidebar from "./components/MatchingSidebar";
 import MatchingHistoryPage from "./components/MatchingHistoryPage";
@@ -21,21 +20,6 @@ import { CREDIT_COST } from "./data/sampleData";
 // 테스트 성공 후 나중에 이 값을 늘리시면 됩니다. (예: 30일 = 30 * 24 * 60 * 60 * 1000)
 const HISTORY_EXPIRATION_MS = 3 * 60 * 1000;
 
-/**
- * 한글 직무명을 영어로 변환 (AI 서버 및 백엔드 매칭용)
- */
-const convertKoreanRole = (role: string): string => {
-  const map: Record<string, string> = {
-    "백엔드 개발자": "Backend Developer",
-    "프론트엔드 개발자": "Frontend Developer",
-    "풀스택 개발자": "Fullstack Developer",
-    "UI/UX 디자이너": "UI/UX Designer",
-    "디자이너": "Designer",
-    "기획자": "Product Manager",
-    "PM": "Product Manager",
-  };
-  return map[role] || role;
-};
 
 interface MatchingPageProps {
   onEditResume?: () => void;
@@ -197,7 +181,6 @@ export default function MatchingPage({
     try {
       const resumeIdNum = parseInt(selectedResume);
 
-      // ✅ [수정] userId가 없는 경우 1로 고정하는 대신 에러 처리 (500 에러 방지)
       const userIdNum = user?.userId
         ? (typeof user.userId === 'string' ? parseInt(user.userId) : user.userId)
         : null;
@@ -208,143 +191,14 @@ export default function MatchingPage({
         return;
       }
 
-      const resumeDetail = await getResumeDetail(resumeIdNum, userIdNum);
-
-      console.log("🔍 [DEBUG] 백엔드 이력서 원본:", resumeDetail);
-
-      // structuredData 파싱하여 필요한 정보 추출
-      let skillsList: string[] = [];
-      let experienceYears = 0;
-      let educationList: any[] = []; // List<Map> structure
-      let careerList: any[] = [];    // List<Map> structure
-      let projectList: any[] = [];   // List<Map> structure
-      let preferredLocation = "Seoul";
-
-      // skills 파싱
-      if (resumeDetail.skills) {
-        try {
-          // 이미 JSON 배열이거나, 문자열이면 파싱
-          if (Array.isArray(resumeDetail.skills)) {
-            skillsList = resumeDetail.skills;
-          } else {
-            const parsed = JSON.parse(resumeDetail.skills);
-            skillsList = Array.isArray(parsed) ? parsed : [resumeDetail.skills];
-          }
-        } catch {
-          skillsList = typeof resumeDetail.skills === 'string'
-            ? resumeDetail.skills.split(',').map(s => s.trim())
-            : [];
-        }
-      }
-
-      // =================================================================================
-      // [데이터 파싱] educations, careers 등이 JSON String으로 올 수도 있고, structuredData에 있을 수도 있음
-      // =================================================================================
-
-      // 1. 학력 (educations)
-      if (resumeDetail.educations) {
-        try {
-          const parsed = JSON.parse(resumeDetail.educations);
-          if (Array.isArray(parsed)) educationList = parsed;
-        } catch (e) {
-          console.warn("educations 파싱 실패 (JSON 아님):", e);
-        }
-      }
-
-      // 2. 경력 (careers)
-      if (resumeDetail.careers) {
-        try {
-          const parsed = JSON.parse(resumeDetail.careers);
-          if (Array.isArray(parsed)) careerList = parsed;
-        } catch (e) {
-          console.warn("careers 파싱 실패 (JSON 아님):", e);
-        }
-      }
-
-      // 3. 프로젝트/경험 (experiences -> projects로 매핑)
-      if (resumeDetail.experiences) {
-        try {
-          const parsed = JSON.parse(resumeDetail.experiences);
-          if (Array.isArray(parsed)) projectList = parsed;
-        } catch (e) {
-          console.warn("experiences 파싱 실패:", e);
-        }
-      }
-
-      // 4. Legacy structuredData fallback (위에서 데이터가 없으면 여기서 추출)
-      if (resumeDetail.structuredData && (educationList.length === 0 || careerList.length === 0)) {
-        try {
-          const sections: ResumeSections = JSON.parse(resumeDetail.structuredData);
-
-          // 경력 계산 및 리스트 추출
-          if (sections.careers && sections.careers.length > 0) {
-            if (careerList.length === 0) careerList = sections.careers;
-
-            // 총 경력 연차 계산
-            let totalMonths = 0;
-            sections.careers.forEach(career => {
-              // ... (existing logic for calculation if needed, or just rely on backend to calc from list)
-              // For now, let's keep the existing logic to populate experienceYears if needed by UI, 
-              // but backend usually recalculates. We will send the list.
-              const period = career.period || "";
-              try {
-                // Clean up logic mostly for display or basic checking
-                if (period.includes("년") || period.includes("개월")) {
-                  const y = period.match(/(\d+)년/);
-                  const m = period.match(/(\d+)개월/);
-                  totalMonths += (y ? parseInt(y[1]) * 12 : 0) + (m ? parseInt(m[1]) : 0);
-                } else if (period.includes("-") || period.includes("~")) {
-                  // simple diff logic if needed, but risky. 
-                }
-              } catch (e) { }
-            });
-            // If totalMonths was updated, use it. Otherwise 0.
-            if (totalMonths > 0) experienceYears = Math.floor(totalMonths / 12);
-          }
-
-          if (sections.educations && sections.educations.length > 0 && educationList.length === 0) {
-            educationList = sections.educations;
-          }
-
-          if (sections.experiences && sections.experiences.length > 0 && projectList.length === 0) {
-            projectList = sections.experiences;
-          }
-
-          if (sections.personalInfo && sections.personalInfo.address) {
-            preferredLocation = sections.personalInfo.address;
-          }
-        } catch (e) {
-          console.warn("structuredData 파싱 실패:", e);
-        }
-      }
-
-      // 5. 요청 객체 생성
+      // 5. 요청 객체 생성 (Dumb Component: ID만 전송)
       const aiRequest: AiRecommendRequest = {
         resumeId: resumeIdNum,
         userId: userIdNum,
-        resumeText: generateResumeText(resumeDetail),
-        jobCategory: convertKoreanRole(resumeDetail.jobCategory || "Backend Developer"),
-        skills: skillsList,
-        experience: experienceYears,
-        experienceMonths: 0,
-        educations: educationList,
-        careers: careerList,
-        projects: projectList,
-        preferredLocation: preferredLocation,
-        filePath: resumeDetail.filePath // ✅ 파일 경로 전달 (상위 필드)
+        // jobCategory: ... (선택 사항)
       };
 
-      // 만약 상위에 없고 structuredData 내부에 있을 경우 (legacy) - 드문 케이스
-      if (!aiRequest.filePath && resumeDetail.structuredData) {
-        try {
-          // 필요하다면 여기서 structuredData 파싱해서 filePath 찾기 추가
-          // const sections = JSON.parse(resumeDetail.structuredData);
-          // if (sections.filePath) aiRequest.filePath = sections.filePath;
-        } catch (e) { }
-      }
-
-      // AI 서버가 빈 데이터를 허용하는지 확인 후, 필요시에만 추가 검증
-      console.log("🚀 [DEBUG] Final AI Request (sending to backend):", aiRequest);
+      console.log("🚀 [Front] Simple AI Matching Request:", aiRequest);
 
       const aiResult = await getAiRecommendation(aiRequest);
 
@@ -360,7 +214,7 @@ export default function MatchingPage({
       if (aiResult.companies.length > 0) {
         const topCompany = aiResult.companies[0];
         const newHistory = {
-          id: Date.now(), // 이 값이 timestamp로 사용됩니다.
+          id: Date.now(),
           date: new Date().toLocaleDateString(),
           time: new Date().toTimeString().slice(0, 5),
           resume: resumes.find(r => r.id.toString() === selectedResume)?.title || "이력서",
@@ -378,7 +232,6 @@ export default function MatchingPage({
         if (matchingHistory && setMatchingHistory) {
           const filteredHistory = matchingHistory.filter((h: any) => h.resumeId !== resumeIdNum);
           setMatchingHistory([...filteredHistory, newHistory]);
-          console.log("🔄 이전 히스토리 삭제 후 최신 기록으로 덮어썼습니다.");
         } else {
           addMatchingHistory(newHistory);
         }
@@ -386,7 +239,7 @@ export default function MatchingPage({
 
     } catch (error) {
       console.error("❌ AI 매칭 치명적 오류:", error);
-      alert("AI 서버 연결에 실패했습니다. 백엔드(8080)와 파이썬 엔진(8000)이 켜져 있는지 확인해주세요.");
+      alert("AI 매칭 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     } finally {
       setIsLoading(false);
     }

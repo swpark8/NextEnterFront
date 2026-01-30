@@ -5,20 +5,11 @@ import api from "./axios";
 // 1. 타입 정의 (Spring Boot의 DTO와 1:1 매칭)
 // ============================================================================
 
-// [요청] Spring의 AiRecommendRequest와 일치
+// [요청] 백엔드 V2.0: 이력서 ID만 보내면 백엔드가 DB에서 조회하여 AI 프롬프트 구성
 export interface AiRecommendRequest {
   resumeId: number;
   userId: number;
-  resumeText?: string;
-  jobCategory: string;
-  skills: string[];
-  experience: number;
-  experienceMonths?: number;
-  educations: any[];
-  careers: any[];
-  projects: any[];
-  preferredLocation: string;
-  filePath?: string;
+  jobCategory?: string; // (선택) 사용자가 직무를 강제 지정하고 싶을 때
 }
 
 // [응답] 화면(UI)에 보여줄 데이터 정의

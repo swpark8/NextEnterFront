@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { JOB_CATEGORIES, AVAILABLE_SKILLS } from "../../constants/jobConstants";
 import {
   createResume,
   updateResume,
@@ -632,44 +633,7 @@ export default function ResumeFormPage({
     }
   };
 
-  const availableSkills = [
-    "JAVA",
-    "Python",
-    "JavaScript",
-    "TypeScript",
-    "C++",
-    "C#",
-    "AWS",
-    "Azure",
-    "GCP",
-    "React",
-    "Vue",
-    "Angular",
-    "Next.js",
-    "Svelte",
-    "Node.js",
-    "Spring",
-    "Django",
-    "Flask",
-    "Express",
-    "MySQL",
-    "PostgreSQL",
-    "MongoDB",
-    "Redis",
-    "Docker",
-    "Kubernetes",
-    "Jenkins",
-    "GitHub Actions",
-    "HTML",
-    "CSS",
-    "SASS",
-    "Tailwind",
-    "Git",
-    "SVN",
-    "Figma",
-    "Sketch",
-    "Adobe XD",
-  ];
+  // availableSkills defined in constants
 
   return (
     <div className="px-4 py-8 mx-auto bg-white max-w-7xl">
@@ -849,14 +813,7 @@ export default function ResumeFormPage({
               </div>
 
               <div className="grid grid-cols-6 gap-4 mb-6">
-                {[
-                  "프론트엔드",
-                  "백엔드",
-                  "풀스택",
-                  "PM",
-                  "데이터 분석가",
-                  "디자이너",
-                ].map((job) => (
+                {JOB_CATEGORIES.map((job) => (
                   <button
                     key={job}
                     onClick={() => handleJobSelect(job)}
@@ -875,7 +832,7 @@ export default function ResumeFormPage({
                 <h4 className="mb-3 font-semibold">스킬 선택</h4>
                 <div className="p-4 overflow-y-auto border-2 border-gray-200 rounded-lg max-h-60">
                   <div className="flex flex-wrap gap-2">
-                    {availableSkills.map((skill) => (
+                    {AVAILABLE_SKILLS.map((skill) => (
                       <button
                         key={skill}
                         onClick={() => toggleSkill(skill)}

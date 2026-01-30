@@ -7,6 +7,7 @@ import {
   updateJobPosting,
   type JobPostingRequest,
 } from "../../api/job";
+import { JOB_CATEGORIES } from "../../constants/jobConstants";
 
 export default function JobPostingEditPage() {
   const navigate = useNavigate();
@@ -364,14 +365,7 @@ export default function JobPostingEditPage() {
                   
                   {/* 직무 버튼 그리드 */}
                   <div className="grid grid-cols-3 gap-3 mb-4">
-                    {[
-                      "프론트엔드 개발자",
-                      "백엔드 개발자",
-                      "풀스택 개발자",
-                      "PM",
-                      "데이터 분석가",
-                      "디자이너",
-                    ].map((category) => (
+                    {JOB_CATEGORIES.map((category) => (
                       <button
                         key={category}
                         type="button"

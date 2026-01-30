@@ -5,9 +5,8 @@ import { useApp } from "../../../context/AppContext";
 import { useAuth } from "../../../context/AuthContext";
 import {
   interviewService,
-  InterviewReport,
 } from "../../../api/interviewService";
-import { getResumeList, getResumeDetail } from "../../../api/resume";
+import { getResumeList } from "../../../api/resume";
 
 interface Message {
   id: number;
@@ -56,12 +55,6 @@ export default function InterviewChatPage({
 
   // 백엔드 인터뷰 ID
   const [realInterviewId, setRealInterviewId] = useState<number | null>(null);
-
-  // 세션 유지를 위한 컨텍스트 (답변 전송 시 재전송용)
-  const [sessionContext, setSessionContext] = useState<any>(null);
-
-  // 리포트 누적 (매 턴마다 AI가 분석한 결과)
-  const [reports, setReports] = useState<InterviewReport[]>([]);
 
   // 스크롤 관련
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -118,88 +111,22 @@ export default function InterviewChatPage({
     setLoading(true);
 
     try {
-      // (1) 이력서 상세 정보 가져오기 (Context Refresh)
       const userIdNum =
         typeof user.userId === "string" ? parseInt(user.userId) : user.userId;
-      const resumeDetail = await getResumeDetail(selectedResumeId, userIdNum);
 
-      // (2) Payload 구성
-      const skills = resumeDetail.skills
-        ? Array.isArray(resumeDetail.skills)
-          ? resumeDetail.skills
-          : String(resumeDetail.skills).split(",")
-        : [];
-
-      // 포트폴리오 메타데이터
-      // 기존 포트폴리오 파일 목록
-      const existingPortfolios =
-        resumeDetail.portfolios?.map((p: any) => p.filename) || [];
-
-      const portfolioData = {
-        projects:
-          resumeDetail.portfolios?.map((p: any) => ({
-            title: p.filename,
-            description: p.description,
-          })) || [],
-        userInputCombined: portfolioText,
-      };
-
-      // 이력서 섹션 파싱 (JSON String -> Object)
-      let careers = [];
-      let educations = [];
-      try {
-        if (resumeDetail.careers && typeof resumeDetail.careers === "string") {
-          careers = JSON.parse(resumeDetail.careers);
-        } else if (Array.isArray(resumeDetail.careers)) {
-          careers = resumeDetail.careers;
-        }
-        if (
-          resumeDetail.educations &&
-          typeof resumeDetail.educations === "string"
-        ) {
-          educations = JSON.parse(resumeDetail.educations);
-        } else if (Array.isArray(resumeDetail.educations)) {
-          educations = resumeDetail.educations;
-        }
-      } catch (e) {
-        console.error("JSON Parsing failed", e);
-      }
-
-      const payloadContext = {
-        resumeId: resumeDetail.resumeId,
-        jobCategory: resumeDetail.jobCategory || "backend",
-        difficulty: (level === "junior" ? "JUNIOR" : "SENIOR") as
-          | "JUNIOR"
-          | "SENIOR",
-        // 이력서 내용 구조화
-        resumeContent: {
-          skills: {
-            essential: skills,
-            additional: [],
-          },
-          professional_experience: careers.map((c: any) => ({
-            role: c.role || c.title || "Unknown",
-            period: c.period || "",
-            key_tasks: c.content ? [c.content] : [],
-          })),
-          education: educations.map((e: any) => ({
-            major: e.major || e.school || "Unknown",
-          })),
-          self_introduction: "", // Removed introduction access
-        },
-        portfolio: portfolioData,
-        portfolioFiles: existingPortfolios,
-      };
-
-      setSessionContext(payloadContext);
-
-      // (3) API 호출
-      const response = await interviewService.startInterview(userIdNum, {
-        ...payloadContext,
+      // (1) Payload 구성 - Minimal data for V2.0 Backend
+      const payload = {
+        resumeId: selectedResumeId,
+        jobCategory: resumes.find(r => r.id === selectedResumeId)?.industry || "backend",
+        difficulty: (level === "junior" ? "JUNIOR" : "SENIOR") as "JUNIOR" | "SENIOR",
+        portfolioText: portfolioText, // 사용자 입력 포트폴리오 텍스트만 전달
         totalTurns: totalQuestions,
-      });
+      };
 
-      // (4) 상태 업데이트 및 화면 전환
+      // (2) API 호출
+      const response = await interviewService.startInterview(userIdNum, payload);
+
+      // (3) 상태 업데이트 및 화면 전환
       setRealInterviewId(response.interviewId);
 
       const welcomeMessage: Message = {
@@ -245,43 +172,17 @@ export default function InterviewChatPage({
     }
   }, [messages, isUserScrolling]);
 
-  // 완료 처리
-  const handleCompleteInterview = () => {
+  const handleCompleteInterview = (backendResult?: any) => {
     const duration = Math.round((Date.now() - startTime) / 60000);
     const durationText = `${duration}분`;
 
-    let totalScore = 0;
-    let validReports = 0;
-    const competencySums: Record<string, number> = {};
-    const allStrengths = new Set<string>();
-    const allGaps = new Set<string>();
-
-    reports.forEach((report) => {
-      if (report.competency_scores) {
-        Object.entries(report.competency_scores).forEach(([key, val]) => {
-          competencySums[key] = (competencySums[key] || 0) + val;
-        });
-        validReports++;
-      }
-    });
-
-    const avgCompetencyScore =
-      validReports > 0
-        ? Object.values(competencySums).reduce((a, b) => a + b, 0) /
-          (Object.keys(competencySums).length * validReports)
-        : 3.5;
-
-    const finalScore = Math.min(100, Math.round(avgCompetencyScore * 20));
-    const resultStatus = finalScore >= 70 ? "합격" : "불합격";
-
-    const finalCompetencyScores: Record<string, number> = {};
-    Object.keys(competencySums).forEach((key) => {
-      finalCompetencyScores[key] = parseFloat(
-        (competencySums[key] / validReports).toFixed(1),
-      );
-    });
+    // 백엔드에서 받은 최종 결과 사용 (V2.0 철학)
+    const finalScore = backendResult?.finalScore ?? 0;
+    const resultStatus = backendResult?.result ?? (finalScore >= 70 ? "합격" : "불합격");
+    const finalFeedback = backendResult?.finalFeedback ?? (finalScore >= 70 ? "전반적으로 훌륭한 역량을 보여주셨습니다." : "일부 역량에서 보완이 필요합니다.");
 
     const now = new Date();
+    // ... (날짜 시간 처리 동일)
     const date = now
       .toLocaleDateString("ko-KR", {
         year: "numeric",
@@ -308,14 +209,11 @@ export default function InterviewChatPage({
       duration: durationText,
       result: resultStatus,
       detailedReport: {
-        competency_scores: finalCompetencyScores,
+        competency_scores: backendResult?.competencyScores ?? {},
         starr_coverage: {},
-        strengths: Array.from(allStrengths),
-        gaps: Array.from(allGaps),
-        feedback:
-          finalScore >= 70
-            ? "전반적으로 훌륭한 역량을 보여주셨습니다."
-            : "일부 역량에서 보완이 필요합니다.",
+        strengths: backendResult?.strengths ?? [],
+        gaps: backendResult?.gaps ?? [],
+        feedback: finalFeedback,
       },
     });
 
@@ -348,6 +246,11 @@ export default function InterviewChatPage({
       alert("면접 세션이 초기화되지 않았습니다.");
       return;
     }
+
+    const userIdNum =
+      typeof user?.userId === "string"
+        ? parseInt(user.userId)
+        : user?.userId || 0;
 
     const userText = inputText;
     setInputText("");
@@ -386,29 +289,9 @@ export default function InterviewChatPage({
     setLoading(true);
 
     try {
-      if (!sessionContext) {
-        console.warn("⚠️ [Frontend Warning] Session Context is missing!");
-        // Optional: Alert user or try to restore?
-        // For now, we proceed but log warning. The backend might handle it with default context.
-      }
-      const payloadContext = sessionContext;
-
-      console.log("🔍 [Frontend Debug] Payload Context:", payloadContext); // Debug log
-
-      const userIdNum =
-        typeof user?.userId === "string"
-          ? parseInt(user.userId)
-          : user?.userId || 0;
-
       const submitPayload = {
         interviewId: realInterviewId,
         answer: userText,
-        resumeId: payloadContext?.resumeId || 0,
-        jobCategory: payloadContext?.jobCategory || "",
-        difficulty: payloadContext?.difficulty || "JUNIOR",
-        resumeContent: payloadContext?.resumeContent,
-        portfolio: payloadContext?.portfolio,
-        portfolioFiles: payloadContext?.portfolioFiles,
       };
 
       console.log("🚀 [Frontend Debug] Sending Submit Payload:", submitPayload); // Debug log
@@ -418,8 +301,9 @@ export default function InterviewChatPage({
         submitPayload,
       );
 
-      if (response.realtime?.report) {
-        setReports((prev) => [...prev, response.realtime!.report!]);
+      if (response.isFinished) {
+        handleCompleteInterview(response.finalResult);
+        return;
       }
 
       if (response.realtime?.reaction && response.realtime.reaction.text) {

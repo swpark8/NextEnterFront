@@ -25,55 +25,46 @@ export interface InterviewResponse {
   interviewId: number;
   currentTurn: number;
   question: string;
-  isCompleted: boolean;
-  finalScore?: number;
-  finalFeedback?: string;
+  isFinished: boolean; // Renamed from isCompleted
+  finalResult?: {
+    finalScore: number;
+    result: string;
+    finalFeedback: string;
+    competencyScores: Record<string, number>;
+    strengths: string[];
+    gaps: string[];
+  };
 
-  // Rich AI Metadata (Mapped from Backend DTO)
+  // Rich AI Metadata
   reactionType?: string;
   reactionText?: string;
-  aiSystemReport?: any; // Map<String, Object>
-  aiEvaluation?: any;
-  requestedEvidence?: string[];
+  aiSystemReport?: any; 
   probeGoal?: string;
 
-  // Adapter helper (to keep UI compatible if needed, or we adapt UI)
   realtime?: InterviewRealtime;
 }
 
-export interface InterviewRequestPayload {
-  resumeId: number; // Changed to number
+export interface InterviewStartPayload {
+  resumeId: number;
   jobCategory: string;
   difficulty: "JUNIOR" | "SENIOR";
+  portfolioText?: string;
   totalTurns?: number;
+}
 
-  // Proxy Fields
-  resumeContent?: any;
-  portfolio?: any;
-  portfolioFiles?: string[];
-
-  // For Answer
-  interviewId?: number;
-  answer?: string;
+export interface InterviewAnswerPayload {
+  interviewId: number;
+  answer: string;
 }
 
 export const interviewService = {
   startInterview: async (
     userId: number,
-    payload: InterviewRequestPayload,
+    payload: InterviewStartPayload,
   ): Promise<InterviewResponse> => {
     const response = await api.post<InterviewResponse>(
       "/api/interview/start",
-      {
-        resumeId: payload.resumeId,
-        jobCategory: payload.jobCategory,
-        difficulty: payload.difficulty,
-        totalTurns: payload.totalTurns,
-        // Proxy
-        resumeContent: payload.resumeContent,
-        portfolio: payload.portfolio,
-        portfolioFiles: payload.portfolioFiles,
-      },
+      payload,
       {
         params: { userId },
       },
@@ -83,19 +74,11 @@ export const interviewService = {
 
   submitAnswer: async (
     userId: number,
-    payload: InterviewRequestPayload,
+    payload: InterviewAnswerPayload,
   ): Promise<InterviewResponse> => {
-    console.log("🚀 [Service Debug] Submitting Answer Payload:", payload);
     const response = await api.post<InterviewResponse>(
       "/api/interview/answer",
-      {
-        interviewId: payload.interviewId,
-        answer: payload.answer,
-        // Proxy - Send context again for persistence
-        resumeContent: payload.resumeContent,
-        portfolio: payload.portfolio,
-        portfolioFiles: payload.portfolioFiles,
-      },
+      payload,
       {
         params: { userId },
       },
@@ -114,7 +97,7 @@ function adaptResponse(serverData: InterviewResponse): InterviewResponse {
       text: serverData.reactionText || null,
     },
     probe_goal: serverData.probeGoal || "",
-    requested_evidence: serverData.requestedEvidence || [],
+    requested_evidence: [], // Removed in V2.0
     report: serverData.aiSystemReport as InterviewReport,
   };
   return serverData;

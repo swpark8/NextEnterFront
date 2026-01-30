@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { createJobPosting, type JobPostingRequest } from "../../api/job";
+import { JOB_CATEGORIES, AVAILABLE_SKILLS } from "../../constants/jobConstants";
 
 export default function JobPostingCreatePage() {
   const navigate = useNavigate();
@@ -53,45 +54,7 @@ export default function JobPostingCreatePage() {
     }
   };
 
-  // 사용 가능한 스킬 목록 (이력서 작성과 동일)
-  const availableSkills = [
-    "JAVA",
-    "Python",
-    "JavaScript",
-    "TypeScript",
-    "C++",
-    "C#",
-    "AWS",
-    "Azure",
-    "GCP",
-    "React",
-    "Vue",
-    "Angular",
-    "Next.js",
-    "Svelte",
-    "Node.js",
-    "Spring",
-    "Django",
-    "Flask",
-    "Express",
-    "MySQL",
-    "PostgreSQL",
-    "MongoDB",
-    "Redis",
-    "Docker",
-    "Kubernetes",
-    "Jenkins",
-    "GitHub Actions",
-    "HTML",
-    "CSS",
-    "SASS",
-    "Tailwind",
-    "Git",
-    "SVN",
-    "Figma",
-    "Sketch",
-    "Adobe XD",
-  ];
+  // availableSkills defined in constants
 
   // 필수 스킬 선택/해제
   const toggleRequiredSkill = (skill: string) => {
@@ -290,14 +253,7 @@ export default function JobPostingCreatePage() {
                   
                   {/* 직무 버튼 그리드 */}
                   <div className="grid grid-cols-3 gap-3 mb-4">
-                    {[
-                      "프론트엔드 개발자",
-                      "백엔드 개발자",
-                      "풀스택 개발자",
-                      "PM",
-                      "데이터 분석가",
-                      "디자이너",
-                    ].map((category) => (
+                    {JOB_CATEGORIES.map((category) => (
                       <button
                         key={category}
                         type="button"
@@ -474,7 +430,7 @@ export default function JobPostingCreatePage() {
                     <h4 className="mb-3 text-sm font-medium text-gray-600">스킬 선택</h4>
                     <div className="p-4 overflow-y-auto border-2 border-gray-200 rounded-lg max-h-60">
                       <div className="flex flex-wrap gap-2">
-                        {availableSkills.map((skill) => (
+                        {AVAILABLE_SKILLS.map((skill) => (
                           <button
                             key={skill}
                             type="button"
@@ -524,7 +480,7 @@ export default function JobPostingCreatePage() {
                     <h4 className="mb-3 text-sm font-medium text-gray-600">스킬 선택</h4>
                     <div className="p-4 overflow-y-auto border-2 border-gray-200 rounded-lg max-h-60">
                       <div className="flex flex-wrap gap-2">
-                        {availableSkills.map((skill) => (
+                        {AVAILABLE_SKILLS.map((skill) => (
                           <button
                             key={skill}
                             type="button"

@@ -14,6 +14,7 @@ import {
 import { getCompanyJobPostings, JobPostingListResponse } from "../../api/job";
 import JobSelectionModal from "./components/JobSelectionModal";
 import { useAuth } from "../../context/AuthContext";
+import { JOB_CATEGORIES } from "../../constants/jobConstants";
 
 export default function TalentSearchPage() {
   const { user } = useAuth();
@@ -259,12 +260,11 @@ export default function TalentSearchPage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
               >
                 <option value="전체">전체</option>
-                <option value="프론트엔드">프론트엔드</option>
-                <option value="백엔드">백엔드</option>
-                <option value="풀스택">풀스택</option>
-                <option value="PM">PM</option>
-                <option value="데이터 분석가">데이터 분석가</option>
-                <option value="디자이너">디자이너</option>
+                {JOB_CATEGORIES.map((job) => (
+                  <option key={job} value={job}>
+                    {job}
+                  </option>
+                ))}
               </select>
             </div>
 

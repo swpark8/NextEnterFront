@@ -182,11 +182,7 @@ export default function InterviewSetup({
 
         <button
           onClick={() => {
-            // 파일 이름을 텍스트에 포함시켜 전송 (임시)
-            const fileInfo = uploadedFiles
-              .map((f) => `[첨부파일: ${f.name}]`)
-              .join("\n");
-            onStart(portfolioText + (fileInfo ? "\n\n" + fileInfo : ""));
+            onStart(portfolioText);
           }}
           disabled={!selectedResumeId || isLoading}
           className={`w-full py-4 text-xl font-bold rounded-xl transition shadow-md ${

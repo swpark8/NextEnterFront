@@ -12,6 +12,7 @@ export interface Notification {
   relatedId: number | null;
   relatedType: string | null;
   createdAt: string;
+  link?: string;
 }
 
 export interface NotificationSettings {

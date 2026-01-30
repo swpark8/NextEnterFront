@@ -183,7 +183,7 @@ export default function CompanyNotificationsPage() {
                 </p>
               </div>
             </div>
-            {notifications.length > 0 && (
+            {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllAsRead}
                 className="px-4 py-2 text-sm font-medium text-purple-600 transition rounded-lg hover:bg-purple-50"
