@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useApp } from "../../context/AppContext";
 import { getResumeList, deleteResume } from "../../api/resume";
+import { JOB_CATEGORIES } from "../../constants/jobConstants";
 import ResumeSidebar from "./components/ResumeSidebar";
 import ResumeFormPage from "./ResumeFormPage";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
@@ -42,6 +43,8 @@ export default function ResumePage() {
   const [resumes, setResumes] = useState<ResumeListItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  /** 파일 업로드 시 선택한 직무 (기본: 백엔드) */
+  const [uploadJobCategory, setUploadJobCategory] = useState<string>(JOB_CATEGORIES[1]);
 
   const loadResumes = useCallback(async () => {
     if (!user?.userId) return;
@@ -195,7 +198,7 @@ export default function ResumePage() {
       
       const resumeData = {
         title: resumeTitle,
-        jobCategory: "backend", // 기본값
+        jobCategory: uploadJobCategory,
         status: "COMPLETED",
       };
 
@@ -271,6 +274,23 @@ export default function ResumePage() {
               <p className="mb-2 text-xs text-gray-600">
                 지원 형식: PDF, WORD, HWP, EXCEL (최대 10MB)
               </p>
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <label htmlFor="upload-job-category" className="text-sm font-medium text-gray-700">
+                  직무
+                </label>
+                <select
+                  id="upload-job-category"
+                  value={uploadJobCategory}
+                  onChange={(e) => setUploadJobCategory(e.target.value)}
+                  className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  {JOB_CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <input
                 type="file"
                 ref={fileInputRef}

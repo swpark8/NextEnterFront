@@ -14,12 +14,15 @@ export interface NotificationMessage {
   createdAt: string;
 }
 
+const WS_BASE_URL = 'http://localhost:5173/ws/notifications';
+
 class WebSocketService {
   private client: Client | null = null;
   private isConnected: boolean = false;
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 5;
   private reconnectDelay: number = 3000;
+  private closingIntentionally: boolean = false;
 
   /**
    * 웹소켓 연결
@@ -35,13 +38,14 @@ class WebSocketService {
       return;
     }
 
+    this.closingIntentionally = false;
     console.log(`🔌 웹소켓 연결 시도 중... userId: ${userId}, userType: ${userType}`);
-    console.log(`🌐 연결 URL: http://localhost:8080/ws/notifications`);
+    console.log(`🌐 연결 URL: ${WS_BASE_URL}`);
 
     this.client = new Client({
       webSocketFactory: () => {
         console.log('🔧 SockJS 인스턴스 생성 중...');
-        return new SockJS('http://localhost:8080/ws/notifications') as any;
+        return new SockJS(WS_BASE_URL) as any;
       },
       debug: (str) => {
         console.log('📝 STOMP Debug:', str);
@@ -76,11 +80,16 @@ class WebSocketService {
         }
       },
       onStompError: (frame) => {
+        if (this.closingIntentionally) return;
         console.error('❌ STOMP 오류 발생:', frame.headers, frame.body);
         this.isConnected = false;
         this.handleReconnect(userId, userType, onMessageReceived);
       },
       onWebSocketClose: () => {
+        if (this.closingIntentionally) {
+          this.closingIntentionally = false;
+          return;
+        }
         console.log('⚠️ 웹소켓 연결 종료');
         this.isConnected = false;
         this.handleReconnect(userId, userType, onMessageReceived);
@@ -96,25 +105,18 @@ class WebSocketService {
   }
 
   /**
-   * 재연결 처리
+   * 재연결 처리 (의도적 종료가 아닐 때만 호출됨)
    */
   private handleReconnect(userId: number, userType: 'individual' | 'company', onMessageReceived: (message: NotificationMessage) => void): void {
-    // ✅ 재연결 시도하지 않도록 임시로 막음 (백엔드 웹소켓 설정 문제 해결 전까지)
-    console.error('❌ 웹소켓 연결 실패 - 재연결 시도 안 함 (백엔드 설정 필요)');
-    return;
-    
-    /* 원래 재연결 로직 (나중에 백엔드 설정 완료 후 복구)
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       console.log(`🔄 재연결 시도 ${this.reconnectAttempts}/${this.maxReconnectAttempts}...`);
-      
       setTimeout(() => {
         this.connect(userId, userType, onMessageReceived);
       }, this.reconnectDelay);
     } else {
       console.error('❌ 최대 재연결 시도 횟수 초과');
     }
-    */
   }
 
   /**
@@ -122,6 +124,7 @@ class WebSocketService {
    */
   disconnect(): void {
     if (this.client && this.isConnected) {
+      this.closingIntentionally = true;
       console.log('🔌 웹소켓 연결 해제');
       this.client.deactivate();
       this.client = null;

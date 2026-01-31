@@ -160,10 +160,10 @@ export default function MatchingPage({
     loadJobsIfEmpty();
   }, [businessJobs.length, setBusinessJobs]);
 
-  const resumeOptions = resumes.map((resume) => ({
-    id: resume.id.toString(),
-    name: resume.title,
-  }));
+  const resumeOptions = (resumes ?? []).map((resume) => ({
+    id: String(resume.resumeId ?? resume.id ?? ""),
+    name: resume.title ?? "",
+  })).filter((opt) => opt.id);
 
   const handleAnalyze = () => {
     if (!selectedResume) {

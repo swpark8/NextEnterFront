@@ -147,10 +147,10 @@ export default function InterviewChatPage({
       const userIdNum =
         typeof user.userId === "string" ? parseInt(user.userId) : user.userId;
 
-      // (1) Payload 구성 - Minimal data for V2.0 Backend
+      // (1) Payload 구성 - 선택된 이력서의 직무(jobCategory) 사용, fallback "미지정"
       const payload = {
         resumeId: selectedResumeId,
-        jobCategory: resumes.find(r => r.id === selectedResumeId)?.industry || "backend",
+        jobCategory: selectedResume?.industry ?? "미지정",
         difficulty: (level === "junior" ? "JUNIOR" : "SENIOR") as "JUNIOR" | "SENIOR",
         portfolioText: portfolioText,
         totalTurns: totalQuestions,
