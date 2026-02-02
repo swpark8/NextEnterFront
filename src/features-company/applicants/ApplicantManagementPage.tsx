@@ -228,18 +228,14 @@ export default function ApplicantManagementPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="flex gap-10 px-6 py-8 mx-auto max-w-screen-2xl">
-        {/* 왼쪽 사이드바 */}
-        <aside className="flex-shrink-0 hidden w-64 lg:block">
-          <CompanyLeftSidebar
-            activeMenu={activeMenu}
-            onMenuClick={handleMenuClick}
-          />
-        </aside>
+      <div className="flex px-4 py-8 mx-auto max-w-7xl">
+        <CompanyLeftSidebar
+          activeMenu={activeMenu}
+          onMenuClick={handleMenuClick}
+        />
 
-        {/* 메인 컨텐츠 */}
-        <main className="flex-1 min-w-0">
-          <div className="p-8 bg-white shadow-lg rounded-2xl">
+        <div className="flex-1 pl-6">
+          <div className="p-8 bg-white shadow-lg rounded-2xl min-h-[800px]">
             <div className="flex items-center justify-between mb-8">
               <h1 className="text-2xl font-bold">지원자 관리</h1>
               {urlJobTitle && (
@@ -428,7 +424,7 @@ export default function ApplicantManagementPage() {
               </div>
             )}
           </div>
-        </main>
+        </div>
       </div>
     </div>
   );

@@ -232,13 +232,13 @@ export default function TalentSearchPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="flex gap-6 px-4 py-8 mx-auto max-w-7xl">
+      <div className="flex px-4 py-8 mx-auto max-w-7xl">
         <CompanyLeftSidebar
           activeMenu={activeMenu}
           onMenuClick={handleMenuClick}
         />
 
-        <div className="flex-1">
+        <div className="flex-1 pl-6 min-h-[800px]">
           <div className="mb-6">
             <h1 className="text-2xl font-bold">인재 검색</h1>
             <p className="mt-2 text-gray-600">최적의 인재를 찾아보세요</p>

@@ -56,8 +56,25 @@ export default function CompanyLeftSidebar({
     );
   };
 
+  // ✅ 상위 메뉴 클릭 핸들러 - 펼치기 + 첫 번째 하위 메뉴로 이동
+  const handleParentMenuClick = (item: MenuItem) => {
+    if (item.hasSubmenu) {
+      // 하위 메뉴가 있으면 펼치기
+      toggleMenu(item.id);
+
+      // 첫 번째 하위 메뉴로 이동
+      if (item.submenu && item.submenu.length > 0) {
+        onMenuClick(item.submenu[0].id);
+      }
+    } else {
+      // 하위 메뉴가 없으면 해당 메뉴로 이동
+      onMenuClick(item.id);
+    }
+  };
+
   return (
-    <aside className="w-64 min-h-screen p-4 space-y-2 bg-white border-r border-gray-200">
+    <div className="sticky top-[145px] w-64 h-fit shrink-0">
+      <aside className="p-4 space-y-2 bg-white border-r border-gray-200">
       {menuItems.map((item) => {
         const isExpanded = expandedMenuIds.includes(item.id);
 
@@ -68,10 +85,7 @@ export default function CompanyLeftSidebar({
         return (
           <div key={item.id}>
             <button
-              onClick={() => {
-                if (item.hasSubmenu) toggleMenu(item.id);
-                else onMenuClick(item.id);
-              }}
+              onClick={() => handleParentMenuClick(item)}
               className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-between group ${
                 isParentActive
                   ? "bg-purple-50 text-purple-700 font-bold"
@@ -126,6 +140,7 @@ export default function CompanyLeftSidebar({
           </div>
         );
       })}
-    </aside>
+      </aside>
+    </div>
   );
 }

@@ -13,10 +13,10 @@ const MENU_CLOSE_DELAY = 150;
 const LOGIN_REQUIRED_MENUS = ["jobs", "applicants", "talent", "ads", "credit"];
 
 export default function CompanyHeader() {
-  const { user, isAuthenticated, isLoading, logout } = useAuth(); // ✅ isLoading 추가
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams] = useSearchParams(); // ✅ URL 파라미터 가져오기
+  const [searchParams] = useSearchParams();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -28,7 +28,6 @@ export default function CompanyHeader() {
 
   // 알림 개수 가져오기 및 웹소켓 연결
   useEffect(() => {
-    // ✅ 인증 상태 로딩 중이면 대기
     if (isLoading) {
       console.log('⏳ AuthContext 로딩 중...');
       return;
@@ -54,17 +53,14 @@ export default function CompanyHeader() {
 
     fetchUnreadCount();
     
-    // 30초마다 알림 개수 업데이트 (백업용)
     const interval = setInterval(fetchUnreadCount, 30000);
     
-    // ✅ 알림 읽음 이벤트 리스너 추가
     const handleNotificationRead = () => {
       console.log('🔔 기업 알림 읽음 이벤트 감지 - 알림 개수 다시 로드');
       fetchUnreadCount();
     };
     window.addEventListener('notification-read', handleNotificationRead);
     
-    // 웹소켓 연결
     if (isAuthenticated && user?.userId) {
       console.log('✅ 기업 웹소켓 연결 조건 충족 - userId:', user.userId);
       websocketService.connect(user.userId, 'company', handleNewNotification);
@@ -75,19 +71,16 @@ export default function CompanyHeader() {
     return () => {
       clearInterval(interval);
       window.removeEventListener('notification-read', handleNotificationRead);
-      // 컴포넌트 언마운트 시 웹소켓 연결 해제
       console.log('CompanyHeader 언마운트 - 웹소켓 연결 해제');
       websocketService.disconnect();
     };
-  }, [isAuthenticated, user, isLoading]); // ✅ isLoading 의존성 추가
+  }, [isAuthenticated, user, isLoading]);
 
   // 새 알림 수신 시 처리
   const handleNewNotification = (notification: NotificationMessage) => {
     console.log('기업 새 알림 도착!', notification);
-    // 알림 개수 증가
     setUnreadCount(prev => prev + 1);
     
-    // 브라우저 알림 표시 (권한이 있는 경우)
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification(notification.title, {
         body: notification.content,
@@ -175,16 +168,14 @@ export default function CompanyHeader() {
       "jobs-sub-2": "/company/jobs",
       "credit-sub-2": "/company/credit/charge",
       "applicants-sub-2": "/company/applicants/1/compatibility",
-      "talent-sub-2": "/company/scrap-talent", // ✅ 스크랩 인재 라우트 추가
+      "talent-sub-2": "/company/scrap-talent",
     };
   
     const targetMenuId = menuId || defaultSubMenus[tabId];
     const targetPath = separateRoutes[targetMenuId] || baseRoutes[tabId];
   
-    // 같은 메뉴 클릭 감지
     const currentMenu = searchParams.get("menu");
     if (currentMenu === targetMenuId) {
-      // 같은 메뉴 클릭 시 reload 파라미터 추가
       const timestamp = Date.now();
       navigate(`${targetPath}?menu=${targetMenuId}&reload=${timestamp}`);
       return;
@@ -210,254 +201,259 @@ export default function CompanyHeader() {
 
   return (
     <>
-      {/* Top Header (Logo Area) */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="px-4 py-4 mx-auto max-w-7xl">
-          <div className="flex items-center justify-between">
-            {/* Logo */}
-            <div className="flex items-center space-x-4">
-              <button className="lg:hidden">
+      {/* Fixed Header Container */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-white">
+        {/* Top Header (Logo Area) */}
+        <header className="bg-white border-b border-gray-200">
+          <div className="px-4 py-4 mx-auto max-w-7xl">
+            <div className="flex items-center justify-between">
+              {/* Logo */}
+              <div className="flex items-center space-x-4">
+                <button className="lg:hidden">
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  </svg>
+                </button>
+                <div
+                  onClick={handleLogoClick}
+                  className="flex items-center transition cursor-pointer hover:opacity-80"
+                >
+                  <span className="text-2xl font-bold text-purple-600">
+                    NextEnter
+                  </span>
+                  <span className="ml-2 text-sm font-medium text-purple-400">
+                    기업
+                  </span>
+                </div>
+              </div>
+
+              {/* Search Bar */}
+              <form
+                onSubmit={handleSearch}
+                className="flex-1 max-w-md mx-auto transform -translate-x-[17.5px]"
+              >
+                <div className="relative">
+                  <svg
+                    className="absolute w-5 h-5 text-gray-400 transform -translate-y-1/2 left-3 top-1/2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder="인재를 검색하세요"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full py-2 pl-10 pr-4 border border-gray-300 rounded-full focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+              </form>
+
+              {/* Right Buttons */}
+              <div className="flex items-center space-x-4">
+                {/* 알림 아이콘 */}
+                {isAuthenticated && (
+                  <button
+                    onClick={() => navigate("/company/notifications")}
+                    className="relative p-2 text-gray-700 transition hover:text-purple-600 hover:bg-gray-100 rounded-full"
+                  >
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                        />
+                      </svg>
+                      {unreadCount > 0 && (
+                        <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border-2 border-white"></span>
+                      )}
+                    </button>
+                )}
+                {isAuthenticated ? (
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                      className="flex items-center px-4 py-2 space-x-2 text-gray-700 transition hover:text-purple-600"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                        />
+                      </svg>
+                      <span className="font-medium">
+                        {user?.name || "기업"}님
+                      </span>
+                      <svg
+                        className={`w-4 h-4 transition-transform ${
+                          isUserMenuOpen ? "rotate-180" : ""
+                        }`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </button>
+
+                    {isUserMenuOpen && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[9999]">
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            if (!checkNavigationBlocked())
+                              navigate("/company/credit");
+                          }}
+                          className="w-full px-4 py-2 text-left text-gray-700 transition hover:bg-gray-50"
+                        >
+                          크레딧 관리
+                        </button>
+                        <button
+                          onClick={handleLogout}
+                          className="w-full px-4 py-2 text-left text-red-600 transition hover:bg-gray-50"
+                        >
+                          로그아웃
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => navigate("/company/login")}
+                      className="px-4 py-2 text-gray-700 transition hover:text-purple-600"
+                    >
+                      로그인
+                    </button>
+                    <button
+                      onClick={() => navigate("/company/signup")}
+                      className="px-4 py-2 text-gray-700 transition hover:text-purple-600"
+                    >
+                      회원가입
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Navigation Bar (Category) */}
+        <nav className="relative bg-white border-b border-purple-600 shadow-sm">
+          <div className="px-4 mx-auto max-w-7xl">
+            <div className="flex items-center space-x-8">
+              <button
+                onClick={toggleDropdown}
+                className="p-4 transition hover:bg-gray-50"
+              >
                 <svg
                   className="w-6 h-6"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
+                  {isDropdownOpen ? (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  ) : (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  )}
                 </svg>
               </button>
-              <div
-                onClick={handleLogoClick}
-                className="flex items-center transition cursor-pointer hover:opacity-80"
-              >
-                <span className="text-2xl font-bold text-purple-600">
-                  NextEnter
-                </span>
-                <span className="ml-2 text-sm font-medium text-purple-400">
-                  기업
-                </span>
-              </div>
-            </div>
 
-            {/* Search Bar */}
-            <form
-              onSubmit={handleSearch}
-              className="flex-1 max-w-md mx-auto transform -translate-x-[17.5px]"
-            >
-              <div className="relative">
-                <svg
-                  className="absolute w-5 h-5 text-gray-400 transform -translate-y-1/2 left-3 top-1/2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              {navItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="relative"
+                  onMouseEnter={() => handleMouseEnter(item.id)}
+                  onMouseLeave={handleMouseLeave}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-                <input
-                  type="text"
-                  placeholder="인재를 검색하세요"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full py-2 pl-10 pr-4 border border-gray-300 rounded-full focus:outline-none focus:border-purple-500"
-                />
-              </div>
-            </form>
-
-            {/* Right Buttons */}
-            <div className="flex items-center space-x-4">
-              {/* 알림 아이콘 */}
-              {isAuthenticated && (
-                <button
-                  onClick={() => navigate("/company/notifications")}
-                  className="relative p-2 text-gray-700 transition hover:text-purple-600 hover:bg-gray-100 rounded-full"
-                >
-                    <svg
-                      className="w-6 h-6"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                      />
-                    </svg>
-                    {/* 파란색 점 배지 - 읽지 않은 알림이 있을 때만 표시 */}
-                    {unreadCount > 0 && (
-                      <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border-2 border-white"></span>
+                  <button
+                    onClick={() => handleMenuClick(item.id)}
+                    className={`relative py-4 px-2 font-medium transition whitespace-nowrap ${
+                      activeTab === item.id
+                        ? "text-purple-600"
+                        : "text-gray-700 hover:text-purple-600"
+                    }`}
+                  >
+                    {item.label}
+                    {activeTab === item.id && (
+                      <span className="absolute -bottom-[1px] left-0 w-full h-0.5 bg-purple-600" />
                     )}
                   </button>
-              )}
-              {isAuthenticated ? (
-                <div className="relative">
-                  <button
-                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center px-4 py-2 space-x-2 text-gray-700 transition hover:text-purple-600"
-                  >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                      />
-                    </svg>
-                    <span className="font-medium">
-                      {user?.name || "기업"}님
-                    </span>
-                    <svg
-                      className={`w-4 h-4 transition-transform ${
-                        isUserMenuOpen ? "rotate-180" : ""
-                      }`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </button>
-
-                  {isUserMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[9999]">
-                      <button
-                        onClick={() => {
-                          setIsUserMenuOpen(false);
-                          if (!checkNavigationBlocked())
-                            navigate("/company/credit");
-                        }}
-                        className="w-full px-4 py-2 text-left text-gray-700 transition hover:bg-gray-50"
-                      >
-                        크레딧 관리
-                      </button>
-                      <button
-                        onClick={handleLogout}
-                        className="w-full px-4 py-2 text-left text-red-600 transition hover:bg-gray-50"
-                      >
-                        로그아웃
-                      </button>
-                    </div>
+                  {hoveredTab === item.id && (
+                    <CompanyHoverMenu
+                      tabId={item.id}
+                      onSubMenuClick={(tabId, subId) =>
+                        handleMenuClick(tabId, subId)
+                      }
+                      onClose={() => setHoveredTab(null)}
+                    />
                   )}
                 </div>
-              ) : (
-                <>
-                  <button
-                    onClick={() => navigate("/company/login")}
-                    className="px-4 py-2 text-gray-700 transition hover:text-purple-600"
-                  >
-                    로그인
-                  </button>
-                  <button
-                    onClick={() => navigate("/company/signup")}
-                    className="px-4 py-2 text-gray-700 transition hover:text-purple-600"
-                  >
-                    회원가입
-                  </button>
-                </>
-              )}
+              ))}
             </div>
           </div>
+        </nav>
+
+        <div className="relative z-[45]">
+          <CompanyDropdownMenu
+            isOpen={isDropdownOpen}
+            onMenuClick={(menuId) => {
+              setIsDropdownOpen(false);
+              const tabId = menuId.split("-sub-")[0];
+              handleMenuClick(tabId, menuId);
+            }}
+          />
         </div>
-      </header>
-
-      {/* Navigation Bar (Category) */}
-      <nav className="relative z-50 bg-white border-b border-purple-600">
-        <div className="px-4 mx-auto max-w-7xl">
-          <div className="flex items-center space-x-8">
-            <button
-              onClick={toggleDropdown}
-              className="p-4 transition hover:bg-gray-50"
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                {isDropdownOpen ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                )}
-              </svg>
-            </button>
-
-            {navItems.map((item) => (
-              <div
-                key={item.id}
-                className="relative"
-                onMouseEnter={() => handleMouseEnter(item.id)}
-                onMouseLeave={handleMouseLeave}
-              >
-                <button
-                  onClick={() => handleMenuClick(item.id)}
-                  className={`relative py-4 px-2 font-medium transition whitespace-nowrap ${
-                    activeTab === item.id
-                      ? "text-purple-600"
-                      : "text-gray-700 hover:text-purple-600"
-                  }`}
-                >
-                  {item.label}
-                  {activeTab === item.id && (
-                    <span className="absolute -bottom-[1px] left-0 w-full h-0.5 bg-purple-600" />
-                  )}
-                </button>
-                {hoveredTab === item.id && (
-                  <CompanyHoverMenu
-                    tabId={item.id}
-                    onSubMenuClick={(tabId, subId) =>
-                      handleMenuClick(tabId, subId)
-                    }
-                    onClose={() => setHoveredTab(null)} // ✅ 호버 닫기
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </nav>
-
-      <div className="relative z-[45]">
-        <CompanyDropdownMenu
-          isOpen={isDropdownOpen}
-          onMenuClick={(menuId) => {
-            setIsDropdownOpen(false);
-            const tabId = menuId.split("-sub-")[0];
-            handleMenuClick(tabId, menuId);
-          }}
-        />
       </div>
+
+      {/* Spacer to prevent content from going under fixed header */}
+      <div className="h-[137px]"></div>
     </>
   );
 }

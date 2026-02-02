@@ -8,6 +8,34 @@ interface LoginPageProps {
   initialAccountType?: "personal" | "business";
 }
 
+// 임시 채용공고 데이터
+const sampleJobs = [
+  {
+    id: 1,
+    title: "프론트엔드 개발자 채용",
+    company: "테크 스타트업",
+    location: "서울 강남구",
+    salary: "연봉 4,000~6,000만원",
+    tags: ["React", "TypeScript", "Vue.js"],
+  },
+  {
+    id: 2,
+    title: "백엔드 개발자 모집",
+    company: "IT 솔루션",
+    location: "서울 판교",
+    salary: "연봉 5,000~7,000만원",
+    tags: ["Spring Boot", "Java", "MySQL"],
+  },
+  {
+    id: 3,
+    title: "풀스택 개발자 채용",
+    company: "스타트업 회사",
+    location: "서울 종로구",
+    salary: "연봉 4,500~6,500만원",
+    tags: ["React", "Node.js", "MongoDB"],
+  },
+];
+
 export default function LoginPage({
   initialAccountType = "personal",
 }: LoginPageProps) {
@@ -28,6 +56,18 @@ export default function LoginPage({
   const [businessNumber, setBusinessNumber] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // 슬라이드 상태
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // 자동 슬라이드
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % sampleJobs.length);
+    }, 3000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   // 로그인 처리
   const handleLogin = async (e: React.FormEvent) => {
@@ -90,7 +130,7 @@ export default function LoginPage({
               email: userEmail,
               name,
               userType: "company",
-              companyId, // ✅ companyId 추가
+              companyId,
               companyName,
               businessNumber: bn,
             },
@@ -123,22 +163,102 @@ export default function LoginPage({
         className="flex flex-col items-center flex-1 gap-6 px-4 pb-4 pt-18"
         style={{ paddingTop: "4.5rem" }}
       >
-        {/* 로고가 들어갈 이미지 위치 */}
-        <div className="flex items-center justify-center w-full h-48 max-w-lg bg-white border-2 border-gray-300 rounded-lg">
-          <p className="text-lg text-gray-500">로고가 들어갈 이미지 위치</p>
+        {/* 로고 텍스트 */}
+        <div className="flex items-center justify-center w-full max-w-lg py-8">
+          <h1 className="text-5xl font-bold text-blue-600">NextEnter</h1>
         </div>
 
         {/* 가로 배치: 이미지 슬라이드 배너 + 로그인 폼 */}
         <div className="flex items-center justify-center w-full max-w-6xl gap-12">
-          {/* 왼쪽: 이미지 슬라이드 배너 생성 위치 */}
-          <div className="flex flex-col items-center justify-center flex-1 max-w-lg p-6 bg-white border-2 border-gray-300 rounded-lg h-96">
-            <p className="mb-2 text-base font-medium text-gray-700">
-              이미지 슬라이드 배너
-            </p>
-            <p className="text-sm text-gray-500">생성 위치</p>
-            <p className="mt-2 text-xs text-gray-400">
-              (회색 박스로 공간 표시만 할 것)
-            </p>
+          {/* 왼쪽: 채용공고 슬라이드 배너 */}
+          <div className="relative flex flex-col flex-1 max-w-lg overflow-hidden bg-white border-2 border-gray-300 rounded-lg h-96">
+            {/* 슬라이드 컨테이너 */}
+            <div
+              className="flex h-full transition-transform duration-500 ease-in-out"
+              style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+            >
+              {sampleJobs.map((job) => (
+                <div
+                  key={job.id}
+                  className="flex flex-col justify-center flex-shrink-0 w-full h-full p-8"
+                >
+                  <div className="space-y-4">
+                    <div className="inline-block px-3 py-1 text-xs font-medium text-blue-600 bg-blue-100 rounded-full">
+                      채용중
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900">
+                      {job.title}
+                    </h3>
+                    <p className="text-lg text-gray-700">{job.company}</p>
+                    <div className="space-y-2 text-sm text-gray-600">
+                      <p className="flex items-center gap-2">
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                        </svg>
+                        {job.location}
+                      </p>
+                      <p className="flex items-center gap-2">
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        {job.salary}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {job.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-3 py-1 text-sm text-gray-700 bg-gray-100 rounded-full"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* 슬라이드 인디케이터 */}
+            <div className="absolute flex gap-2 transform -translate-x-1/2 bottom-4 left-1/2">
+              {sampleJobs.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentSlide(index)}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    currentSlide === index
+                      ? "bg-blue-600 w-6"
+                      : "bg-gray-300 hover:bg-gray-400"
+                  }`}
+                />
+              ))}
+            </div>
           </div>
 
           {/* 오른쪽: 로그인 폼 */}
@@ -304,7 +424,7 @@ export default function LoginPage({
               </button>
             </div>
 
-            {/* ✅ 소셜 로그인 섹션 - 개인회원일 때만 표시 */}
+            {/* 소셜 로그인 섹션 - 개인회원일 때만 표시 */}
             {accountType === "personal" && (
               <div className="mt-6">
                 <div className="relative">
@@ -312,7 +432,7 @@ export default function LoginPage({
                     <div className="w-full border-t border-gray-300"></div>
                   </div>
                   <div className="relative flex justify-center text-sm">
-                    <span className="px-2 text-gray-500 bg-gray-50">
+                    <span className="px-2 text-gray-500 bg-white">
                       간편로그인
                     </span>
                   </div>
