@@ -23,8 +23,19 @@ export default function CompanyHeader() {
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 스크롤 감지
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // 알림 개수 가져오기 및 웹소켓 연결
   useEffect(() => {
@@ -204,7 +215,9 @@ export default function CompanyHeader() {
       {/* Fixed Header Container */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-white">
         {/* Top Header (Logo Area) */}
-        <header className="bg-white border-b border-gray-200">
+        <header className={`bg-white border-b border-gray-200 transition-all duration-300 overflow-hidden ${
+          isScrolled ? 'max-h-0 opacity-0' : 'max-h-24 opacity-100'
+        }`}>
           <div className="px-4 py-4 mx-auto max-w-7xl">
             <div className="flex items-center justify-between">
               {/* Logo */}
@@ -266,6 +279,79 @@ export default function CompanyHeader() {
                 </div>
               </form>
 
+
+            </div>
+          </div>
+        </header>
+
+        {/* Navigation Bar (Category) */}
+        <nav className={`relative bg-white border-b border-purple-600 shadow-sm transition-all duration-300 ${
+          isScrolled ? 'shadow-md' : ''
+        }`}>
+          <div className="px-4 mx-auto max-w-7xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-8">
+              <button
+                onClick={toggleDropdown}
+                className="p-4 transition hover:bg-gray-50"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  {isDropdownOpen ? (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  ) : (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  )}
+                </svg>
+              </button>
+
+              {navItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="relative"
+                  onMouseEnter={() => handleMouseEnter(item.id)}
+                  onMouseLeave={handleMouseLeave}
+                >
+                  <button
+                    onClick={() => handleMenuClick(item.id)}
+                    className={`relative py-4 px-2 font-medium transition whitespace-nowrap ${
+                      activeTab === item.id
+                        ? "text-purple-600"
+                        : "text-gray-700 hover:text-purple-600"
+                    }`}
+                  >
+                    {item.label}
+                    {activeTab === item.id && (
+                      <span className="absolute -bottom-[1px] left-0 w-full h-0.5 bg-purple-600" />
+                    )}
+                  </button>
+                  {hoveredTab === item.id && (
+                    <CompanyHoverMenu
+                      tabId={item.id}
+                      onSubMenuClick={(tabId, subId) =>
+                        handleMenuClick(tabId, subId)
+                      }
+                      onClose={() => setHoveredTab(null)}
+                    />
+                  )}
+                </div>
+              ))}
+              </div>
+              
               {/* Right Buttons */}
               <div className="flex items-center space-x-4">
                 {/* 알림 아이콘 */}
@@ -371,73 +457,6 @@ export default function CompanyHeader() {
               </div>
             </div>
           </div>
-        </header>
-
-        {/* Navigation Bar (Category) */}
-        <nav className="relative bg-white border-b border-purple-600 shadow-sm">
-          <div className="px-4 mx-auto max-w-7xl">
-            <div className="flex items-center space-x-8">
-              <button
-                onClick={toggleDropdown}
-                className="p-4 transition hover:bg-gray-50"
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  {isDropdownOpen ? (
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  ) : (
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 6h16M4 12h16M4 18h16"
-                    />
-                  )}
-                </svg>
-              </button>
-
-              {navItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="relative"
-                  onMouseEnter={() => handleMouseEnter(item.id)}
-                  onMouseLeave={handleMouseLeave}
-                >
-                  <button
-                    onClick={() => handleMenuClick(item.id)}
-                    className={`relative py-4 px-2 font-medium transition whitespace-nowrap ${
-                      activeTab === item.id
-                        ? "text-purple-600"
-                        : "text-gray-700 hover:text-purple-600"
-                    }`}
-                  >
-                    {item.label}
-                    {activeTab === item.id && (
-                      <span className="absolute -bottom-[1px] left-0 w-full h-0.5 bg-purple-600" />
-                    )}
-                  </button>
-                  {hoveredTab === item.id && (
-                    <CompanyHoverMenu
-                      tabId={item.id}
-                      onSubMenuClick={(tabId, subId) =>
-                        handleMenuClick(tabId, subId)
-                      }
-                      onClose={() => setHoveredTab(null)}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
         </nav>
 
         <div className="relative z-[45]">
@@ -453,7 +472,9 @@ export default function CompanyHeader() {
       </div>
 
       {/* Spacer to prevent content from going under fixed header */}
-      <div className="h-[137px]"></div>
+      <div className={`transition-all duration-300 ${
+        isScrolled ? 'h-[57px]' : 'h-[137px]'
+      }`}></div>
     </>
   );
 }

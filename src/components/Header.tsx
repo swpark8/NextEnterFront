@@ -29,8 +29,19 @@ export default function Header() {
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 스크롤 감지
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // 알림 개수 가져오기 및 웹소켓 연결
   useEffect(() => {
@@ -252,7 +263,12 @@ export default function Header() {
 
   return (
     <>
-      <header className="bg-white border-b border-gray-200">
+      {/* Fixed Header Container */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-white">
+        {/* Top Header (Logo Area) */}
+        <header className={`bg-white border-b border-gray-200 transition-all duration-300 overflow-hidden ${
+          isScrolled ? 'max-h-0 opacity-0' : 'max-h-24 opacity-100'
+        }`}>
         <div className="px-4 py-4 mx-auto max-w-7xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -306,6 +322,80 @@ export default function Header() {
               </div>
             </form>
 
+
+          </div>
+        </div>
+        </header>
+
+        {/* Navigation Bar */}
+        <nav className={`relative bg-white border-b border-blue-600 shadow-sm transition-all duration-300 ${
+          isScrolled ? 'shadow-md' : ''
+        }`}>
+        <div className="px-4 mx-auto max-w-7xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-8">
+            <button
+              onClick={toggleDropdown}
+              className="p-4 transition hover:bg-gray-50"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                {isDropdownOpen ? (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                ) : (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                )}
+              </svg>
+            </button>
+
+            {navItems.map((item) => (
+              <div
+                key={item.id}
+                className="relative"
+                onMouseEnter={() => handleMouseEnter(item.id)}
+                onMouseLeave={handleMouseLeave}
+              >
+                <button
+                  onClick={() => handleMenuClick(item.id)}
+                  className={`relative py-4 px-2 font-medium transition whitespace-nowrap ${
+                    activeTab === item.id
+                      ? "text-blue-600"
+                      : "text-gray-700 hover:text-blue-600"
+                  }`}
+                >
+                  {item.label}
+                  {activeTab === item.id && (
+                    <span className="absolute -bottom-[1px] left-0 w-full h-0.5 bg-blue-600" />
+                  )}
+                </button>
+                {hoveredTab === item.id && (
+                  <HoverMenu
+                    tabId={item.id}
+                    onSubMenuClick={(tabId, subId) =>
+                      handleMenuClick(tabId, subId)
+                    }
+                    onClose={() => setHoveredTab(null)} // ✅ 호버 닫기
+                  />
+                )}
+              </div>
+            ))}
+            </div>
+
+            {/* Right Buttons */}
             <div className="flex items-center space-x-4">
               {isAuthenticated ? (
                 <>
@@ -330,7 +420,6 @@ export default function Header() {
                         d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                       />
                     </svg>
-                    {/* 빨간 점 배지 - 읽지 않은 알림이 있을 때만 표시 */}
                     {unreadCount > 0 && (
                       <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border-2 border-white"></span>
                     )}
@@ -422,75 +511,9 @@ export default function Header() {
             </div>
           </div>
         </div>
-      </header>
+        </nav>
 
-      <nav className="relative z-50 bg-white border-b border-blue-600">
-        <div className="px-4 mx-auto max-w-7xl">
-          <div className="flex items-center space-x-8">
-            <button
-              onClick={toggleDropdown}
-              className="p-4 transition hover:bg-gray-50"
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                {isDropdownOpen ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                )}
-              </svg>
-            </button>
-
-            {navItems.map((item) => (
-              <div
-                key={item.id}
-                className="relative"
-                onMouseEnter={() => handleMouseEnter(item.id)}
-                onMouseLeave={handleMouseLeave}
-              >
-                <button
-                  onClick={() => handleMenuClick(item.id)}
-                  className={`relative py-4 px-2 font-medium transition whitespace-nowrap ${
-                    activeTab === item.id
-                      ? "text-blue-600"
-                      : "text-gray-700 hover:text-blue-600"
-                  }`}
-                >
-                  {item.label}
-                  {activeTab === item.id && (
-                    <span className="absolute -bottom-[1px] left-0 w-full h-0.5 bg-blue-600" />
-                  )}
-                </button>
-                {hoveredTab === item.id && (
-                  <HoverMenu
-                    tabId={item.id}
-                    onSubMenuClick={(tabId, subId) =>
-                      handleMenuClick(tabId, subId)
-                    }
-                    onClose={() => setHoveredTab(null)} // ✅ 호버 닫기
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </nav>
-
-      <div className="relative z-[45]">
+        <div className="relative z-[45]">
         <DropdownMenu
           isOpen={isDropdownOpen}
           onMenuClick={(menuId) => {
@@ -499,7 +522,13 @@ export default function Header() {
             handleMenuClick(tabId, menuId);
           }}
         />
+        </div>
       </div>
+
+      {/* Spacer to prevent content from going under fixed header */}
+      <div className={`transition-all duration-300 ${
+        isScrolled ? 'h-[57px]' : 'h-[137px]'
+      }`}></div>
     </>
   );
 }

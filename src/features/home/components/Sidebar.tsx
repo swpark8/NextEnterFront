@@ -1,6 +1,6 @@
 export default function Sidebar() {
   return (
-    <aside className="w-80 space-y-6">
+    <aside className="sticky top-24 w-80 space-y-6 h-fit">
       {/* 오늘의 한줄 꿀팁 */}
       <div className="bg-white border-2 border-blue-500 rounded-2xl p-8 shadow-lg">
         <h3 className="font-bold text-2xl mb-4 text-blue-600">
