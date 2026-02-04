@@ -314,8 +314,13 @@ export default function InterviewChatPage({
         })),
     });
 
-    alert(`면접이 완료되었습니다! 점수: ${finalScore}점 (${resultStatus})`);
-    onBack();
+    // [New] Auto-redirect to Interview History instead of alert
+    console.log("✅ 면접 완료 - 히스토리 페이지로 자동 이동");
+    if (onMenuClick) {
+      onMenuClick("interview-sub-4"); // '면접 히스토리' 메뉴 ID
+    } else {
+      onBack(); // Fallback
+    }
   };
 
   const handleSend = async () => {
@@ -363,7 +368,25 @@ export default function InterviewChatPage({
       if (response.isFinished) {
         // 면접 완료: 백엔드에서 받은 최종 결과로 완료 처리
         setStep("setup"); // 경고 방지용 상태 변경
-        handleCompleteInterview(response.finalResult);
+
+        // Show the final goodbye message briefly before redirecting (optional but good UX)
+        if (response.realtime?.next_question) {
+          const goodbyeMsg: Message = {
+            id: messages.length + 2,
+            sender: "ai",
+            text: response.realtime.next_question,
+            timestamp: new Date().toLocaleTimeString("ko-KR", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          };
+          setMessages((prev) => [...prev, goodbyeMsg]);
+        }
+
+        // Wait a moment for the user to read the message, then finish
+        setTimeout(() => {
+          handleCompleteInterview(response.finalResult);
+        }, 2000);
         return;
       }
 

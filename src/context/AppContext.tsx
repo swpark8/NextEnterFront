@@ -1,5 +1,11 @@
-import { createContext, useContext, useState, ReactNode, useCallback } from "react";
-import { ResumeResponse, ResumeSections, PortfolioInfo } from "../api/resume";
+import {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useCallback,
+} from "react";
+import { ResumeSections, PortfolioInfo } from "../api/resume";
 
 // 이력서 타입 (기존 간단한 타입)
 export interface Resume {
