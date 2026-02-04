@@ -272,23 +272,7 @@ export default function ResumePage() {
               <p className="mb-2 text-xs text-gray-600">
                 지원 형식: PDF, WORD, HWP, EXCEL (최대 10MB)
               </p>
-              <div className="flex items-center justify-center gap-2 mb-3">
-                <label htmlFor="upload-job-category" className="text-sm font-medium text-gray-700">
-                  직무
-                </label>
-                <select
-                  id="upload-job-category"
-                  value={uploadJobCategory}
-                  onChange={(e) => setUploadJobCategory(e.target.value)}
-                  className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  {JOB_CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              
               <input
                 type="file"
                 ref={fileInputRef}
@@ -541,9 +525,10 @@ export default function ResumePage() {
 
                         <button
                           onClick={(e) => handleDeleteClick(resume.resumeId, e)}
-                          className="p-2 text-gray-300 transition-all rounded-full hover:text-red-600 hover:bg-red-50"
+                          className="p-2 text-red-600 transition-all rounded-full hover:bg-red-50 hover:text-red-700"
                           title="삭제"
                         >
+
                           <svg
                             className="w-5 h-5"
                             fill="none"

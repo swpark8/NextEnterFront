@@ -230,6 +230,13 @@ export default function SignupPage({
 
       <div className="flex flex-col items-center flex-1 px-4 py-8">
         <div className="w-full max-w-md">
+          {/* 로고 */}
+          <div
+            className="mb-8 text-center cursor-pointer"
+            onClick={() => navigate("/")}
+          >
+            <h1 className="text-4xl font-bold text-blue-600">NextEnter</h1>
+          </div>
           <div className="flex mb-6">
             <button
               onClick={() => {
