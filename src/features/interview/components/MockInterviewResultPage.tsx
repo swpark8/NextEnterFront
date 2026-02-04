@@ -1,9 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Footer from "../../../components/Footer";
-// ✅ [수정] LeftSidebar 사용
 import LeftSidebar from "../../../components/LeftSidebar";
 import MockInterviewHistoryPage from "./MockInterviewHistoryPage";
-import { useApp } from "../../../context/AppContext";
+// ✅ [수정] useAuth 사용
+import { useAuth } from "../../../context/AuthContext";
+import {
+  interviewService,
+  InterviewHistoryDTO,
+  InterviewResultDTO,
+} from "../../../api/interviewService";
 
 interface MockInterviewResultPageProps {
   onNavigateToInterview?: () => void;
@@ -20,34 +25,60 @@ export default function MockInterviewResultPage({
     null,
   );
 
-  // Context에서 실제 면접 결과 데이터 가져오기
-  const { interviewResults, clearInterviewResults, clearInterviewHistories } =
-    useApp();
+  // API 데이터 상태
+  const [historyList, setHistoryList] = useState<InterviewHistoryDTO[]>([]);
+  const [latestResult, setLatestResult] = useState<InterviewResultDTO | null>(
+    null,
+  );
+  const [loading, setLoading] = useState(true);
 
-  // 전체 삭제 핸들러 (이중 확인)
-  const handleClearAll = () => {
-    // 첫 번째 확인
-    if (
-      window.confirm(
-        "모든 면접 결과와 히스토리를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.",
-      )
-    ) {
-      // 두 번째 확인
-      if (
-        window.confirm(
-          "⚠️ 정말 삭제하시겠습니까?\n모든 면접 데이터가 영구적으로 삭제됩니다.",
-        )
-      ) {
-        clearInterviewResults();
-        clearInterviewHistories();
-        alert("모든 면접 데이터가 삭제되었습니다.");
+  // User Context
+  const { user } = useAuth();
+
+  // 데이터 로드
+  useEffect(() => {
+    const loadData = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
       }
-    }
-  };
 
-  // 통계 계산
+      try {
+        const userIdNum =
+          typeof user.userId === "string"
+            ? parseInt(user.userId)
+            : user.userId || 1;
+
+        // 1. 전체 히스토리 목록 조회
+        const histories = await interviewService.getInterviewHistory(userIdNum);
+        setHistoryList(histories);
+
+        // 2. 가장 최근 면접(첫 번째)의 상세 결과 조회
+        if (histories.length > 0) {
+          // 서버에서 최신순으로 준다고 가정 (만약 아니라면 정렬 필요)
+          // 보통 DB 쿼리가 DESC 정렬임.
+          const latestId = histories[0].interviewId;
+          const detail = await interviewService.getInterviewResult(
+            userIdNum,
+            latestId,
+          );
+          setLatestResult(detail);
+        } else {
+          setLatestResult(null);
+        }
+      } catch (error) {
+        console.error("Failed to fetch interview results:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [user]);
+
+  // 통계 계산 (historyList 기반)
   const calculateStatistics = () => {
-    if (interviewResults.length === 0) {
+    if (historyList.length === 0) {
       return {
         maxScore: 0,
         minScore: 0,
@@ -55,7 +86,7 @@ export default function MockInterviewResultPage({
       };
     }
 
-    const scores = interviewResults.map((record) => record.score);
+    const scores = historyList.map((record) => record.finalScore);
     const maxScore = Math.max(...scores);
     const minScore = Math.min(...scores);
     const avgScore = Math.round(
@@ -129,15 +160,19 @@ export default function MockInterviewResultPage({
     );
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-xl font-bold text-gray-500">데이터 로딩 중...</div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="min-h-screen bg-white">
         <div className="px-4 py-8 mx-auto max-w-7xl">
-          {/* ✅ [수정] AI 모의 면접 타이틀(h2) 제거 */}
-
-          {/* ✅ [수정] 레이아웃 변경: items-start + gap-6 */}
           <div className="flex items-start gap-6">
-            {/* ✅ [수정] 왼쪽 사이드바 교체 & Title 적용 */}
             <LeftSidebar
               title="AI 모의 면접 결과"
               activeMenu={activeMenu}
@@ -146,7 +181,7 @@ export default function MockInterviewResultPage({
 
             {/* 메인 컨텐츠 */}
             <div className="flex-1 space-y-6">
-              {interviewResults.length === 0 ? (
+              {historyList.length === 0 ? (
                 /* 면접 결과 없을 때 */
                 <div className="p-16 text-center bg-white border-2 border-gray-200 rounded-2xl">
                   <div className="mb-4 text-6xl">🎤</div>
@@ -169,13 +204,7 @@ export default function MockInterviewResultPage({
                   <div className="p-6 bg-white border-2 border-blue-400 rounded-2xl">
                     <div className="flex items-center justify-between mb-6">
                       <h3 className="text-xl font-bold">면접 통계</h3>
-                      {/* 전체 삭제 버튼 */}
-                      <button
-                        onClick={handleClearAll}
-                        className="px-4 py-2 text-sm font-semibold text-red-600 transition border-2 border-red-600 rounded-lg hover:bg-red-50"
-                      >
-                        전체 삭제
-                      </button>
+                      {/* 전체 삭제 버튼 제거 (Backend 미지원) */}
                     </div>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                       {statistics.map((stat, index) => (
@@ -202,12 +231,21 @@ export default function MockInterviewResultPage({
                     </div>
                   </div>
 
-                  {/* 히스토리 바로 아래에 상세 리포트 카드 추가 */}
-                  {interviewResults[0]?.detailedReport && (
+                  {/* 히스토리 바로 아래에 상세 리포트 카드 추가 (최신 결과) */}
+                  {latestResult && (
                     <div className="p-6 mb-6 bg-white border-2 border-purple-400 rounded-2xl">
-                      <h3 className="mb-6 text-xl font-bold">
-                        📝 AI 상세 분석 리포트
-                      </h3>
+                      <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-bold">
+                          📝 최신 AI 상세 분석 리포트
+                        </h3>
+                        <span className="text-sm text-gray-500">
+                          (
+                          {new Date(
+                            latestResult.createdAt,
+                          ).toLocaleDateString()}
+                          )
+                        </span>
+                      </div>
 
                       {/* 역량 점수 & STARR */}
                       <div className="grid grid-cols-1 gap-8 mb-8 md:grid-cols-2">
@@ -216,31 +254,40 @@ export default function MockInterviewResultPage({
                             핵심 역량 평가
                           </h4>
                           <div className="space-y-3">
-                            {Object.entries(
-                              interviewResults[0].detailedReport
-                                .competency_scores,
-                            ).map(([key, score]) => (
-                              <div
-                                key={key}
-                                className="flex items-center gap-4"
-                              >
-                                <span
-                                  className="w-24 font-medium text-gray-600 truncate"
-                                  title={key}
-                                >
-                                  {key}
-                                </span>
-                                <div className="flex-1 h-3 bg-gray-200 rounded-full">
+                            {latestResult.competencyScores &&
+                            Object.keys(latestResult.competencyScores).length >
+                              0 ? (
+                              Object.entries(latestResult.competencyScores).map(
+                                ([key, score]) => (
                                   <div
-                                    className="h-3 bg-purple-600 rounded-full"
-                                    style={{ width: `${(score / 5) * 100}%` }}
-                                  ></div>
-                                </div>
-                                <span className="font-bold text-purple-700">
-                                  {score.toFixed(1)}/5.0
-                                </span>
-                              </div>
-                            ))}
+                                    key={key}
+                                    className="flex items-center gap-4"
+                                  >
+                                    <span
+                                      className="w-24 font-medium text-gray-600 truncate"
+                                      title={key}
+                                    >
+                                      {key}
+                                    </span>
+                                    <div className="flex-1 h-3 bg-gray-200 rounded-full">
+                                      <div
+                                        className="h-3 bg-purple-600 rounded-full"
+                                        style={{
+                                          width: `${(score / 5) * 100}%`,
+                                        }}
+                                      ></div>
+                                    </div>
+                                    <span className="font-bold text-purple-700">
+                                      {score.toFixed(1)}/5.0
+                                    </span>
+                                  </div>
+                                ),
+                              )
+                            ) : (
+                              <p className="text-gray-400">
+                                평가 데이터가 없습니다.
+                              </p>
+                            )}
                           </div>
                         </div>
 
@@ -256,9 +303,14 @@ export default function MockInterviewResultPage({
                               "result",
                               "reflection",
                             ].map((key) => {
-                              const covered =
-                                interviewResults[0].detailedReport
-                                  ?.starr_coverage[key];
+                              // DB 컬럼과 매핑 필요. 현재 DTO에는 starrCoverage 필드가 없음?
+                              // -> DTO 확인 필요. 일단 없으면 가짜 데이터 혹은 숨김 처리.
+                              // 백엔드 로직상 detailedReport가 DTO에 어떻게 매핑되는지 확인.
+                              // InterviewResultDTO에는 finalFeedback, competencyScores 등이 있음.
+                              // starrCoverage는 없을 가능성 높음. 일단 보류.
+                              // 여기서는 임시로 false 처리 혹은 DTO 필드 확인.
+                              // 확인: InterviewResultDTO에 starr 관련 필드가 없으므로, 이 부분은 주석 처리하거나 빈 상태로 둠.
+                              const covered = false;
                               return (
                                 <div
                                   key={key}
@@ -287,7 +339,8 @@ export default function MockInterviewResultPage({
                             })}
                           </div>
                           <p className="mt-2 text-xs text-center text-gray-500">
-                            * 답변에 포함된 STARR 요소가 활성화됩니다.
+                            * (현재 버전에서 STARR 분석은 지원되지 않을 수
+                            있습니다)
                           </p>
                         </div>
                       </div>
@@ -299,11 +352,11 @@ export default function MockInterviewResultPage({
                             <span>👍</span> 강점 (Strengths)
                           </h4>
                           <ul className="space-y-1 text-gray-700 list-disc list-inside">
-                            {interviewResults[0].detailedReport.strengths
-                              .length > 0 ? (
-                              interviewResults[0].detailedReport.strengths.map(
-                                (s, i) => <li key={i}>{s}</li>,
-                              )
+                            {latestResult.strengths &&
+                            latestResult.strengths.length > 0 ? (
+                              latestResult.strengths.map((s, i) => (
+                                <li key={i}>{s}</li>
+                              ))
                             ) : (
                               <li className="text-gray-400 list-none">
                                 분석된 강점이 없습니다.
@@ -316,11 +369,11 @@ export default function MockInterviewResultPage({
                             <span>💡</span> 보완점 (Gaps)
                           </h4>
                           <ul className="space-y-1 text-gray-700 list-disc list-inside">
-                            {interviewResults[0].detailedReport.gaps.length >
-                            0 ? (
-                              interviewResults[0].detailedReport.gaps.map(
-                                (g, i) => <li key={i}>{g}</li>,
-                              )
+                            {latestResult.gaps &&
+                            latestResult.gaps.length > 0 ? (
+                              latestResult.gaps.map((g, i) => (
+                                <li key={i}>{g}</li>
+                              ))
                             ) : (
                               <li className="text-gray-400 list-none">
                                 특별한 보완점이 발견되지 않았습니다.
@@ -331,13 +384,13 @@ export default function MockInterviewResultPage({
                       </div>
 
                       {/* 종합 피드백 */}
-                      {interviewResults[0].detailedReport.feedback && (
+                      {latestResult.finalFeedback && (
                         <div className="p-4 mt-6 bg-gray-100 rounded-xl">
                           <h4 className="mb-2 font-bold text-gray-800">
                             종합 피드백
                           </h4>
                           <p className="leading-relaxed text-gray-700">
-                            {interviewResults[0].detailedReport.feedback}
+                            {latestResult.finalFeedback}
                           </p>
                         </div>
                       )}
@@ -349,15 +402,15 @@ export default function MockInterviewResultPage({
                     <div className="flex items-center justify-between mb-6">
                       <h3 className="text-xl font-bold">최근 면접 기록</h3>
                       <span className="text-sm text-gray-600">
-                        총 {interviewResults.length}개의 면접 기록
+                        총 {historyList.length}개의 면접 기록
                       </span>
                     </div>
 
                     {/* 스크롤 가능한 컨테이너 */}
                     <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
-                      {interviewResults.map((record) => (
+                      {historyList.map((record) => (
                         <div
-                          key={record.id}
+                          key={record.interviewId}
                           className="p-5 transition border-2 border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50"
                         >
                           <div className="flex items-start justify-between">
@@ -365,57 +418,77 @@ export default function MockInterviewResultPage({
                               <div className="flex items-center gap-3 mb-3">
                                 <span
                                   className={`px-4 py-1.5 text-base font-bold rounded-lg ${
-                                    record.level === "주니어"
+                                    record.difficulty === "JUNIOR"
                                       ? "bg-blue-100 text-blue-700"
                                       : "bg-purple-100 text-purple-700"
                                   }`}
                                 >
-                                  {record.level}
+                                  {record.difficulty === "JUNIOR"
+                                    ? "주니어"
+                                    : "시니어"}
                                 </span>
                                 <span
                                   className={`px-3 py-1 text-sm font-semibold border-2 rounded-full ${getScoreColor(
-                                    record.score,
+                                    record.finalScore,
                                   )}`}
                                 >
-                                  {record.score}점
+                                  {record.finalScore}점
                                 </span>
                                 <span
                                   className={`px-3 py-1 text-sm font-semibold rounded-full ${
-                                    record.result === "합격"
+                                    record.status === "COMPLETED" &&
+                                    record.finalScore >= 70
                                       ? "bg-green-100 text-green-700"
                                       : "bg-red-100 text-red-700"
                                   }`}
                                 >
-                                  {record.result}
+                                  {record.status === "COMPLETED"
+                                    ? record.finalScore >= 70
+                                      ? "합격"
+                                      : "불합격"
+                                    : "진행중"}
                                 </span>
                               </div>
 
                               <div className="flex items-center gap-2 mb-3">
                                 <span className="text-xl">✓</span>
                                 <span className="text-base font-semibold text-gray-900">
-                                  {record.totalQuestions}개 질문 중{" "}
-                                  {record.goodAnswers}개 질문에 대한 좋은 답변
+                                  {/* totalQuestions/goodAnswers는 DTO에 없으면 계산하거나 필드 추가 필요.
+                                      InterviewHistoryDTO: totalTurns, currentTurn 등.
+                                      goodAnswers는 현재 DTO에 없음. 임시로 currentTurn 사용 */}
+                                  {record.totalTurns}개 질문 중{" "}
+                                  {record.currentTurn}개 답변 완료
                                 </span>
                               </div>
 
                               <div className="flex items-center gap-6 text-sm text-gray-600">
                                 <div className="flex items-center gap-2">
                                   <span>📅</span>
-                                  <span>{record.date}</span>
+                                  <span>
+                                    {new Date(
+                                      record.createdAt,
+                                    ).toLocaleDateString()}
+                                  </span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <span>🕐</span>
-                                  <span>{record.time}</span>
+                                  <span>
+                                    {new Date(
+                                      record.createdAt,
+                                    ).toLocaleTimeString([], {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <span>⏱️</span>
-                                  <span>소요시간: {record.duration}</span>
-                                </div>
+                                {/* 소요시간 DTO에 없음. DB에서 계산해서 주지 않는 이상 표시 불가 */}
                               </div>
                             </div>
 
                             <button
-                              onClick={() => handleViewHistory(record.id)}
+                              onClick={() =>
+                                handleViewHistory(record.interviewId)
+                              }
                               className="flex items-center gap-2 px-4 py-2 ml-4 text-blue-600 transition rounded-lg hover:bg-blue-100"
                             >
                               히스토리

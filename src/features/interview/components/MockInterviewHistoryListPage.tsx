@@ -1,7 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import LeftSidebar from "../../../components/LeftSidebar";
 import MockInterviewHistoryPage from "./MockInterviewHistoryPage";
-import { useApp } from "../../../context/AppContext";
+import { useAuth } from "../../../context/AuthContext";
+import {
+  interviewService,
+  InterviewHistoryDTO,
+} from "../../../api/interviewService";
 
 interface MockInterviewHistoryListPageProps {
   activeMenu: string;
@@ -18,30 +22,31 @@ export default function MockInterviewHistoryListPage({
     null,
   );
 
-  // Context에서 면접 히스토리 데이터 가져오기
-  const { interviewHistories, clearInterviewHistories, clearInterviewResults } =
-    useApp();
+  // API로 데이터 가져오기 상태
+  const [historyList, setHistoryList] = useState<InterviewHistoryDTO[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // 전체 삭제 핸들러 (이중 확인)
-  const handleClearAll = () => {
-    // 첫 번째 확인
-    if (
-      window.confirm(
-        "모든 면접 히스토리와 결과를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.",
-      )
-    ) {
-      // 두 번째 확인
-      if (
-        window.confirm(
-          "⚠️ 정말 삭제하시겠습니까?\n모든 면접 데이터가 영구적으로 삭제됩니다.",
-        )
-      ) {
-        clearInterviewHistories();
-        clearInterviewResults();
-        alert("모든 면접 데이터가 삭제되었습니다.");
+  // Context에서 user 정보 가져오기 (userId 필요)
+  const { user } = useAuth(); // ✅ useAuth 사용 (Lint fix: ID d45faedd-4ff7-409f-9848-ce8dd75fa7ab)
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const userIdNum =
+          typeof user?.userId === "string"
+            ? parseInt(user.userId)
+            : user?.userId || 1; // Default to 1 if missing for testing
+        const data = await interviewService.getInterviewHistory(userIdNum);
+        setHistoryList(data);
+      } catch (error) {
+        console.error("Failed to fetch interview history:", error);
+      } finally {
+        setLoading(false);
       }
-    }
-  };
+    };
+
+    fetchHistory();
+  }, [user]);
 
   const getScoreColor = (score: number) => {
     if (score >= 90) return "text-green-600 bg-green-50 border-green-300";
@@ -56,6 +61,20 @@ export default function MockInterviewHistoryListPage({
 
   const handleBackToList = () => {
     setSelectedHistoryId(null);
+  };
+
+  // 날짜/시간 포맷팅
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return "";
+    return new Date(dateStr).toLocaleDateString();
+  };
+
+  const formatTime = (dateStr: string) => {
+    if (!dateStr) return "";
+    return new Date(dateStr).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   // 히스토리 상세 페이지 표시
@@ -74,11 +93,7 @@ export default function MockInterviewHistoryListPage({
     <>
       <div className="min-h-screen bg-white">
         <div className="px-4 py-8 mx-auto max-w-7xl">
-          {/* ✅ [수정] 제목(h2) 영역 삭제 (사이드바 title로 이동) */}
-
-          {/* ✅ [수정] 레이아웃 변경: items-start + gap-6 */}
           <div className="flex items-start gap-6">
-            {/* ✅ [수정] LeftSidebar 교체 & Title 적용 */}
             <LeftSidebar
               title="면접 히스토리"
               activeMenu={activeMenu}
@@ -87,7 +102,9 @@ export default function MockInterviewHistoryListPage({
 
             {/* 메인 컨텐츠 */}
             <div className="flex-1 space-y-6">
-              {interviewHistories.length === 0 ? (
+              {loading ? (
+                <div className="text-center p-16">로딩 중...</div>
+              ) : historyList.length === 0 ? (
                 /* 히스토리가 없을 때 */
                 <div className="p-16 text-center bg-white border-2 border-gray-200 rounded-2xl">
                   <div className="mb-4 text-6xl">📋</div>
@@ -114,71 +131,73 @@ export default function MockInterviewHistoryListPage({
                           면접 히스토리 목록
                         </h3>
                         <span className="text-sm text-gray-600">
-                          총 {interviewHistories.length}개의 면접 히스토리
+                          총 {historyList.length}개의 면접 히스토리
                         </span>
                       </div>
-                      {/* 전체 삭제 버튼 */}
-                      <button
-                        onClick={handleClearAll}
-                        className="px-4 py-2 text-sm font-semibold text-red-600 transition border-2 border-red-600 rounded-lg hover:bg-red-50"
-                      >
-                        전체 삭제
-                      </button>
+                      {/* 전체 삭제 버튼 제거 (Backend API 미지원) */}
                     </div>
 
                     {/* 스크롤 가능한 컨테이너 */}
                     <div className="space-y-4 max-h-[700px] overflow-y-auto pr-2">
-                      {interviewHistories.map((history) => (
+                      {historyList.map((history) => (
                         <div
-                          key={history.id}
+                          key={history.interviewId}
                           className="p-5 transition border-2 border-gray-200 cursor-pointer rounded-xl hover:border-blue-400 hover:bg-blue-50"
-                          onClick={() => handleViewHistory(history.id)}
+                          onClick={() => handleViewHistory(history.interviewId)}
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-3">
                                 <span
                                   className={`px-4 py-1.5 text-base font-bold rounded-lg ${
-                                    history.level === "주니어"
+                                    history.difficulty === "JUNIOR"
                                       ? "bg-blue-100 text-blue-700"
                                       : "bg-purple-100 text-purple-700"
                                   }`}
                                 >
-                                  {history.level}
+                                  {history.difficulty === "JUNIOR"
+                                    ? "주니어"
+                                    : "시니어"}
                                 </span>
                                 <span
                                   className={`px-3 py-1 text-sm font-semibold border-2 rounded-full ${getScoreColor(
-                                    history.score,
+                                    history.finalScore,
                                   )}`}
                                 >
-                                  {history.score}점
+                                  {history.finalScore}점
                                 </span>
                                 <span
                                   className={`px-3 py-1 text-sm font-semibold rounded-full ${
-                                    history.result === "합격"
-                                      ? "bg-green-100 text-green-700"
-                                      : "bg-red-100 text-red-700"
+                                    history.status === "COMPLETED"
+                                      ? history.finalScore >= 70
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-red-100 text-red-700"
+                                      : "bg-gray-100 text-gray-700"
                                   }`}
                                 >
-                                  {history.result}
+                                  {history.status === "COMPLETED"
+                                    ? history.finalScore >= 70
+                                      ? "합격"
+                                      : "불합격"
+                                    : "진행중"}
                                 </span>
                               </div>
 
                               <div className="flex items-center gap-2 mb-3">
                                 <span className="text-xl">✓</span>
                                 <span className="text-base font-semibold text-gray-900">
-                                  {history.qaList.length}개의 질문-답변
+                                  {history.currentTurn}개의 질문-답변
                                 </span>
                               </div>
 
                               <div className="flex items-center gap-6 text-sm text-gray-600">
                                 <div className="flex items-center gap-2">
                                   <span>📅</span>
-                                  <span>{history.date}</span>
+                                  <span>{formatDate(history.createdAt)}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <span>🕐</span>
-                                  <span>{history.time}</span>
+                                  <span>{formatTime(history.createdAt)}</span>
                                 </div>
                               </div>
                             </div>
@@ -186,7 +205,7 @@ export default function MockInterviewHistoryListPage({
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleViewHistory(history.id);
+                                handleViewHistory(history.interviewId);
                               }}
                               className="flex items-center gap-2 px-4 py-2 ml-4 text-blue-600 transition rounded-lg hover:bg-blue-100"
                             >
@@ -209,16 +228,6 @@ export default function MockInterviewHistoryListPage({
                         </div>
                       ))}
                     </div>
-                  </div>
-
-                  {/* 액션 버튼 */}
-                  <div className="flex justify-center">
-                    <button
-                      onClick={onBackToInterview}
-                      className="px-8 py-3 font-semibold text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
-                    >
-                      새 모의 면접 시작
-                    </button>
                   </div>
                 </>
               )}

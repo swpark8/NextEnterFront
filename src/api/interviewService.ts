@@ -38,7 +38,7 @@ export interface InterviewResponse {
   // Rich AI Metadata
   reactionType?: string;
   reactionText?: string;
-  aiSystemReport?: any; 
+  aiSystemReport?: any;
   probeGoal?: string;
 
   realtime?: InterviewRealtime;
@@ -55,6 +55,47 @@ export interface InterviewStartPayload {
 export interface InterviewAnswerPayload {
   interviewId: number;
   answer: string;
+}
+
+// DTOs for History & Result
+export interface InterviewHistoryDTO {
+  interviewId: number;
+  jobCategory: string;
+  difficulty: "JUNIOR" | "SENIOR"; // difficulty string in backend might map here
+  totalTurns: number;
+  currentTurn: number;
+  status: string;
+  finalScore: number;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+export interface InterviewMessageDTO {
+  messageId: number;
+  turnNumber: number;
+  role: string;
+  message: string;
+  createdAt: string;
+}
+
+export interface InterviewResultDTO {
+  interviewId: number;
+  userId: number;
+  resumeId: number;
+  jobCategory: string;
+  difficulty: string;
+  totalTurns: number;
+  currentTurn: number;
+  status: string;
+  finalScore: number;
+  finalFeedback: string;
+  createdAt: string;
+  completedAt: string | null;
+  messages: InterviewMessageDTO[];
+  // AI Analysis fields (optional as they populate after completion)
+  competencyScores?: Record<string, number>;
+  strengths?: string[];
+  gaps?: string[];
 }
 
 export const interviewService = {
@@ -84,6 +125,31 @@ export const interviewService = {
       },
     );
     return adaptResponse(response.data);
+  },
+
+  getInterviewHistory: async (
+    userId: number,
+  ): Promise<InterviewHistoryDTO[]> => {
+    const response = await api.get<InterviewHistoryDTO[]>(
+      "/api/interview/history",
+      {
+        params: { userId },
+      },
+    );
+    return response.data;
+  },
+
+  getInterviewResult: async (
+    userId: number,
+    interviewId: number,
+  ): Promise<InterviewResultDTO> => {
+    const response = await api.get<InterviewResultDTO>(
+      `/api/interview/${interviewId}`,
+      {
+        params: { userId },
+      },
+    );
+    return response.data;
   },
 };
 

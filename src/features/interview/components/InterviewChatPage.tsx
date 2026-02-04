@@ -3,9 +3,7 @@ import LeftSidebar from "../../../components/LeftSidebar"; // [수정] LeftSideb
 import InterviewSetup from "./InterviewSetup";
 import { useApp } from "../../../context/AppContext";
 import { useAuth } from "../../../context/AuthContext";
-import {
-  interviewService,
-} from "../../../api/interviewService";
+import { interviewService } from "../../../api/interviewService";
 import { getResumeList } from "../../../api/resume";
 
 interface Message {
@@ -28,13 +26,8 @@ export default function InterviewChatPage({
   activeMenu = "interview-sub-2",
   onMenuClick,
 }: InterviewChatPageProps) {
-  const {
-    addInterviewResult,
-    addInterviewHistory,
-    currentResume,
-    resumes,
-    setResumes,
-  } = useApp();
+  const { addInterviewResult, addInterviewHistory, resumes, setResumes } =
+    useApp();
   const { user } = useAuth();
 
   // 단계 관리: 'setup' | 'chat'
@@ -66,16 +59,16 @@ export default function InterviewChatPage({
     const loadResumes = async () => {
       console.log("📚 ========== 이력서 목록 로딩 시작 ==========");
       console.log("👤 사용자 ID:", user?.userId);
-      
+
       if (user?.userId) {
         try {
           console.log("🔄 getResumeList API 호출 중...");
           const data = await getResumeList(user.userId);
-          
+
           console.log("✅ API 응답 받음:", data);
           console.log("  - 타입:", Array.isArray(data) ? "배열" : typeof data);
           console.log("  - 길이:", Array.isArray(data) ? data.length : "N/A");
-          
+
           if (Array.isArray(data)) {
             const contextResumes = data.map((resume) => ({
               id: resume.resumeId,
@@ -83,10 +76,14 @@ export default function InterviewChatPage({
               industry: resume.jobCategory || "미지정",
               applications: 0,
             }));
-            
+
             console.log("📋 변환된 이력서 목록:", contextResumes);
             setResumes(contextResumes);
-            console.log("✅ 이력서 목록 로드 완료:", contextResumes.length, "개");
+            console.log(
+              "✅ 이력서 목록 로드 완료:",
+              contextResumes.length,
+              "개",
+            );
 
             // 첫 번째 이력서를 자동 선택 (선택된 이력서가 없을 때만)
             if (!selectedResumeId && contextResumes.length > 0) {
@@ -110,35 +107,38 @@ export default function InterviewChatPage({
       } else {
         console.log("⚠️ 사용자 ID 없음 - 로그인 필요");
       }
-      
+
       console.log("📚 ========== 이력서 목록 로딩 종료 ==========");
     };
     loadResumes();
   }, [user?.userId]); // resumes.length, currentResume 의존성 제거
 
   // 2. 면접 시작 핸들러
-  const handleStartInterview = async (portfolioText: string, portfolioFiles: File[]) => {
+  const handleStartInterview = async (
+    portfolioText: string,
+    portfolioFiles: File[],
+  ) => {
     console.log("🎬 ========== 면접 시작 프로세스 시작 ==========");
-    
+
     // 1. 이력서 선택 상태 확인
     console.log("📋 선택된 이력서 ID:", selectedResumeId);
     console.log("📚 전체 이력서 목록:", resumes);
-    
+
     if (!selectedResumeId) {
       console.error("❌ 이력서가 선택되지 않음");
       alert("이력서를 선택해주세요.");
       return;
     }
-    
-    const selectedResume = resumes.find(r => r.id === selectedResumeId);
+
+    const selectedResume = resumes.find((r) => r.id === selectedResumeId);
     console.log("✅ 선택된 이력서 정보:", selectedResume);
-    
+
     if (!user?.userId) {
       console.error("❌ 사용자 정보 없음");
       alert("로그인 정보가 없습니다.");
       return;
     }
-    
+
     console.log("👤 사용자 ID:", user.userId);
 
     setLoading(true);
@@ -151,7 +151,9 @@ export default function InterviewChatPage({
       const payload = {
         resumeId: selectedResumeId,
         jobCategory: selectedResume?.industry ?? "미지정",
-        difficulty: (level === "junior" ? "JUNIOR" : "SENIOR") as "JUNIOR" | "SENIOR",
+        difficulty: (level === "junior" ? "JUNIOR" : "SENIOR") as
+          | "JUNIOR"
+          | "SENIOR",
         portfolioText: portfolioText,
         totalTurns: totalQuestions,
       };
@@ -160,25 +162,34 @@ export default function InterviewChatPage({
       console.log("  - resumeId:", payload.resumeId);
       console.log("  - jobCategory:", payload.jobCategory);
       console.log("  - difficulty:", payload.difficulty);
-      console.log("  - portfolioText:", portfolioText ? `"${portfolioText.substring(0, 50)}..."` : "(없음)");
+      console.log(
+        "  - portfolioText:",
+        portfolioText ? `"${portfolioText.substring(0, 50)}..."` : "(없음)",
+      );
       console.log("  - totalTurns:", payload.totalTurns);
 
       // TODO: 백엔드 API가 준비되면 portfolioFiles를 함께 전송
       console.log("📎 포트폴리오 파일:", portfolioFiles.length, "개");
-      portfolioFiles.forEach(file => {
+      portfolioFiles.forEach((file) => {
         console.log("  -", file.name, `(${(file.size / 1024).toFixed(1)} KB)`);
       });
 
       // (2) API 호출
       console.log("🚀 면접 시작 API 호출 중...");
-      const response = await interviewService.startInterview(userIdNum, payload);
-      
+      const response = await interviewService.startInterview(
+        userIdNum,
+        payload,
+      );
+
       console.log("✅ API 응답 받음:", response);
       console.log("  - interviewId:", response.interviewId);
       console.log("  - currentTurn:", response.currentTurn);
       console.log("  - isFinished:", response.isFinished);
       console.log("  - 첫 질문:", response.question);
-      console.log("  - realtime.next_question:", response.realtime?.next_question);
+      console.log(
+        "  - realtime.next_question:",
+        response.realtime?.next_question,
+      );
 
       // (3) 상태 업데이트 및 화면 전환
       setRealInterviewId(response.interviewId);
@@ -192,12 +203,12 @@ export default function InterviewChatPage({
           minute: "2-digit",
         }),
       };
-      
+
       console.log("💬 첫 메시지 설정:", welcomeMessage.text);
       setMessages([welcomeMessage]);
       setTurnCount(1);
       setStep("chat");
-      
+
       console.log("🎬 ========== 면접 시작 완료 ==========");
     } catch (error) {
       console.error("❌ ========== 면접 시작 오류 ==========");
@@ -241,8 +252,13 @@ export default function InterviewChatPage({
 
     // 백엔드에서 받은 최종 결과 사용 (V2.0 철학)
     const finalScore = backendResult?.finalScore ?? 0;
-    const resultStatus = backendResult?.result ?? (finalScore >= 70 ? "합격" : "불합격");
-    const finalFeedback = backendResult?.finalFeedback ?? (finalScore >= 70 ? "전반적으로 훌륭한 역량을 보여주셨습니다." : "일부 역량에서 보완이 필요합니다.");
+    const resultStatus =
+      backendResult?.result ?? (finalScore >= 70 ? "합격" : "불합격");
+    const finalFeedback =
+      backendResult?.finalFeedback ??
+      (finalScore >= 70
+        ? "전반적으로 훌륭한 역량을 보여주셨습니다."
+        : "일부 역량에서 보완이 필요합니다.");
 
     const now = new Date();
     // ... (날짜 시간 처리 동일)
@@ -289,7 +305,7 @@ export default function InterviewChatPage({
       result: resultStatus,
       qaList: messages
         .filter((m) => m.sender === "user")
-        .map((m, idx) => ({
+        .map((m) => ({
           question:
             messages.find((msg) => msg.id < m.id && msg.sender === "ai")
               ?.text || "질문 없음",
@@ -329,26 +345,6 @@ export default function InterviewChatPage({
     };
     setMessages((prev) => [...prev, userMsg]);
 
-    if (turnCount >= totalQuestions) {
-      setLoading(true);
-      setTimeout(() => {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: prev.length + 2,
-            sender: "ai",
-            text: "모든 질문이 완료되었습니다. 수고하셨습니다!",
-            timestamp: new Date().toLocaleTimeString("ko-KR", {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-          },
-        ]);
-        setTimeout(handleCompleteInterview, 2000);
-      }, 1000);
-      return;
-    }
-
     setLoading(true);
 
     try {
@@ -357,7 +353,7 @@ export default function InterviewChatPage({
         answer: userText,
       };
 
-      console.log("🚀 [Frontend Debug] Sending Submit Payload:", submitPayload); // Debug log
+      console.log("🚀 [Frontend Debug] Sending Submit Payload:", submitPayload);
 
       const response = await interviewService.submitAnswer(
         userIdNum,
@@ -365,6 +361,8 @@ export default function InterviewChatPage({
       );
 
       if (response.isFinished) {
+        // 면접 완료: 백엔드에서 받은 최종 결과로 완료 처리
+        setStep("setup"); // 경고 방지용 상태 변경
         handleCompleteInterview(response.finalResult);
         return;
       }
@@ -393,7 +391,9 @@ export default function InterviewChatPage({
           }),
         };
         setMessages((prev) => [...prev, nextQMsg]);
-        setTurnCount((prev) => prev + 1);
+        // 백엔드에서 받은 턴 수 사용, 최대값 제한
+        const newTurn = response.currentTurn ?? turnCount + 1;
+        setTurnCount(Math.min(newTurn, totalQuestions));
         setLoading(false);
       }, 1000);
     } catch (error) {
