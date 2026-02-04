@@ -147,7 +147,7 @@ export default function AllJobPostingsPage() {
           <JobSearchFilter onFilterChange={handleFilterChange} />
 
           {/* 공고 리스트 섹션 */}
-          <div className="p-8 bg-white border border-gray-200 shadow-sm rounded-2xl">
+          <div className="p-8 bg-white border border-gray-300 shadow-sm rounded-2xl">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900">
                 전체 채용공고{" "}
@@ -250,31 +250,31 @@ export default function AllJobPostingsPage() {
                       </div>
 
                       {/* 내용 영역 */}
-                      <div className="flex flex-col flex-1 p-5">
+                      <div className="flex flex-col flex-1 p-4">
                         {/* 직무명 */}
-                        <h3 className="mb-2 text-lg font-bold text-gray-900 line-clamp-2 hover:text-purple-600">
+                        <h3 className="mb-1.5 text-lg font-bold text-gray-900 line-clamp-2 hover:text-purple-600">
                           {job.title}
                         </h3>
 
                         {/* 회사명 */}
-                        <p className="mb-3 text-sm font-medium text-gray-600">
+                        <p className="mb-2 text-sm font-medium text-gray-600">
                           {job.companyName}
                         </p>
 
                         {/* 썸네일 이미지 */}
-                        <div className="mb-3 overflow-hidden rounded-lg">
+                        <div className="mb-2 overflow-hidden rounded-lg">
                           {job.thumbnailUrl ? (
                             <img
                               src={job.thumbnailUrl}
                               alt={`${job.title} 썸네일`}
-                              className="object-cover w-full h-50"
+                              className="object-cover w-full h-48"
                               onError={(e) => {
                                 e.currentTarget.src =
                                   "https://via.placeholder.com/400x200?text=No+Image";
                               }}
                             />
                           ) : (
-                            <div className="flex items-center justify-center w-full h-32 bg-gradient-to-br from-purple-50 to-blue-50">
+                            <div className="flex items-center justify-center w-full h-48 bg-gradient-to-br from-purple-50 to-blue-50">
                               <svg
                                 className="w-12 h-12 text-gray-300"
                                 fill="none"
@@ -293,7 +293,7 @@ export default function AllJobPostingsPage() {
                         </div>
 
                         {/* 정보 태그 */}
-                        <div className="flex flex-wrap gap-2 mb-4">
+                        <div className="flex flex-wrap gap-2 mb-2">
                           <span className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded-full">
                             <svg
                               className="w-3 h-3"
@@ -336,14 +336,14 @@ export default function AllJobPostingsPage() {
                         </div>
 
                         {/* 통계 정보 */}
-                        <div className="flex items-center gap-3 mb-3 text-xs text-gray-500">
+                        <div className="flex items-center gap-3 mb-2 text-xs text-gray-500">
                           <span>👁️ {job.viewCount}</span>
                           <span>📝 {job.applicantCount}</span>
                           <span>⭐ {job.bookmarkCount}</span>
                         </div>
 
                         {/* 하단 정보 */}
-                        <div className="flex items-center justify-between pt-4 mt-auto border-t border-gray-100">
+                        <div className="flex items-center justify-between pt-3 mt-auto border-t border-gray-100">
                           <div className="flex items-center gap-2">
                             <svg
                               className="w-4 h-4 text-gray-500"

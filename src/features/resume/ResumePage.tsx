@@ -272,23 +272,7 @@ export default function ResumePage() {
               <p className="mb-2 text-xs text-gray-600">
                 지원 형식: PDF, WORD, HWP, EXCEL (최대 10MB)
               </p>
-              <div className="flex items-center justify-center gap-2 mb-3">
-                <label htmlFor="upload-job-category" className="text-sm font-medium text-gray-700">
-                  직무
-                </label>
-                <select
-                  id="upload-job-category"
-                  value={uploadJobCategory}
-                  onChange={(e) => setUploadJobCategory(e.target.value)}
-                  className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  {JOB_CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              
               <input
                 type="file"
                 ref={fileInputRef}
@@ -306,7 +290,7 @@ export default function ResumePage() {
           </div>
 
           {/* 2. 안내문 영역 */}
-          <div className="p-5 mt-2 border border-gray-200 bg-gray-50 rounded-xl">
+          <div className="p-5 mt-2 border border-gray-300 bg-gray-50 rounded-xl">
             <h4 className="mb-4 text-sm font-bold text-gray-800">
               업로드 후 자동으로 전환됩니다
             </h4>
@@ -354,7 +338,7 @@ export default function ResumePage() {
           </div>
 
           {/* 3. 리스트 컨테이너 */}
-          <section className="bg-white border border-gray-200 rounded-xl flex flex-col overflow-hidden min-h-[400px] shadow-sm mt-8">
+          <section className="bg-white border border-gray-300 rounded-xl flex flex-col overflow-hidden min-h-[400px] shadow-sm mt-8">
             <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-gray-50">
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-4">
@@ -541,9 +525,10 @@ export default function ResumePage() {
 
                         <button
                           onClick={(e) => handleDeleteClick(resume.resumeId, e)}
-                          className="p-2 text-gray-300 transition-all rounded-full hover:text-red-600 hover:bg-red-50"
+                          className="p-2 text-red-600 transition-all rounded-full hover:bg-red-50 hover:text-red-700"
                           title="삭제"
                         >
+
                           <svg
                             className="w-5 h-5"
                             fill="none"

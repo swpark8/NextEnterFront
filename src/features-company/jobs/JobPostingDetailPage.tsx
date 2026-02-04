@@ -235,32 +235,33 @@ export default function JobPostingDetailPage() {
                 </div>
               </div>
               <div className="flex gap-3">
-                <button
-                  onClick={handleEditClick}
-                  className="flex items-center gap-2 px-6 py-3 font-semibold text-white transition shadow-lg rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+              <button
+                onClick={handleEditClick}
+                className="flex items-center gap-2 px-6 py-3 font-semibold text-white transition shadow-lg rounded-xl bg-purple-600 hover:bg-gray-800"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                    />
-                  </svg>
-                  수정
-                </button>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  />
+                </svg>
+                수정
+              </button>
+
                 <button
                   onClick={handleDeleteClick}
                   disabled={job.status === "CLOSED" || job.status === "EXPIRED"}
                   className={`flex items-center gap-2 px-6 py-3 font-semibold transition rounded-xl shadow-lg ${
                     job.status === "CLOSED" || job.status === "EXPIRED"
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800"
+                      : "bg-black text-white hover:bg-gray-800"
                   }`}
                 >
                   <svg
@@ -278,6 +279,7 @@ export default function JobPostingDetailPage() {
                   </svg>
                   삭제
                 </button>
+
               </div>
             </div>
 
@@ -382,7 +384,7 @@ export default function JobPostingDetailPage() {
               <div className="flex items-start gap-4 p-4 transition bg-gray-50 rounded-xl hover:bg-gray-100">
                 <div className="p-2 bg-white rounded-lg shadow-sm">
                   <svg
-                    className="w-5 h-5 text-purple-600"
+                    className="w-5 h-5 text-black-600"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -407,7 +409,7 @@ export default function JobPostingDetailPage() {
               <div className="flex items-start gap-4 p-4 transition bg-gray-50 rounded-xl hover:bg-gray-100">
                 <div className="p-2 bg-white rounded-lg shadow-sm">
                   <svg
-                    className="w-5 h-5 text-blue-600"
+                    className="w-5 h-5 text-black-600"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -432,7 +434,7 @@ export default function JobPostingDetailPage() {
               <div className="flex items-start gap-4 p-4 transition bg-gray-50 rounded-xl hover:bg-gray-100">
                 <div className="p-2 bg-white rounded-lg shadow-sm">
                   <svg
-                    className="w-5 h-5 text-green-600"
+                    className="w-5 h-5 text-black-600"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -463,7 +465,7 @@ export default function JobPostingDetailPage() {
               <div className="flex items-start gap-4 p-4 transition bg-gray-50 rounded-xl hover:bg-gray-100">
                 <div className="p-2 bg-white rounded-lg shadow-sm">
                   <svg
-                    className="w-5 h-5 text-indigo-600"
+                    className="w-5 h-5 text-black-600"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -488,7 +490,7 @@ export default function JobPostingDetailPage() {
               <div className="flex items-start gap-4 p-4 transition bg-gray-50 rounded-xl hover:bg-gray-100">
                 <div className="p-2 bg-white rounded-lg shadow-sm">
                   <svg
-                    className="w-5 h-5 text-yellow-600"
+                    className="w-5 h-5 text-black-600"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -513,7 +515,7 @@ export default function JobPostingDetailPage() {
               <div className="flex items-start gap-4 p-4 transition bg-gray-50 rounded-xl hover:bg-gray-100">
                 <div className="p-2 bg-white rounded-lg shadow-sm">
                   <svg
-                    className="w-5 h-5 text-gray-600"
+                    className="w-5 h-5 text-black-600"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -628,7 +630,7 @@ export default function JobPostingDetailPage() {
                   Required
                 </span>
               </div>
-              <div className="p-6 bg-red-50 rounded-xl">
+              <div className="p-6 bg-gray-50 rounded-xl">
                 <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap">
                   {job.requiredSkills}
                 </div>
@@ -660,7 +662,7 @@ export default function JobPostingDetailPage() {
                   Preferred
                 </span>
               </div>
-              <div className="p-6 bg-green-50 rounded-xl">
+              <div className="p-6 bg-gray-50 rounded-xl">
                 <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap">
                   {job.preferredSkills}
                 </div>

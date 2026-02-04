@@ -355,7 +355,7 @@ export default function ResumeDetailPage() {
     title: string;
     children: React.ReactNode;
   }) => (
-    <section className="py-8 border-t border-gray-900">
+    <section className="py-8 border-t border-gray-300">
       <h2 className="mb-4 text-lg font-bold text-gray-900">{title}</h2>
       {children}
     </section>
@@ -471,7 +471,7 @@ export default function ResumeDetailPage() {
                     {isFormBasedResume && (
                       <button
                         onClick={handleEditClick}
-                        className="px-4 py-2 font-semibold text-white transition bg-black rounded-lg hover:bg-gray-800"
+                        className="px-4 py-2 font-semibold text-white transition bg-blue-500 rounded-lg hover:bg-gray-800"
                       >
                         수정
                       </button>
@@ -488,7 +488,7 @@ export default function ResumeDetailPage() {
 
                     <button
                       onClick={handleDeleteClick}
-                      className="px-4 py-2 font-semibold text-white transition bg-black rounded-lg hover:bg-gray-800"
+                      className="px-4 py-2 font-semibold text-white transition bg-red-500 rounded-lg hover:bg-gray-800"
                     >
                       삭제
                     </button>
@@ -537,21 +537,24 @@ export default function ResumeDetailPage() {
                           <img
                             src={resume.profileImage}
                             alt="프로필 이미지"
-                            className="object-cover w-40 h-48 bg-white border border-gray-400 rounded-lg"
+                            className="object-cover w-40 h-48 bg-white border border-gray-300 rounded-lg"
                           />
                         </div>
                       )}
 
                       <div className="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div className="p-4 border border-gray-400 rounded-lg">
+                        {/* 이름 */}
+                        <div className="p-4 border border-gray-300 rounded-lg">
                           <div className="text-xs text-gray-500">이름</div>
-                          <div className="mt-1 font-semibold text-gray-900">
+                          <div className="mt-1 font-semibold text-gray-800">
                             {resume.resumeName || "-"}
                           </div>
                         </div>
-                        <div className="p-4 border border-gray-400 rounded-lg">
+
+                        {/* 성별 */}
+                        <div className="p-4 border border-gray-300 rounded-lg">
                           <div className="text-xs text-gray-500">성별</div>
-                          <div className="mt-1 font-semibold text-gray-900">
+                          <div className="mt-1 font-semibold text-gray-800">
                             {resume.resumeGender
                               ? resume.resumeGender === "MALE"
                                 ? "남성"
@@ -559,37 +562,46 @@ export default function ResumeDetailPage() {
                               : "-"}
                           </div>
                         </div>
-                        <div className="p-4 border border-gray-400 rounded-lg">
+
+                        {/* 생년월일 */}
+                        <div className="p-4 border border-gray-300 rounded-lg">
                           <div className="text-xs text-gray-500">생년월일</div>
-                          <div className="mt-1 font-semibold text-gray-900">
+                          <div className="mt-1 font-semibold text-gray-800">
                             {resume.resumeBirthDate || "-"}
                           </div>
                         </div>
-                        <div className="p-4 border border-gray-400 rounded-lg">
+
+                        {/* 이메일 */}
+                        <div className="p-4 border border-gray-300 rounded-lg">
                           <div className="text-xs text-gray-500">이메일</div>
-                          <div className="mt-1 font-semibold text-gray-900">
+                          <div className="mt-1 font-semibold text-gray-800">
                             {resume.resumeEmail || "-"}
                           </div>
                         </div>
-                        <div className="p-4 border border-gray-400 rounded-lg">
-                          <div className="text-xs text-gray-500">연락처</div>
-                          <div className="mt-1 font-semibold text-gray-900">
-                            {resume.resumePhone || "-"}
-                          </div>
-                        </div>
-                        <div className="p-4 border border-gray-400 rounded-lg sm:col-span-2">
+
+                        {/* ✅ 주소 → 이메일 옆 */}
+                        <div className="p-4 border border-gray-300 rounded-lg">
                           <div className="text-xs text-gray-500">주소</div>
-                          <div className="mt-1 font-semibold text-gray-900">
+                          <div className="mt-1 font-semibold text-gray-800">
                             {resume.resumeAddress || "-"}
                             {resume.resumeDetailAddress
                               ? ` ${resume.resumeDetailAddress}`
                               : ""}
                           </div>
                         </div>
+
+                        {/* 연락처 */}
+                        <div className="p-4 border border-gray-300 rounded-lg">
+                          <div className="text-xs text-gray-500">연락처</div>
+                          <div className="mt-1 font-semibold text-gray-800">
+                            {resume.resumePhone || "-"}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </Section>
                 )}
+
 
                 {/* ===== 주요 스킬 ===== */}
                 {skills.length > 0 && (
@@ -877,7 +889,7 @@ export default function ResumeDetailPage() {
                 )}
 
                 {/* 하단 버튼 */}
-                <div className="pt-8 border-t border-gray-900">
+                <div className="pt-8 border-t border-gray-300">
                   <div className="flex justify-end">
                     <button
                       onClick={handleBackClick}

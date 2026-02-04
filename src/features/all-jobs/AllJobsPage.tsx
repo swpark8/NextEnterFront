@@ -461,7 +461,7 @@ export default function AllJobsPage() {
                     <p>조건에 맞는 채용공고가 없습니다.</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {currentJobs.map((job) => {
                       const isApplied = appliedJobIds.has(job.id);
 
@@ -479,6 +479,7 @@ export default function AllJobsPage() {
                           }}
                           className="flex flex-col overflow-hidden transition bg-white border border-gray-300 shadow-sm cursor-pointer rounded-xl hover:shadow-xl hover:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400"
                         >
+                          {/* 로고 영역 */}
                           <div className="flex items-center justify-center h-12 bg-gradient-to-br from-gray-50 to-gray-100">
                             {job.logoUrl ? (
                               <img
@@ -497,28 +498,32 @@ export default function AllJobsPage() {
                             )}
                           </div>
 
-                          <div className="flex flex-col flex-1 p-5">
-                            <h3 className="mb-2 text-lg font-bold text-gray-900 transition-colors line-clamp-2 hover:text-blue-600">
+                          {/* 내용 영역 */}
+                          <div className="flex flex-col flex-1 p-4">
+                            {/* 직무명 */}
+                            <h3 className="mb-1.5 text-lg font-bold text-gray-900 line-clamp-2 hover:text-purple-600">
                               {job.title}
                             </h3>
 
-                            <p className="mb-3 text-sm font-medium text-gray-600">
+                            {/* 회사명 */}
+                            <p className="mb-2 text-sm font-medium text-gray-600">
                               {job.company}
                             </p>
 
-                            <div className="mb-3 overflow-hidden rounded-lg">
+                            {/* 썸네일 이미지 */}
+                            <div className="mb-2 overflow-hidden rounded-lg">
                               {job.thumbnailUrl ? (
                                 <img
                                   src={job.thumbnailUrl}
                                   alt={`${job.title} 썸네일`}
-                                  className="object-cover w-full h-40"
+                                  className="object-cover w-full h-48"
                                   onError={(e) => {
                                     e.currentTarget.src =
                                       "https://via.placeholder.com/400x200?text=No+Image";
                                   }}
                                 />
                               ) : (
-                                <div className="flex items-center justify-center w-full h-40 bg-gradient-to-br from-purple-50 to-blue-50">
+                                <div className="flex items-center justify-center w-full h-48 bg-gradient-to-br from-purple-50 to-blue-50">
                                   <svg
                                     className="w-12 h-12 text-gray-300"
                                     fill="none"
@@ -536,8 +541,28 @@ export default function AllJobsPage() {
                               )}
                             </div>
 
-                            <div className="flex flex-wrap gap-2 mb-4">
+                            {/* 정보 태그 */}
+                            <div className="flex flex-wrap gap-2 mb-2">
                               <span className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded-full">
+                                <svg
+                                  className="w-3 h-3"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                                  />
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                                  />
+                                </svg>
                                 {job.location}
                               </span>
                               {job.tags.map((tag, i) => (
@@ -545,38 +570,68 @@ export default function AllJobsPage() {
                                   key={i}
                                   className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-full"
                                 >
+                                  <svg
+                                    className="w-3 h-3"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                                    />
+                                  </svg>
                                   {tag}
                                 </span>
                               ))}
                             </div>
 
-                            <div className="flex items-center justify-between pt-4 mt-auto border-t border-gray-100">
+                            {/* 하단 정보 */}
+                            <div className="flex items-center justify-between pt-3 mt-auto border-t border-gray-100">
                               <div className="flex items-center gap-2">
+                                <svg
+                                  className="w-4 h-4 text-gray-500"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                  />
+                                </svg>
                                 <span className="text-xs text-gray-600">
                                   ~ {job.deadline}
                                 </span>
                               </div>
-                              <span
-                                className={`text-sm font-bold ${
+
+                              {/* D-Day 배지 */}
+                              <div
+                                className={`px-3 py-1 text-xs font-bold rounded-lg ${
                                   job.daysLeft <= 7
-                                    ? "text-red-600"
-                                    : "text-blue-600"
+                                    ? "bg-red-50 text-red-600"
+                                    : "bg-blue-50 text-blue-600"
                                 }`}
                               >
-                                D-{job.daysLeft}
-                              </span>
+                                {job.daysLeft > 0 ? `D-${job.daysLeft}` : "마감"}
+                              </div>
                             </div>
 
+                            {/* 입사지원 버튼 */}
                             <button
                               onClick={(e) => {
                                 stopCardNavigation(e);
                                 if (!isApplied) handleApply(job.id);
                               }}
                               disabled={isApplied}
-                              className={`w-full py-2.5 mt-4 text-sm font-semibold transition rounded-lg ${
+                              className={`w-full py-2.5 mt-3 text-sm font-semibold transition rounded-lg ${
                                 isApplied
                                   ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                                  : "bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transform hover:scale-105"
+                                  : "bg-purple-600 text-white hover:bg-purple-700"
                               }`}
                             >
                               {isApplied ? "지원완료" : "입사지원"}
