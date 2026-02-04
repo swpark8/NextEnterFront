@@ -264,12 +264,96 @@ export default function JobSearchFilter({
       "증평군",
     ],
     제주: ["제주시", "서귀포시"],
+    세종: [
+      "조치원읍",
+      "연기면",
+      "연동면",
+      "부강면",
+      "금남면",
+      "장군면",
+      "연서면",
+      "전의면",
+      "전동면",
+      "소정면",
+      "한솔동",
+      "새롬동",
+      "나성동",
+      "다정동",
+      "어진동",
+      "해밀동",
+      "아름동",
+      "종촌동",
+      "고운동",
+      "보람동",
+      "대평동",
+      "소담동",
+    ],
   };
 
-  // ✅ 랜덤 공고 수 생성 함수
-  const getRandomJobCount = () => {
-    return Math.floor(Math.random() * 900) + 100; // 100~999 사이
+  // ✅ 지역별 총 공고 수
+  const regionTotalCounts: Record<string, number> = {
+    서울: 12571,
+    경기: 8764,
+    인천: 3722,
+    부산: 1017,
+    대구: 529,
+    광주: 89,
+    대전: 981,
+    울산: 358,
+    세종: 251,
+    강원: 941,
+    경남: 1023,
+    경북: 802,
+    전남: 941,
+    전북: 542,
+    충남: 1240,
+    충북: 915,
+    제주: 41,
   };
+
+  // ✅ 지역별 하위 지역 공고 수 분배 (합이 총 공고 수와 일치, 랜덤 분배)
+  const getDistrictCounts = (regionName: string): number[] => {
+    const districts = regionDistricts[regionName];
+    if (!districts) return [];
+
+    const total = regionTotalCounts[regionName];
+    const count = districts.length;
+
+    // 최소값 보장 (각 지역에 최소 1개)
+    const minPerDistrict = 1;
+    const guaranteedTotal = minPerDistrict * count;
+    const remaining = total - guaranteedTotal;
+
+    // 랜덤 가중치 생성
+    const weights = Array.from({ length: count }, () => Math.random());
+    const weightSum = weights.reduce((sum, w) => sum + w, 0);
+
+    // 가중치에 따라 나머지 분배
+    const counts = weights.map((weight) => {
+      return minPerDistrict + Math.floor((weight / weightSum) * remaining);
+    });
+
+    // 반올림 오차로 인한 차이 보정
+    const currentSum = counts.reduce((sum, c) => sum + c, 0);
+    const diff = total - currentSum;
+
+    // 차이만큼 랜덤 인덱스에 분배
+    for (let i = 0; i < Math.abs(diff); i++) {
+      const randomIndex = Math.floor(Math.random() * count);
+      counts[randomIndex] += diff > 0 ? 1 : -1;
+    }
+
+    return counts;
+  };
+
+  // ✅ 컴포넌트 마운트 시 한 번만 계산 (매 렌더링마다 바뀌지 않도록)
+  const [districtCountsCache] = useState<Record<string, number[]>>(() => {
+    const cache: Record<string, number[]> = {};
+    Object.keys(regionDistricts).forEach((region) => {
+      cache[region] = getDistrictCounts(region);
+    });
+    return cache;
+  });
 
   const handleApplyFilter = () => {
     onFilterChange({
@@ -466,23 +550,23 @@ export default function JobSearchFilter({
                 </h3>
                 <div className="grid grid-cols-2 overflow-y-auto gap-x-2 gap-y-1 max-h-96">
                   {[
-                    { name: "서울", count: "62,055" },
-                    { name: "경기", count: "51,552" },
-                    { name: "인천", count: "8,486" },
-                    { name: "부산", count: "13,276" },
-                    { name: "대구", count: "8,208" },
-                    { name: "광주", count: "3,531" },
-                    { name: "대전", count: "4,825" },
-                    { name: "울산", count: "3,289" },
-                    { name: "세종", count: "1,453" },
-                    { name: "강원", count: "1,721" },
-                    { name: "경남", count: "11,845" },
-                    { name: "경북", count: "8,029" },
-                    { name: "전남", count: "3,837" },
-                    { name: "전북", count: "4,965" },
-                    { name: "충남", count: "8,502" },
-                    { name: "충북", count: "6,875" },
-                    { name: "제주", count: "1,615" },
+                    { name: "서울", count: "12,571" },
+                    { name: "경기", count: "8,764" },
+                    { name: "인천", count: "3,722" },
+                    { name: "부산", count: "1,017" },
+                    { name: "대구", count: "529" },
+                    { name: "광주", count: "89" },
+                    { name: "대전", count: "981" },
+                    { name: "울산", count: "358" },
+                    { name: "세종", count: "251" },
+                    { name: "강원", count: "941" },
+                    { name: "경남", count: "1,023" },
+                    { name: "경북", count: "802" },
+                    { name: "전남", count: "941" },
+                    { name: "전북", count: "542" },
+                    { name: "충남", count: "1,240" },
+                    { name: "충북", count: "915" },
+                    { name: "제주", count: "41" },
                   ].map((region) => {
                     const hasDistricts = regionDistricts[region.name]; // ✅ 하위지역 있는지 확인
                     const isSelected =
@@ -497,23 +581,14 @@ export default function JobSearchFilter({
                         key={region.name}
                         onClick={() => {
                           if (hasDistricts) {
-                            // 하위지역 있으면 펼치기/접기
+                            // 하위지역 있으면 펼치기/접기만
                             if (expandedRegion === region.name) {
                               setExpandedRegion(null);
                             } else {
                               setExpandedRegion(region.name);
-                              // 전체 선택 추가
-                              if (
-                                !selectedRegions.includes(`${region.name} 전체`)
-                              ) {
-                                setSelectedRegions((prev) => [
-                                  ...prev,
-                                  `${region.name} 전체`,
-                                ]);
-                              }
                             }
                           } else {
-                            // 하위지역 없으면 (세종) 그냥 선택
+                            // 하위지역 없으면 그냥 선택
                             setExpandedRegion(null);
                             handleRegionToggle(region.name);
                           }
@@ -577,29 +652,38 @@ export default function JobSearchFilter({
                         </div>
                       </label>
                       {/* 하위지역 목록 */}
-                      {regionDistricts[expandedRegion].map((district) => (
-                        <label
-                          key={district}
-                          className="flex items-center justify-between px-2 py-1 text-xs rounded hover:bg-gray-50"
-                        >
-                          <div className="flex items-center gap-1">
-                            <input
-                              type="checkbox"
-                              checked={selectedRegions.includes(
-                                `${expandedRegion} ${district}`,
-                              )}
-                              onChange={() =>
-                                handleDistrictToggle(expandedRegion, district)
-                              }
-                              className="w-3.5 h-3.5 text-purple-600"
-                            />
-                            <span>{district}</span>
-                          </div>
-                          <span className="text-xs text-gray-500">
-                            ({getRandomJobCount()})
-                          </span>
-                        </label>
-                      ))}
+                      {(() => {
+                        const districtCounts =
+                          districtCountsCache[expandedRegion] || [];
+                        return regionDistricts[expandedRegion].map(
+                          (district, index) => (
+                            <label
+                              key={district}
+                              className="flex items-center justify-between px-2 py-1 text-xs rounded hover:bg-gray-50"
+                            >
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedRegions.includes(
+                                    `${expandedRegion} ${district}`,
+                                  )}
+                                  onChange={() =>
+                                    handleDistrictToggle(
+                                      expandedRegion,
+                                      district,
+                                    )
+                                  }
+                                  className="w-3.5 h-3.5 text-purple-600"
+                                />
+                                <span>{district}</span>
+                              </div>
+                              <span className="text-xs text-gray-500">
+                                ({districtCounts[index].toLocaleString()})
+                              </span>
+                            </label>
+                          ),
+                        );
+                      })()}
                     </>
                   ) : (
                     <div className="flex items-center justify-center col-span-3 py-12 text-sm text-gray-400">

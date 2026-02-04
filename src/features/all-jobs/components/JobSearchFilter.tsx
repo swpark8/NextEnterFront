@@ -25,87 +25,335 @@ export default function JobSearchFilter({
 
   // ✅ 모든 지역의 하위지역 데이터
   const regionDistricts: Record<string, string[]> = {
-    "서울": [
-      "강남구", "강동구", "강북구", "강서구", "관악구", "광진구",
-      "구로구", "금천구", "노원구", "도봉구", "동대문구", "동작구",
-      "마포구", "서대문구", "서초구", "성동구", "성북구", "송파구",
-      "양천구", "영등포구", "용산구", "은평구", "종로구", "중구", "중랑구"
+    서울: [
+      "강남구",
+      "강동구",
+      "강북구",
+      "강서구",
+      "관악구",
+      "광진구",
+      "구로구",
+      "금천구",
+      "노원구",
+      "도봉구",
+      "동대문구",
+      "동작구",
+      "마포구",
+      "서대문구",
+      "서초구",
+      "성동구",
+      "성북구",
+      "송파구",
+      "양천구",
+      "영등포구",
+      "용산구",
+      "은평구",
+      "종로구",
+      "중구",
+      "중랑구",
     ],
-    "부산": [
-      "강서구", "금정구", "기장군", "남구", "동구", "동래구",
-      "부산진구", "북구", "사상구", "사하구", "서구", "수영구",
-      "연제구", "영도구", "해운대구", "중구"
+    부산: [
+      "강서구",
+      "금정구",
+      "기장군",
+      "남구",
+      "동구",
+      "동래구",
+      "부산진구",
+      "북구",
+      "사상구",
+      "사하구",
+      "서구",
+      "수영구",
+      "연제구",
+      "영도구",
+      "해운대구",
+      "중구",
     ],
-    "대구": [
-      "남구", "달서구", "동구", "북구",
-      "서구", "수성구", "중구", "달성군"
+    대구: [
+      "남구",
+      "달서구",
+      "동구",
+      "북구",
+      "서구",
+      "수성구",
+      "중구",
+      "달성군",
     ],
-    "인천": [
-      "강화구", "계양구", "미추홀구", "남동구", "동구",
-      "부평구", "서구", "연수구", "옹진군", "중구"
+    인천: [
+      "강화구",
+      "계양구",
+      "미추홀구",
+      "남동구",
+      "동구",
+      "부평구",
+      "서구",
+      "연수구",
+      "옹진군",
+      "중구",
     ],
-    "광주": [
-      "광산구", "남구", "동구", "북구", "서구"
+    광주: ["광산구", "남구", "동구", "북구", "서구"],
+    대전: ["대덕구", "동구", "서구", "유성구", "중구"],
+    울산: ["남구", "동구", "북구", "중구", "울주군"],
+    경기: [
+      "가평시",
+      "고양시",
+      "과천시",
+      "광명시",
+      "광주시",
+      "구리시",
+      "군포시",
+      "김포시",
+      "남양주시",
+      "동두천시",
+      "부천시",
+      "성남시",
+      "수원시",
+      "시흥시",
+      "안산시",
+      "안성시",
+      "안양시",
+      "양주시",
+      "여주시",
+      "오산시",
+      "용인시",
+      "의정부시",
+      "이천시",
+      "파주시",
+      "평택시",
+      "포천시",
+      "하남시",
+      "화성시",
+      "가평군",
+      "연천군",
+      "양평군",
     ],
-    "대전": [
-      "대덕구", "동구", "서구", "유성구", "중구"
+    강원: [
+      "강릉시",
+      "동해시",
+      "삼척시",
+      "속초시",
+      "원주시",
+      "춘천시",
+      "태백시",
+      "고성군",
+      "양구군",
+      "영월군",
+      "평창군",
+      "정선군",
+      "철원군",
+      "화천군",
+      "양양군",
+      "인제군",
+      "황성군",
+      "가평군",
     ],
-    "울산": [
-      "남구", "동구", "북구", "중구", "울주군"
+    경남: [
+      "창원시",
+      "진주시",
+      "통영시",
+      "사천시",
+      "김해시",
+      "밀양시",
+      "거제시",
+      "양산시",
+      "의령군",
+      "함안군",
+      "창녕군",
+      "고성군",
+      "남해군",
+      "하동군",
+      "산청군",
+      "함양군",
+      "거창군",
+      "합천군",
     ],
-    "경기": [
-      "가평시", "고양시", "과천시", "광명시", "광주시", "구리시",
-      "군포시", "김포시", "남양주시", "동두천시", "부천시", "성남시",
-      "수원시", "시흥시", "안산시", "안성시", "안양시", "양주시",
-      "여주시", "오산시", "용인시", "의정부시", "이천시", "파주시",
-      "평택시", "포천시", "하남시", "화성시", "가평군", "연천군", "양평군"
+    경북: [
+      "포항시",
+      "경주시",
+      "김천시",
+      "안동시",
+      "구미시",
+      "영주시",
+      "영천시",
+      "상주시",
+      "문경시",
+      "경산시",
+      "군위군",
+      "의성군",
+      "청송군",
+      "영양군",
+      "영덕군",
+      "청도군",
+      "고령군",
+      "성주군",
+      "칠곡군",
+      "예천군",
+      "봉화군",
+      "울진군",
+      "울릉군",
     ],
-    "강원": [
-      "강릉시", "동해시", "삼척시", "속초시", "원주시", "춘천시",
-      "태백시", "고성군", "양구군", "영월군", "평창군", "정선군",
-      "철원군", "화천군", "양양군", "인제군", "황성군", "가평군"
+    전남: [
+      "목포시",
+      "여수시",
+      "순천시",
+      "나주시",
+      "광양시",
+      "담양군",
+      "곱성군",
+      "구례군",
+      "고흥군",
+      "보성군",
+      "화순군",
+      "장흥군",
+      "강진군",
+      "해남군",
+      "영암군",
+      "무안군",
+      "함평군",
+      "영광군",
+      "장성군",
+      "완도군",
+      "진도군",
+      "신안군",
     ],
-    "경남": [
-      "창원시", "진주시", "통영시", "사천시", "김해시", "밀양시",
-      "거제시", "양산시", "의령군", "함안군", "창녕군", "고성군",
-      "남해군", "하동군", "산청군", "함양군", "거창군", "합천군"
+    전북: [
+      "전주시",
+      "군산시",
+      "익산시",
+      "정읍시",
+      "남원시",
+      "김제시",
+      "완주군",
+      "진안군",
+      "무주군",
+      "고창군",
+      "부안군",
+      "순창군",
+      "임실군",
+      "장수군",
     ],
-    "경북": [
-      "포항시", "경주시", "김천시", "안동시", "구미시", "영주시",
-      "영천시", "상주시", "문경시", "경산시", "군위군", "의성군",
-      "청송군", "영양군", "영덕군", "청도군", "고령군", "성주군",
-      "칠곡군", "예천군", "봉화군", "울진군", "울릉군"
+    충남: [
+      "천안시",
+      "공주시",
+      "보령시",
+      "아산시",
+      "서산시",
+      "논산시",
+      "계룡시",
+      "당진시",
+      "금산군",
+      "부여군",
+      "서천군",
+      "청양군",
+      "홍성군",
+      "예산군",
+      "태안군",
     ],
-    "전남": [
-      "목포시", "여수시", "순천시", "나주시", "광양시",
-      "담양군", "곱성군", "구례군", "고흥군", "보성군",
-      "화순군", "장흥군", "강진군", "해남군", "영암군",
-      "무안군", "함평군", "영광군", "장성군", "완도군",
-      "진도군", "신안군"
+    충북: [
+      "청주시",
+      "충주시",
+      "제천시",
+      "보은군",
+      "옥천군",
+      "영동군",
+      "진천군",
+      "괴산군",
+      "음성군",
+      "단양군",
+      "증평군",
     ],
-    "전북": [
-      "전주시", "군산시", "익산시", "정읍시", "남원시",
-      "김제시", "완주군", "진안군", "무주군", "고창군",
-      "부안군", "순창군", "임실군", "장수군"
+    제주: ["제주시", "서귀포시"],
+    세종: [
+      "조치원읍",
+      "연기면",
+      "연동면",
+      "부강면",
+      "금남면",
+      "장군면",
+      "연서면",
+      "전의면",
+      "전동면",
+      "소정면",
+      "한솔동",
+      "새롬동",
+      "나성동",
+      "다정동",
+      "어진동",
+      "해밀동",
+      "아름동",
+      "종촌동",
+      "고운동",
+      "보람동",
+      "대평동",
+      "소담동",
     ],
-    "충남": [
-      "천안시", "공주시", "보령시", "아산시", "서산시",
-      "논산시", "계룡시", "당진시", "금산군", "부여군",
-      "서천군", "청양군", "홍성군", "예산군", "태안군"
-    ],
-    "충북": [
-      "청주시", "충주시", "제천시", "보은군", "옥천군",
-      "영동군", "진천군", "괴산군", "음성군", "단양군", "증평군"
-    ],
-    "제주": [
-      "제주시", "서귀포시"
-    ]
   };
 
-  // ✅ 랜덤 공고 수 생성 함수
-  const getRandomJobCount = () => {
-    return Math.floor(Math.random() * 900) + 100; // 100~999 사이
+  // ✅ 지역별 총 공고 수
+  const regionTotalCounts: Record<string, number> = {
+    서울: 12571,
+    경기: 8764,
+    인천: 3722,
+    부산: 1017,
+    대구: 529,
+    광주: 89,
+    대전: 981,
+    울산: 358,
+    세종: 251,
+    강원: 941,
+    경남: 1023,
+    경북: 802,
+    전남: 941,
+    전북: 542,
+    충남: 1240,
+    충북: 915,
+    제주: 41,
   };
+
+  // ✅ 지역별 하위 지역 공고 수 분배 (합이 총 공고 수와 일치, 랜덤 분배)
+  const getDistrictCounts = (regionName: string): number[] => {
+    const districts = regionDistricts[regionName];
+    if (!districts) return [];
+
+    const total = regionTotalCounts[regionName];
+    const count = districts.length;
+
+    // 최소값 보장 (각 지역에 최소 1개)
+    const minPerDistrict = 1;
+    const guaranteedTotal = minPerDistrict * count;
+    const remaining = total - guaranteedTotal;
+
+    // 랜덤 가중치 생성
+    const weights = Array.from({ length: count }, () => Math.random());
+    const weightSum = weights.reduce((sum, w) => sum + w, 0);
+
+    // 가중치에 따라 나머지 분배
+    const counts = weights.map((weight) => {
+      return minPerDistrict + Math.floor((weight / weightSum) * remaining);
+    });
+
+    // 반올림 오차로 인한 차이 보정
+    const currentSum = counts.reduce((sum, c) => sum + c, 0);
+    const diff = total - currentSum;
+
+    // 차이만큼 랜덤 인덱스에 분배
+    for (let i = 0; i < Math.abs(diff); i++) {
+      const randomIndex = Math.floor(Math.random() * count);
+      counts[randomIndex] += diff > 0 ? 1 : -1;
+    }
+
+    return counts;
+  };
+
+  // ✅ 컴포넌트 마운트 시 한 번만 계산 (매 렌더링마다 바뀌지 않도록)
+  const [districtCountsCache] = useState<Record<string, number[]>>(() => {
+    const cache: Record<string, number[]> = {};
+    Object.keys(regionDistricts).forEach((region) => {
+      cache[region] = getDistrictCounts(region);
+    });
+    return cache;
+  });
 
   const handleApplyFilter = () => {
     onFilterChange({
@@ -302,29 +550,31 @@ export default function JobSearchFilter({
                 </h3>
                 <div className="grid grid-cols-2 overflow-y-auto gap-x-2 gap-y-1 max-h-96">
                   {[
-                    { name: "서울", count: "62,055" },
-                    { name: "경기", count: "51,552" },
-                    { name: "인천", count: "8,486" },
-                    { name: "부산", count: "13,276" },
-                    { name: "대구", count: "8,208" },
-                    { name: "광주", count: "3,531" },
-                    { name: "대전", count: "4,825" },
-                    { name: "울산", count: "3,289" },
-                    { name: "세종", count: "1,453" },
-                    { name: "강원", count: "1,721" },
-                    { name: "경남", count: "11,845" },
-                    { name: "경북", count: "8,029" },
-                    { name: "전남", count: "3,837" },
-                    { name: "전북", count: "4,965" },
-                    { name: "충남", count: "8,502" },
-                    { name: "충북", count: "6,875" },
-                    { name: "제주", count: "1,615" },
+                    { name: "서울", count: "12,571" },
+                    { name: "경기", count: "8,764" },
+                    { name: "인천", count: "3,722" },
+                    { name: "부산", count: "1,017" },
+                    { name: "대구", count: "529" },
+                    { name: "광주", count: "89" },
+                    { name: "대전", count: "981" },
+                    { name: "울산", count: "358" },
+                    { name: "세종", count: "251" },
+                    { name: "강원", count: "941" },
+                    { name: "경남", count: "1023" },
+                    { name: "경북", count: "802" },
+                    { name: "전남", count: "941" },
+                    { name: "전북", count: "542" },
+                    { name: "충남", count: "1,240" },
+                    { name: "충북", count: "915" },
+                    { name: "제주", count: "41" },
                   ].map((region) => {
                     const hasDistricts = regionDistricts[region.name]; // ✅ 하위지역 있는지 확인
                     const isSelected =
                       expandedRegion === region.name ||
                       selectedRegions.includes(region.name) ||
-                      selectedRegions.some((r) => r.startsWith(`${region.name} `)); // ✅ 모든 지역 대상
+                      selectedRegions.some((r) =>
+                        r.startsWith(`${region.name} `),
+                      ); // ✅ 모든 지역 대상
 
                     return (
                       <button
@@ -388,35 +638,52 @@ export default function JobSearchFilter({
                         <div className="flex items-center gap-2">
                           <input
                             type="checkbox"
-                            checked={selectedRegions.includes(`${expandedRegion} 전체`)}
-                            onChange={() => handleRegionToggle(`${expandedRegion} 전체`)}
+                            checked={selectedRegions.includes(
+                              `${expandedRegion} 전체`,
+                            )}
+                            onChange={() =>
+                              handleRegionToggle(`${expandedRegion} 전체`)
+                            }
                             className="w-3.5 h-3.5 text-blue-600"
                           />
-                          <span className="font-medium">{expandedRegion}전체</span>
+                          <span className="font-medium">
+                            {expandedRegion}전체
+                          </span>
                         </div>
                       </label>
                       {/* 하위지역 목록 */}
-                      {regionDistricts[expandedRegion].map((district) => (
-                        <label
-                          key={district}
-                          className="flex items-center justify-between px-2 py-1 text-xs rounded hover:bg-gray-50"
-                        >
-                          <div className="flex items-center gap-1">
-                            <input
-                              type="checkbox"
-                              checked={selectedRegions.includes(
-                                `${expandedRegion} ${district}`,
-                              )}
-                              onChange={() =>
-                                handleDistrictToggle(expandedRegion, district)
-                              }
-                              className="w-3.5 h-3.5 text-blue-600"
-                            />
-                            <span>{district}</span>
-                          </div>
-                          <span className="text-xs text-gray-500">({getRandomJobCount()})</span>
-                        </label>
-                      ))}
+                      {(() => {
+                        const districtCounts =
+                          districtCountsCache[expandedRegion] || [];
+                        return regionDistricts[expandedRegion].map(
+                          (district, index) => (
+                            <label
+                              key={district}
+                              className="flex items-center justify-between px-2 py-1 text-xs rounded hover:bg-gray-50"
+                            >
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedRegions.includes(
+                                    `${expandedRegion} ${district}`,
+                                  )}
+                                  onChange={() =>
+                                    handleDistrictToggle(
+                                      expandedRegion,
+                                      district,
+                                    )
+                                  }
+                                  className="w-3.5 h-3.5 text-blue-600"
+                                />
+                                <span>{district}</span>
+                              </div>
+                              <span className="text-xs text-gray-500">
+                                ({districtCounts[index].toLocaleString()})
+                              </span>
+                            </label>
+                          ),
+                        );
+                      })()}
                     </>
                   ) : (
                     <div className="flex items-center justify-center col-span-3 py-12 text-sm text-gray-400">
