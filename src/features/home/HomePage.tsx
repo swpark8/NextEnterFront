@@ -45,6 +45,10 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
   // ✅ 호버된 카드 ID 추적
   const [hoveredCardId, setHoveredCardId] = useState<number | null>(null);
 
+  // ✅ 코로셀 상태
+  const [currentTab, setCurrentTab] = useState<'recommended' | 'hot' | 'public'>('recommended');
+  const [carouselIndex, setCarouselIndex] = useState(0);
+
   // ✅ 광고 배너 자동 페이드 (3초마다)
   useEffect(() => {
     const timer = setInterval(() => {
@@ -60,10 +64,10 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
       try {
         setIsLoading(true);
         
-        // 추천 공고 3개
+        // 추천 공고 12개 (캐러셀용)
         const recommendedResponse = await getJobPostings({
           page: 0,
-          size: 3,
+          size: 12,
           status: "OPEN"
         });
         setRecommendedJobs(recommendedResponse.content);
@@ -143,74 +147,50 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
       {/* 상단 영역 */}
       <div className="flex gap-6 mb-6">
         {/* 왼쪽: 오늘의 합격 꿀팁 */}
-        <aside className="w-64 space-y-4">
-          {/* 꿀팁 박스 */}
-          <div className="h-52 p-6 bg-yellow-50 border-2 border-yellow-200 rounded-xl shadow-sm flex flex-col justify-between">
-            <div>
-              <div className="flex items-center mb-4">
-                <div className="flex items-center justify-center w-12 h-12 mr-3 bg-yellow-300 rounded-full">
-                  <span className="text-2xl">📝</span>
-                </div>
-                <h2 className="text-lg font-bold text-gray-900">
-                  오늘의 합격 꿀팁
-                </h2>
+        <aside className="w-64 space-y-3">
+          {/* 꿀팁 박스 - 큰 카드 */}
+          <div className="p-6 bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-2xl shadow-md">
+            <div className="flex items-start mb-4">
+              {/* 그라데이션 아이콘 */}
+              <div className="flex items-center justify-center w-14 h-14 mr-3 bg-gradient-to-br from-purple-400 via-blue-400 to-teal-400 rounded-2xl flex-shrink-0">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
               </div>
-              <p className="text-sm leading-relaxed text-gray-700">
-                붙는 취업을 위해
-                <br />
-                전략을 세우는 사이트가 있어요.
-              </p>
+              <h2 className="text-lg font-bold text-gray-900 leading-tight pt-1">
+                오늘의 합격 꿀팁
+              </h2>
             </div>
-            <button className="text-sm font-semibold text-blue-600 hover:underline text-left">
+            <p className="text-sm leading-relaxed text-gray-700 mb-4">
+              경쟁자는 합격하고
+              <br />
+              나는 탈락하는 이유, 알려드려요.
+            </p>
+            <button className="text-sm font-semibold text-blue-600 hover:underline">
               확인하기
             </button>
           </div>
 
           {/* 인적성검사 */}
-          <div className="h-24 p-6 bg-white border-2 border-gray-200 rounded-xl shadow-sm flex flex-col justify-center">
-            <div className="flex items-center mb-3">
-              <span className="mr-3 text-2xl">💡</span>
-              <h3 className="text-base font-bold">인적성검사</h3>
+          <div className="p-5 bg-gray-50 border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+            <div className="flex items-center mb-2">
+              <div className="flex items-center justify-center w-10 h-10 mr-3 bg-blue-100 rounded-full">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-base font-bold text-gray-900">인적성검사</h3>
             </div>
-            <p className="text-sm text-blue-600 hover:underline cursor-pointer">
-              사람인적성 UP
+            <p className="text-sm text-gray-600 ml-13">
+              서류합격률 UP
             </p>
           </div>
 
-          {/* 외국인 채용은 KoMate */}
-          <div className="h-24 p-6 bg-white border-2 border-gray-200 rounded-xl shadow-sm flex flex-col justify-center">
-            <div className="flex items-center mb-3">
-              <span className="mr-3 text-2xl">✨</span>
-              <h3 className="text-base font-bold">외국인 채용은 KoMate</h3>
-            </div>
-            <p className="text-sm text-gray-600">외국인 전용 채용 플랫폼</p>
-          </div>
-
-          {/* 커리어 마켓플레이스 */}
-          <div className="h-27 p-6 bg-white border-2 border-gray-200 rounded-xl shadow-sm flex flex-col justify-center">
-            <div className="flex items-center">
-              <span className="mr-3 text-2xl">📬</span>
-              <h3 className="text-sm font-bold leading-tight">커리어 마켓플레이스 앱은 포지션 제안</h3>
-            </div>
-          </div>
         </aside>
 
-        {/* 중앙: 회원님을 위한 추천 공고 */}
-        <div className="flex-1 space-y-6">
-          {/* 추천 공고 헤더 */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">🔥</span>
-              <h2 className="text-2xl font-bold">회원님을 위한 추천 공고</h2>
-            </div>
-            <div className="flex gap-2">
-              <button className="px-4 py-2 text-sm font-semibold text-blue-600 bg-blue-50 border border-blue-600 rounded-lg hover:bg-blue-100">
-                🔍 지금 핫한 기업 공고
-              </button>
-            </div>
-          </div>
-
-          {/* ✅ 로딩 상태 */}
+        {/* 중앙: 추천 공고 캐러셀 */}
+        <div className="flex-1">
+          {/* ✅ 캐러셀 공고 카드 */}
           {isLoading ? (
             <div className="flex items-center justify-center py-20">
               <div className="text-center">
@@ -219,87 +199,99 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
               </div>
             </div>
           ) : (
-            <>
-              {/* ✅ 추천 공고 카드 3개 */}
-              <div className="grid grid-cols-3 gap-4">
-                {recommendedJobs.length > 0 ? (
-                  recommendedJobs.map((job) => (
-                    <div
-                      key={job.jobId}
-                      onClick={() => handleJobClick(job.jobId)}
-                      className="flex flex-col p-6 bg-white border-2 border-gray-200 rounded-xl cursor-pointer transition hover:shadow-lg hover:border-blue-400"
+            <div className="relative">
+              {recommendedJobs.length > 0 ? (
+                <>
+                  {/* 왼쪽 화살표 */}
+                  {carouselIndex > 0 && (
+                    <button
+                      onClick={() => setCarouselIndex(prev => Math.max(0, prev - 1))}
+                      className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition-all -translate-x-6"
                     >
-                      <div className="flex items-center justify-center w-16 h-16 mb-4 overflow-hidden bg-white border border-gray-200 rounded-lg">
-                        {job.logoUrl ? (
-                          <img 
-                            src={job.logoUrl} 
-                            alt={job.companyName} 
-                            className="w-full h-full object-contain p-1"
-                          />
-                        ) : (
-                          <div className="flex items-center justify-center w-full h-full text-2xl font-bold text-white bg-gradient-to-br from-blue-500 to-purple-600">
-                            {getCompanyInitial(job.companyName)}
-                          </div>
-                        )}
-                      </div>
-                      <h4 className="mb-3 text-sm font-bold text-gray-900 line-clamp-2" style={{ minHeight: "40px" }}>
-                        {job.title}
-                      </h4>
-                      <p className="mb-2 text-xs text-gray-600">{job.companyName}</p>
-                      <p className="mb-2 text-xs text-gray-500">{job.location}</p>
-                      <p className="text-xs font-semibold text-blue-600">{calculateDday(job.deadline)}</p>
-                    </div>
-                  ))
-                ) : (
-                  <div className="col-span-3 py-12 text-center text-gray-500">
-                    <p className="text-4xl mb-4">📭</p>
-                    <p>등록된 공고가 없습니다</p>
-                  </div>
-                )}
-              </div>
-
-              {/* ✅ 회원님이 꼭 봐야 할 공고 */}
-              <div className="p-6 bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-200 rounded-xl">
-                <h3 className="mb-3 text-lg font-bold text-orange-900">
-                  🎯 회원님이 꼭 봐야 할 공고 (플래티넘)
-                </h3>
-                <div className="grid grid-cols-3 gap-4">
-                  {moreJobs.length > 0 ? (
-                    moreJobs.map((job) => (
-                      <div
-                        key={job.jobId}
-                        onClick={() => handleJobClick(job.jobId)}
-                        className="p-4 bg-white border border-gray-200 rounded-lg cursor-pointer hover:shadow-md transition"
-                      >
-                        <div className="flex items-center mb-3">
-                          <div className="flex items-center justify-center w-10 h-10 mr-2 overflow-hidden bg-white border border-gray-200 rounded">
-                            {job.logoUrl ? (
-                              <img 
-                                src={job.logoUrl} 
-                                alt={job.companyName} 
-                                className="w-full h-full object-contain p-0.5"
-                              />
-                            ) : (
-                              <div className="flex items-center justify-center w-full h-full text-sm font-bold text-white bg-gradient-to-br from-blue-500 to-purple-600">
-                                {getCompanyInitial(job.companyName)}
-                              </div>
-                            )}
-                          </div>
-                          <h5 className="text-sm font-bold text-gray-900 line-clamp-1 flex-1">{job.title}</h5>
-                        </div>
-                        <p className="mb-1 text-xs text-gray-600">{job.companyName}</p>
-                        <p className="mb-1 text-xs text-gray-500">{job.location}</p>
-                        <p className="text-xs font-semibold text-orange-600">{calculateDday(job.deadline)}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="col-span-3 py-8 text-center text-gray-500">
-                      <p>등록된 공고가 없습니다</p>
-                    </div>
+                      <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
                   )}
+
+                  {/* 캐러셀 컨테이너 */}
+                  <div className="overflow-hidden bg-gray-50 rounded-3xl p-8 border-2 border-gray-200">
+                    {/* 제목 */}
+                    <div className="flex items-center mb-6">
+                      <span className="mr-3 text-2xl">👤</span>
+                      <h3 className="text-base font-bold">회원님을 위한 추천공고</h3>
+                    </div>
+                    
+                    <div 
+                      className="flex transition-transform duration-500 ease-in-out"
+                      style={{ 
+                        transform: `translateX(-${carouselIndex * (100 / 3)}%)`,
+                      }}
+                    >
+                      {recommendedJobs.map((job) => (
+                        <div
+                          key={job.jobId}
+                          className="flex-shrink-0 px-3"
+                          style={{ width: 'calc(100% / 3)' }}
+                        >
+                          <div
+                            onClick={() => handleJobClick(job.jobId)}
+                            className="bg-white rounded-2xl overflow-hidden cursor-pointer transition-all hover:shadow-lg p-6 h-full flex flex-col border-2 border-gray-200"
+                          >
+                            {/* 로고 영역 */}
+                            <div className="flex items-center justify-start mb-4">
+                              {job.logoUrl ? (
+                                <img 
+                                  src={job.logoUrl} 
+                                  alt={job.companyName} 
+                                  className="h-8 w-auto object-contain"
+                                />
+                              ) : (
+                                <div className="px-3 py-1 text-sm font-bold text-gray-400">
+                                  {job.companyName}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* 공고 제목 */}
+                            <h4 className="mb-3 text-lg font-bold text-gray-900 line-clamp-2 flex-grow">
+                              {job.title}
+                            </h4>
+                            
+                            {/* 회사명 */}
+                            <p className="mb-4 text-sm text-gray-600">{job.companyName}</p>
+                            
+                            {/* 마감일 */}
+                            <div className="mt-auto">
+                              <p className="text-sm text-gray-400 text-right">
+                                ~{new Date(job.deadline).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}({['일','월','화','수','목','금','토'][new Date(job.deadline).getDay()]})
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 오른쪽 화살표 */}
+                  {carouselIndex < recommendedJobs.length - 3 && (
+                    <button
+                      onClick={() => setCarouselIndex(prev => prev + 1)}
+                      className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition-all translate-x-6"
+                    >
+                      <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  )}
+                </>
+              ) : (
+                <div className="py-12 text-center text-gray-500">
+                  <p className="text-4xl mb-4">📭</p>
+                  <p>등록된 공고가 없습니다</p>
                 </div>
-              </div>
-            </>
+              )}
+            </div>
           )}
         </div>
 
@@ -366,17 +358,8 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
             <div className="absolute text-xs bottom-2 right-3">5/5</div>
           </div>
 
-          <div className="relative h-46 p-5 text-white shadow-lg bg-gradient-to-br from-orange-500 to-orange-700 rounded-xl">
-            <h3 className="mb-2 text-base font-bold">쿠팡로지스틱스</h3>
-            <h3 className="mb-3 text-lg font-bold">
-              쿠팡 CLS 플렉스 어시스턴트 채용
-            </h3>
-            <div className="mb-2 text-xl font-bold">coupang</div>
-            <div className="text-xs">logistics services</div>
-            <div className="absolute text-xs bottom-2 right-3">5/8</div>
-          </div>
 
-          <div className="relative h-40 p-5 bg-white border border-gray-200 shadow-lg rounded-xl">
+          <div className="relative h-30 p-5 bg-white border border-gray-200 shadow-lg rounded-xl">
             <h3 className="mb-2 text-base font-bold">SK 하이닉스 채용 공고</h3>
             <p className="mb-3 text-xs text-gray-600">
               연봉 5500만원~7500만원
@@ -507,7 +490,7 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
                           <img 
                             src={job.thumbnailUrl} 
                             alt={job.title}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-contain bg-white"
                           />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
@@ -544,7 +527,7 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
                         <img 
                           src={job.detailImageUrl} 
                           alt={`${job.title} 상세`}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain bg-gray-900"
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-purple-100 via-blue-100 to-pink-100 flex items-center justify-center">
