@@ -51,6 +51,9 @@ export default function InterviewChatPage({
   // 백엔드 인터뷰 ID
   const [realInterviewId, setRealInterviewId] = useState<number | null>(null);
 
+  // 면접 완료 상태 (알람 표시 방지용)
+  const [isInterviewCompleted, setIsInterviewCompleted] = useState(false);
+
   // 스크롤 관련
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -371,42 +374,71 @@ export default function InterviewChatPage({
 
       if (response.isFinished) {
         // 면접 완료: 백엔드에서 받은 최종 결과로 완료 처리
-        setStep("setup"); // 경고 방지용 상태 변경
+        // 주의: setStep("setup") 호출하면 안됨! 면접 화면 유지해야 함
 
-        // Show the final goodbye message briefly before redirecting (optional but good UX)
-        if (response.realtime?.next_question) {
-          const goodbyeMsg: Message = {
-            id: messages.length + 2,
-            sender: "ai",
-            text:
-              response.realtime.next_question ||
-              "수고하셨습니다. 면접 결과는 [면접 결과] 페이지에서 상세 확인 가능합니다.",
-            timestamp: new Date().toLocaleTimeString("ko-KR", {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-          };
-          setMessages((prev) => [...prev, goodbyeMsg]);
-        }
+        // ✅ 면접 완료 상태 설정 (알람 방지)
+        setIsInterviewCompleted(true);
 
-        // Wait a moment for the user to read the message, then finish
-        setTimeout(() => {
-          handleCompleteInterview(response.finalResult);
-        }, 2000);
-        return;
-      }
-
-      if (response.realtime?.reaction && response.realtime.reaction.text) {
-        const reactionMsg: Message = {
+        // Show the final goodbye message briefly before redirecting
+        const goodbyeMsg: Message = {
           id: messages.length + 2,
           sender: "ai",
-          text: `[면접관 반응] ${response.realtime.reaction.text}`,
+          text:
+            response.realtime?.next_question ||
+            response.question ||
+            "수고하셨습니다. 면접 결과는 [면접 결과] 페이지에서 상세 확인 가능합니다.",
           timestamp: new Date().toLocaleTimeString("ko-KR", {
             hour: "2-digit",
             minute: "2-digit",
           }),
         };
-        setMessages((prev) => [...prev, reactionMsg]);
+        setMessages((prev) => [...prev, goodbyeMsg]);
+        setLoading(false);
+
+        // Wait a moment for the user to read the message, then navigate to results
+        setTimeout(() => {
+          handleCompleteInterview(response.finalResult);
+        }, 2500);
+        return;
+      }
+
+      // 면접관 반응 표시 (감정만 간단히)
+      // welcome, complete 타입은 특수 상황이므로 표시 안함
+      if (response.realtime?.reaction) {
+        const reactionType = response.realtime.reaction.type || "neutral";
+
+        // 특수 타입은 반응 표시 생략
+        const skipTypes = ["welcome", "complete", "wrap_up"];
+        if (skipTypes.includes(reactionType)) {
+          // 반응 메시지 생략
+        } else {
+          // 반응 타입에 따른 감정 매핑 (답변 품질 기반)
+          const emotionMap: Record<string, string> = {
+            "impressed": "인상적이네요",
+            "satisfied": "만족스럽습니다",
+            "good": "좋습니다",
+            "neutral": "네",
+            "clarify": "조금 더 설명해주세요",
+            "concerned": "아쉽네요",
+            "unsatisfied": "부족합니다",
+            "acknowledge": "알겠습니다",
+            "transition": "다음 질문으로",
+            "reflect": "생각해보면",
+            "paraphrase": "이해했습니다"
+          };
+          const emotion = emotionMap[reactionType] || "네";
+
+          const reactionMsg: Message = {
+            id: messages.length + 2,
+            sender: "ai",
+            text: `(${emotion})`,
+            timestamp: new Date().toLocaleTimeString("ko-KR", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          };
+          setMessages((prev) => [...prev, reactionMsg]);
+        }
       }
 
       setTimeout(() => {
@@ -449,8 +481,14 @@ export default function InterviewChatPage({
             title="실전 모의 면접"
             activeMenu={activeMenu}
             onMenuClick={(menuId) => {
+              // ✅ 면접 완료 상태면 알람 없이 바로 이동
+              if (isInterviewCompleted) {
+                if (onMenuClick) onMenuClick(menuId);
+                return;
+              }
+              // 면접 진행 중이면 확인 알람 표시
               if (step === "chat") {
-                if (confirm("면접을 종료하시겠습니까? 저장되지 않습니다.")) {
+                if (confirm("면접이 진행 중입니다. 페이지를 이동하면 진행 상황이 저장되지 않습니다. 이동하시겠습니까?")) {
                   if (onMenuClick) onMenuClick(menuId);
                 }
               } else {
