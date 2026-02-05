@@ -54,10 +54,24 @@ export default function CompanyProfile({
   setDetailAddress,
   onSave,
 }: CompanyProfileProps) {
+  // 수정 모드 상태
+  const [isEditMode, setIsEditMode] = useState(false);
+
   // 카카오 주소 API 훅 사용
   const { openPostcode } = useKakaoAddress((data) => {
     setAddress(data.address);
   });
+
+  // 취소 버튼 클릭
+  const handleCancel = () => {
+    setIsEditMode(false);
+  };
+
+  // 저장 버튼 클릭
+  const handleSave = () => {
+    onSave();
+    setIsEditMode(false);
+  };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -70,12 +84,158 @@ export default function CompanyProfile({
     }
   };
 
+  // 상세보기 모드 렌더링
+  if (!isEditMode) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="mb-2 text-2xl font-bold">기업 정보</h2>
+            <p className="text-gray-600">
+              구직자들에게 보여지는 우리 회사의 공적인 정보입니다.
+            </p>
+          </div>
+          <button
+            onClick={() => setIsEditMode(true)}
+            className="px-6 py-3 text-white transition bg-purple-600 rounded-lg hover:bg-purple-700"
+          >
+            수정하기
+          </button>
+        </div>
+
+        {/* 회사 로고 */}
+        <div className="p-6 bg-gray-50 rounded-xl">
+          <label className="block mb-3 text-sm font-bold text-gray-700">
+            회사 로고
+          </label>
+          <div className="flex items-center justify-center w-32 h-32 overflow-hidden bg-white border-2 border-gray-300 rounded-lg">
+            {companyLogo ? (
+              <img
+                src={companyLogo}
+                alt="회사 로고"
+                className="object-cover w-full h-full"
+              />
+            ) : (
+              <span className="text-4xl">🏢</span>
+            )}
+          </div>
+        </div>
+
+        {/* 기본 정보 */}
+        <div className="grid grid-cols-2 gap-6">
+          <div className="p-4 bg-gray-50 rounded-xl">
+            <label className="block mb-2 text-sm font-bold text-gray-500">
+              회사명
+            </label>
+            <p className="text-lg font-semibold text-gray-900">{companyName || '-'}</p>
+          </div>
+
+          <div className="p-4 bg-gray-50 rounded-xl">
+            <label className="block mb-2 text-sm font-bold text-gray-500">
+              대표자명
+            </label>
+            <p className="text-lg font-semibold text-gray-900">{ceoName || '-'}</p>
+          </div>
+
+          <div className="col-span-2 p-4 bg-gray-50 rounded-xl">
+            <label className="block mb-2 text-sm font-bold text-gray-500">
+              사업자등록번호
+            </label>
+            <p className="text-lg font-semibold text-gray-900">{businessNumber || '-'}</p>
+          </div>
+        </div>
+
+        {/* 기업 소개 */}
+        <div className="p-6 bg-gray-50 rounded-xl">
+          <label className="block mb-3 text-sm font-bold text-gray-700">
+            기업 상세 소개
+          </label>
+          <p className="text-gray-900 whitespace-pre-wrap">{description || '등록된 소개가 없습니다.'}</p>
+        </div>
+
+        <div className="p-6 bg-gray-50 rounded-xl">
+          <label className="block mb-3 text-sm font-bold text-gray-700">
+            기업 한 줄 소개
+          </label>
+          <p className="text-gray-900">{shortIntro || '등록된 소개가 없습니다.'}</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-6">
+          <div className="p-4 bg-gray-50 rounded-xl">
+            <label className="block mb-2 text-sm font-bold text-gray-500">
+              홈페이지 URL
+            </label>
+            {website ? (
+              <a
+                href={website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline"
+              >
+                {website}
+              </a>
+            ) : (
+              <p className="text-gray-900">-</p>
+            )}
+          </div>
+
+          <div className="p-4 bg-gray-50 rounded-xl">
+            <label className="block mb-2 text-sm font-bold text-gray-500">
+              SNS / 채용 사이트 URL
+            </label>
+            {snsUrl ? (
+              <a
+                href={snsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline"
+              >
+                {snsUrl}
+              </a>
+            ) : (
+              <p className="text-gray-900">-</p>
+            )}
+          </div>
+        </div>
+
+        {/* 기업 분류 정보 */}
+        <div className="grid grid-cols-2 gap-6">
+          <div className="p-4 bg-gray-50 rounded-xl">
+            <label className="block mb-2 text-sm font-bold text-gray-500">
+              주요 산업군
+            </label>
+            <p className="text-lg font-semibold text-gray-900">{industry || '-'}</p>
+          </div>
+
+          <div className="p-4 bg-gray-50 rounded-xl">
+            <label className="block mb-2 text-sm font-bold text-gray-500">
+              기업 규모
+            </label>
+            <p className="text-lg font-semibold text-gray-900">{companySize || '-'}</p>
+          </div>
+        </div>
+
+        {/* 회사 주소 */}
+        <div className="p-6 bg-gray-50 rounded-xl">
+          <label className="block mb-3 text-sm font-bold text-gray-700">
+            회사 주소
+          </label>
+          <p className="mb-1 text-gray-900">{address || '-'}</p>
+          {detailAddress && (
+            <p className="text-gray-600">{detailAddress}</p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // 수정 모드 렌더링
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="mb-6 text-2xl font-bold">기업 정보 관리</h2>
+        <h2 className="mb-6 text-2xl font-bold">기업 정보 수정</h2>
         <p className="mb-6 text-gray-600">
-          구직자들에게 보여지는 우리 회사의 공적인 정보를 관리합니다.
+          구직자들에게 보여지는 우리 회사의 공적인 정보를 수정합니다.
         </p>
       </div>
 
@@ -288,9 +448,16 @@ export default function CompanyProfile({
       </div>
 
       {/* 저장 버튼 */}
-      <div className="flex justify-end pt-6 border-t">
+      <div className="flex justify-end gap-3 pt-6 border-t">
         <button
-          onClick={onSave}
+          onClick={handleCancel}
+          type="button"
+          className="px-8 py-3 text-lg font-bold text-gray-700 transition bg-gray-200 rounded-lg hover:bg-gray-300"
+        >
+          취소
+        </button>
+        <button
+          onClick={handleSave}
           disabled={loading}
           className="px-8 py-3 text-lg font-bold text-white transition bg-purple-600 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >

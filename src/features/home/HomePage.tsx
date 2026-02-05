@@ -412,7 +412,7 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
                       </button>
 
                       {/* 상단: 회사 로고 (동그라미 제거, 크기 축소) */}
-                      <div className="flex justify-center px-5 pt-5 pb-3">
+                      <div className="flex justify-center px-5 pt-4 pb-3">
                         <div className="flex items-center justify-center h-12 max-w-[120px]">
                           {job.logoUrl ? (
                             <img 

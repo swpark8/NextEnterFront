@@ -109,9 +109,9 @@ export default function CompanyHomePage() {
             {/* 중앙 타이틀 */}
             <div>
               <h1 className="text-5xl font-black text-gray-900 mb-3">
-                채용의 모든 과정을 <span className="text-purple-600">한 곳에서!</span>
+                나에게 맞춘 <span className="text-purple-600">AI 채용</span> 서비스
               </h1>
-              <p className="text-xl text-gray-600 font-medium"> NextEnter 채용센터 OPEN !</p>
+              <p className="text-xl text-black-600 font-medium"> NextEnter</p>
             </div>
             
             {/* 오른쪽 아이콘들 */}
