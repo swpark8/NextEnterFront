@@ -234,11 +234,10 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
                           className="flex-shrink-0 px-3"
                           style={{ width: 'calc(100% / 3)' }}
                         >
-                              <div
-                                onClick={() => handleJobClick(job.jobId)}
-                                className="bg-white rounded-2xl overflow-hidden cursor-pointer transition-all hover:shadow-lg h-full flex flex-col border-2 border-gray-200 px-5 py-4"
-                              >
-
+                            <div
+                              onClick={() => handleJobClick(job.jobId)}
+                              className="bg-white rounded-2xl overflow-hidden cursor-pointer transition-all hover:shadow-lg h-full flex flex-col border-2 border-gray-200 px-5 py-4"
+                            >
                             {/* 로고 영역 */}
                             <div className="flex items-center justify-start mb-3">
                               {job.logoUrl ? (
@@ -362,7 +361,7 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
         </div>
       )}
 
-      {/* ✅ 모든 공고 카드 섹션 (둥글게 + 로고 동그라미 제거) */}
+      {/* ✅ 모든 공고 카드 섹션 - 제목과 회사명을 상세 설명으로 변경 */}
       {!isLoading && allJobs.length > 0 && (
         <div className="mt-8">
           <div className="flex items-center justify-between mb-6">
@@ -392,7 +391,7 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
                     }
                   `}
                 >
-                  {/* ✅ 기본 상태: 로고 + 텍스트 + 썸네일 */}
+                  {/* ✅ 기본 상태: 로고 + 상세 설명 + 썸네일 */}
                   {hoveredCardId !== job.jobId && (
                     <div className="relative w-full h-full bg-white border-2 border-gray-200 rounded-3xl overflow-hidden">
                       {/* ✅ 상단 그라데이션 테두리 */}
@@ -411,7 +410,7 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
                         </svg>
                       </button>
 
-                      {/* 상단: 회사 로고 (동그라미 제거, 크기 축소) */}
+                      {/* 상단: 회사 로고 */}
                       <div className="flex justify-center px-5 pt-5 pb-3">
                         <div className="flex items-center justify-center h-12 max-w-[120px]">
                           {job.logoUrl ? (
@@ -428,13 +427,12 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
                         </div>
                       </div>
 
-                      {/* 중간: 텍스트 정보 */}
-                      <div className="px-5 pb-3">
-                        <h4 className="mb-2 text-base font-bold text-gray-900 line-clamp-2" style={{ minHeight: "48px" }}>
-                          {job.title}
-                        </h4>
-                        <p className="mb-1 text-sm text-gray-600">{job.companyName}</p>
-                      </div>
+                      {/* ✅ 중간: 상세 설명 (제목과 회사명 대신) */}
+                      <div className="px-6 py-4 pl-7 flex items-start justify-start" style={{ minHeight: "100px" }}>
+                      <p className="text-lg font-medium text-gray-800 line-clamp-3 whitespace-pre-line leading-relaxed text-left">
+                        {job.description || "상세 설명이 없습니다."}
+                      </p>
+                    </div>
 
                       {/* 하단: 썸네일 이미지 */}
                       <div className="absolute bottom-0 left-0 right-0 h-[150px] rounded-b-3xl overflow-hidden">
@@ -442,7 +440,7 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
                           <img 
                             src={job.thumbnailUrl} 
                             alt={job.title}
-                            className="w-full h-full object-contain bg-white"
+                            className="w-full h-full object-cover"
                           />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
@@ -479,15 +477,15 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
                         <img 
                           src={job.detailImageUrl} 
                           alt={`${job.title} 상세`}
-                          className="w-full h-full object-contain bg-gray-900"
+                          className="w-full h-auto"
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-purple-100 via-blue-100 to-pink-100 flex items-center justify-center">
-                          <div className="text-center text-gray-500">
-                            <p className="text-xl font-bold mb-2">상세 이미지</p>
-                            <p className="text-base">(등록 필요)</p>
-                          </div>
+                        <div className="text-center text-gray-500">
+                          <p className="text-xl font-bold mb-2">상세 이미지</p>
+                          <p className="text-base">(등록 필요)</p>
                         </div>
+                      </div>
                       )}
 
                       {/* 북마크 아이콘 */}
