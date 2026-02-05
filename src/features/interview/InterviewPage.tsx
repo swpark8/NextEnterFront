@@ -92,6 +92,11 @@ export default function InterviewPage({
   // 면접 완료 핸들러
   const handleInterviewComplete = (interviewId: number) => {
     console.log("🎉 면접 완료! 결과 페이지로 이동. ID:", interviewId);
+
+    // ✅ [FIX] 면접 완료 시 모든 네비게이션 가드 즉시 해제
+    setIsInterviewStarted(false);
+    setNavigationBlocker(false); // 전역 블로커도 즉시 해제
+
     // ✅ URL 업데이트 (replace: true) 사용하여 히스토리 스택 관리 및 ID 전달
     navigate(
       `/user/interview?menu=interview-sub-3&interviewId=${interviewId}`,
