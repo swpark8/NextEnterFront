@@ -195,30 +195,7 @@ export default function CompanyHomePage() {
           
           {/* 오른쪽: 로그인 & 고객센터 */}
           <div className="col-span-3 space-y-4">
-            {/* 로그인 안내 */}
-            {!isAuthenticated && (
-              <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">환영합니다.</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  <span className="text-blue-600 font-bold">로그인</span> 후 이용하세요.
-                </p>
-                <div className="space-y-2">
-                  <button
-                    onClick={() => navigate('/company/login')}
-                    className="w-full px-4 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-all"
-                  >
-                    로그인
-                  </button>
-                  <button
-                    onClick={() => navigate('/company/signup')}
-                    className="w-full px-4 py-3 bg-white text-blue-600 font-semibold rounded-lg border-2 border-blue-600 hover:bg-blue-50 transition-all"
-                  >
-                    회원가입
-                  </button>
-                </div>
-              </div>
-            )}
-            
+                        
             {/* 고객센터 */}
             <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200">
               <h3 className="text-2xl font-bold text-gray-900 mb-6">고객센터</h3>
