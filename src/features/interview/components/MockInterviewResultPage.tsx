@@ -14,16 +14,24 @@ interface MockInterviewResultPageProps {
   onNavigateToInterview?: () => void;
   activeMenu: string;
   onMenuClick: (menuId: string) => void;
+  initialInterviewId?: number | null;
 }
 
 export default function MockInterviewResultPage({
   onNavigateToInterview,
   activeMenu,
   onMenuClick,
+  initialInterviewId,
 }: MockInterviewResultPageProps) {
   const [selectedInterviewId, setSelectedInterviewId] = useState<number | null>(
-    null,
+    initialInterviewId || null,
   );
+
+  useEffect(() => {
+    if (initialInterviewId) {
+      setSelectedInterviewId(initialInterviewId);
+    }
+  }, [initialInterviewId]);
 
   // API 데이터 상태
   const [historyList, setHistoryList] = useState<InterviewHistoryDTO[]>([]);
@@ -400,7 +408,7 @@ export default function MockInterviewResultPage({
                   {/* 최근 면접 기록 - 스크롤 가능 */}
                   <div className="p-6 bg-white border-2 border-blue-400 rounded-2xl">
                     <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-xl font-bold">최근 면접 기록</h3>
+                      <h3 className="text-xl font-bold">면접 히스토리</h3>
                       <span className="text-sm text-gray-600">
                         총 {historyList.length}개의 면접 기록
                       </span>

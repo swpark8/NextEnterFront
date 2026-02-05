@@ -18,6 +18,7 @@ interface InterviewChatPageProps {
   level: "junior" | "senior";
   activeMenu?: string;
   onMenuClick?: (menuId: string) => void;
+  onComplete?: (interviewId: number) => void;
 }
 
 export default function InterviewChatPage({
@@ -25,6 +26,7 @@ export default function InterviewChatPage({
   level,
   activeMenu = "interview-sub-2",
   onMenuClick,
+  onComplete,
 }: InterviewChatPageProps) {
   const { addInterviewResult, addInterviewHistory, resumes, setResumes } =
     useApp();
@@ -316,8 +318,10 @@ export default function InterviewChatPage({
 
     // [New] Auto-redirect to Interview History instead of alert
     console.log("✅ 면접 완료 - 히스토리 페이지로 자동 이동");
-    if (onMenuClick) {
-      onMenuClick("interview-sub-4"); // '면접 히스토리' 메뉴 ID
+    if (onComplete && realInterviewId) {
+      onComplete(realInterviewId);
+    } else if (onMenuClick) {
+      onMenuClick("interview-sub-3"); // '면접 결과' 메뉴 ID
     } else {
       onBack(); // Fallback
     }
@@ -374,7 +378,9 @@ export default function InterviewChatPage({
           const goodbyeMsg: Message = {
             id: messages.length + 2,
             sender: "ai",
-            text: response.realtime.next_question,
+            text:
+              response.realtime.next_question ||
+              "수고하셨습니다. 면접 결과는 [면접 결과] 페이지에서 상세 확인 가능합니다.",
             timestamp: new Date().toLocaleTimeString("ko-KR", {
               hour: "2-digit",
               minute: "2-digit",

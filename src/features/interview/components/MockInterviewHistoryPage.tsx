@@ -63,7 +63,9 @@ export default function MockInterviewHistoryPage({
           const aMsg = data.messages.find(
             (m) =>
               m.turnNumber === i &&
-              (m.role === "APPLICANT" || m.role === "user"),
+              (m.role === "APPLICANT" ||
+                m.role === "user" ||
+                m.role === "CANDIDATE"),
           ); // user for compatibility
 
           if (qMsg) {
