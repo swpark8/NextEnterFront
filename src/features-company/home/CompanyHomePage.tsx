@@ -58,7 +58,7 @@ export default function CompanyHomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* 메인 컨텐츠 */}
       <div className="px-6 py-16 mx-auto max-w-7xl">
         {/* 히어로 섹션 */}
@@ -81,9 +81,9 @@ export default function CompanyHomePage() {
             {/* 중앙 타이틀 */}
             <div>
               <h1 className="text-5xl font-black text-gray-900 mb-3">
-                채용의 모든 과정을 <span className="text-blue-600">한 곳에서!</span>
+                채용의 모든 과정을 <span className="text-purple-600">한 곳에서!</span>
               </h1>
-              <p className="text-xl text-gray-600 font-medium">사람인 채용센터 OPEN !</p>
+              <p className="text-xl text-gray-600 font-medium"> NextEnter 채용센터 OPEN !</p>
             </div>
             
             {/* 오른쪽 아이콘들 */}
@@ -225,7 +225,7 @@ export default function CompanyHomePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
               </svg>
               <h2 className="text-2xl font-black text-gray-900">
-                찾고 있는 채용 상품이 없다면? <span className="text-blue-600">더 많은 채용 상품을</span> 구경해보세요!
+                찾고 있는 채용 상품이 없다면? <span className="text-purple-600">더 많은 채용 상품을</span> 구경해보세요!
               </h2>
               <svg className="w-12 h-12 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />

@@ -145,11 +145,11 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
   return (
     <main className="px-6 py-8 mx-auto max-w-[1600px] bg-white">
       {/* 상단 영역 */}
-      <div className="flex gap-6 mb-6">
+      <div className="flex gap-5 mb-6">
         {/* 왼쪽: 오늘의 합격 꿀팁 */}
-        <aside className="w-64 space-y-3">
+        <aside className="w-72 space-y-3">
           {/* 꿀팁 박스 - 큰 카드 */}
-          <div className="p-6 bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-2xl shadow-md">
+          <div className="p-2 bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-2xl shadow-md">
             <div className="flex items-start mb-4">
               {/* 그라데이션 아이콘 */}
               <div className="flex items-center justify-center w-14 h-14 mr-3 bg-gradient-to-br from-purple-400 via-blue-400 to-teal-400 rounded-2xl flex-shrink-0">
@@ -189,7 +189,7 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
         </aside>
 
         {/* 중앙: 추천 공고 캐러셀 */}
-        <div className="flex-1">
+        <div className="flex-1 max-w-4xl">
           {/* ✅ 캐러셀 공고 카드 */}
           {isLoading ? (
             <div className="flex items-center justify-center py-20">
@@ -215,11 +215,11 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
                   )}
 
                   {/* 캐러셀 컨테이너 */}
-                  <div className="overflow-hidden bg-gray-50 rounded-3xl p-8 border-2 border-gray-200">
+                  <div className="overflow-hidden bg-white rounded-3xl p-11 border-2 border-gray-200">
                     {/* 제목 */}
-                    <div className="flex items-center mb-6">
-                      <span className="mr-3 text-2xl">👤</span>
-                      <h3 className="text-base font-bold">회원님을 위한 추천공고</h3>
+                    <div className="flex items-center mb-4">
+                      <span className="mr-2 text-xl">👤</span>
+                      <h3 className="text-sm font-bold">회원님을 위한 추천공고</h3>
                     </div>
                     
                     <div 
@@ -234,12 +234,13 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
                           className="flex-shrink-0 px-3"
                           style={{ width: 'calc(100% / 3)' }}
                         >
-                          <div
-                            onClick={() => handleJobClick(job.jobId)}
-                            className="bg-white rounded-2xl overflow-hidden cursor-pointer transition-all hover:shadow-lg p-6 h-full flex flex-col border-2 border-gray-200"
-                          >
+                              <div
+                                onClick={() => handleJobClick(job.jobId)}
+                                className="bg-white rounded-2xl overflow-hidden cursor-pointer transition-all hover:shadow-lg h-full flex flex-col border-2 border-gray-200 px-5 py-4"
+                              >
+
                             {/* 로고 영역 */}
-                            <div className="flex items-center justify-start mb-4">
+                            <div className="flex items-center justify-start mb-3">
                               {job.logoUrl ? (
                                 <img 
                                   src={job.logoUrl} 
@@ -259,7 +260,7 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
                             </h4>
                             
                             {/* 회사명 */}
-                            <p className="mb-4 text-sm text-gray-600">{job.companyName}</p>
+                            <p className="mb-3 text-sm text-gray-600">{job.companyName}</p>
                             
                             {/* 마감일 */}
                             <div className="mt-auto">
@@ -296,58 +297,9 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
         </div>
 
         {/* 오른쪽: 광고 배너 */}
-        <aside className="w-80 space-y-4">
-          {/* 로그인 박스 */}
-          {!isAuthenticated && (
-            <div className="p-6 text-center bg-white border-2 border-gray-200 shadow-lg rounded-xl">
-              <p className="mb-4 text-sm text-gray-600">
-                아이디 · 비밀번호 찾기 |{" "}
-                <span
-                  onClick={() => navigate("/user/signup")}
-                  className="text-blue-600 cursor-pointer hover:underline"
-                >
-                  회원가입
-                </span>
-              </p>
-              <button
-                onClick={() => navigate("/user/login")}
-                className="w-full px-6 py-3 font-bold text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
-              >
-                로그인
-              </button>
-              <div className="mt-4 text-xs text-gray-500">간편로그인</div>
-
-              {/* 소셜 로그인 버튼들 */}
-              <div className="flex justify-center mt-3 space-x-4">
-                <button
-                  onClick={() => handleSocialLogin("naver")}
-                  className="flex items-center justify-center w-10 h-10 overflow-hidden transition-opacity rounded-full shadow-md hover:opacity-80"
-                  title="네이버 로그인"
-                >
-                  <img src="/images/naver-icon.png" alt="네이버" className="object-cover w-full h-full" />
-                </button>
-
-                <button
-                  onClick={() => handleSocialLogin("kakao")}
-                  className="w-10 h-10 rounded-full flex items-center justify-center bg-[#FEE500] hover:opacity-80 transition-opacity shadow-md"
-                  title="카카오 로그인"
-                >
-                  <img src="/images/kakao-icon.png" alt="카카오" className="object-contain w-12 h-12" />
-                </button>
-
-                <button
-                  onClick={() => handleSocialLogin("google")}
-                  className="flex items-center justify-center w-10 h-10 overflow-hidden transition-opacity rounded-full shadow-md hover:opacity-80"
-                  title="구글 로그인"
-                >
-                  <img src="/images/google-icon.png" alt="구글" className="object-cover w-full h-full" />
-                </button>
-              </div>
-            </div>
-          )}
-
+        <aside className="w-72 space-y-4">
           {/* 광고 배너들 */}
-          <div className="relative h-48 p-5 overflow-hidden text-white shadow-lg bg-gradient-to-br from-teal-700 to-teal-900 rounded-xl">
+          <div className="relative h-44 p-4 overflow-hidden text-white shadow-lg bg-gradient-to-br from-teal-700 to-teal-900 rounded-xl">
             <h3 className="mb-2 text-lg font-bold">구직자 대상</h3>
             <h3 className="mb-4 text-lg font-bold">
               해외 취업 사기에 주의하세요!
@@ -359,7 +311,7 @@ export default function HomePage({ onLoginClick }: HomePageProps) {
           </div>
 
 
-          <div className="relative h-30 p-5 bg-white border border-gray-200 shadow-lg rounded-xl">
+          <div className="relative h-28 p-4 bg-white border border-gray-200 shadow-lg rounded-xl">
             <h3 className="mb-2 text-base font-bold">SK 하이닉스 채용 공고</h3>
             <p className="mb-3 text-xs text-gray-600">
               연봉 5500만원~7500만원
