@@ -385,6 +385,7 @@ export default function UserJobDetailPage() {
                     viewBox="0 0 24 24"
                   >
                     <path
+
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
@@ -543,7 +544,7 @@ export default function UserJobDetailPage() {
               <div className="flex items-start gap-4 p-4 transition bg-gray-50 rounded-xl hover:bg-gray-100">
                 <div className="p-2 bg-white rounded-lg shadow-sm">
                   <svg
-                    className="w-5 h-5 text-purple-600"
+                    className="w-5 h-5 text-black-600"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -568,7 +569,7 @@ export default function UserJobDetailPage() {
               <div className="flex items-start gap-4 p-4 transition bg-gray-50 rounded-xl hover:bg-gray-100">
                 <div className="p-2 bg-white rounded-lg shadow-sm">
                   <svg
-                    className="w-5 h-5 text-blue-600"
+                    className="w-5 h-5 text-black-600"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -593,7 +594,7 @@ export default function UserJobDetailPage() {
               <div className="flex items-start gap-4 p-4 transition bg-gray-50 rounded-xl hover:bg-gray-100">
                 <div className="p-2 bg-white rounded-lg shadow-sm">
                   <svg
-                    className="w-5 h-5 text-green-600"
+                    className="w-5 h-5 text-black-600"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -624,7 +625,7 @@ export default function UserJobDetailPage() {
               <div className="flex items-start gap-4 p-4 transition bg-gray-50 rounded-xl hover:bg-gray-100">
                 <div className="p-2 bg-white rounded-lg shadow-sm">
                   <svg
-                    className="w-5 h-5 text-indigo-600"
+                    className="w-5 h-5 text-black-600"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -649,7 +650,7 @@ export default function UserJobDetailPage() {
               <div className="flex items-start gap-4 p-4 transition bg-gray-50 rounded-xl hover:bg-gray-100">
                 <div className="p-2 bg-white rounded-lg shadow-sm">
                   <svg
-                    className="w-5 h-5 text-yellow-600"
+                    className="w-5 h-5 text-black-600"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"

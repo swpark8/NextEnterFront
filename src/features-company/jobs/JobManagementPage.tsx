@@ -539,7 +539,7 @@ export default function JobManagementPage() {
                                 {job.applicantCount || 0}
                               </div>
                               <div className="text-xs text-gray-500 group-hover/stat:text-purple-600">
-                                지원자 →
+                                지원자
                               </div>
                             </button>
 

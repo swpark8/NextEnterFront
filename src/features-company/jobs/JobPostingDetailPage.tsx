@@ -630,7 +630,7 @@ export default function JobPostingDetailPage() {
                   Required
                 </span>
               </div>
-              <div className="p-6 bg-gray-50 rounded-xl">
+              <div className="p-6 bg-red-50 rounded-xl">
                 <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap">
                   {job.requiredSkills}
                 </div>
@@ -662,7 +662,7 @@ export default function JobPostingDetailPage() {
                   Preferred
                 </span>
               </div>
-              <div className="p-6 bg-gray-50 rounded-xl">
+              <div className="p-6 bg-green-50 rounded-xl">
                 <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap">
                   {job.preferredSkills}
                 </div>
