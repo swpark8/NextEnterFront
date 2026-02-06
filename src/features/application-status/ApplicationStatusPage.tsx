@@ -270,7 +270,7 @@ export default function ApplicationStatusPage({
                 </div>
                 <div className="flex items-center gap-2">
                   <label className="w-20 text-sm font-medium text-gray-700 whitespace-nowrap">
-                    영업여부
+                    마감여부
                   </label>
                   <select
                     value={businessType}
@@ -284,7 +284,7 @@ export default function ApplicationStatusPage({
                 </div>
                 <div className="flex items-center gap-2">
                   <label className="w-20 text-sm font-medium text-gray-700 whitespace-nowrap">
-                    지원산업
+                    지원분야
                   </label>
                   <select
                     value={industry}

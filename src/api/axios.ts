@@ -42,11 +42,11 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       console.error("❌ 401 에러 - 토큰 만료 또는 유효하지 않음");
-      
+
       // ✅ 현재 경로에 맞는 키 삭제
       const tokenKey = getTokenKey();
       const userKey = getUserKey();
-      
+
       localStorage.removeItem(tokenKey);
       localStorage.removeItem(userKey);
 
