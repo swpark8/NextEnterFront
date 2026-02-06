@@ -74,10 +74,32 @@ export default function UserJobDetailPage() {
     if (showResumeModal) {
       const fetchResumes = () => {
         setResumesLoading(true);
+        setSelectedResumeId(null);
+        
         try {
           const savedResumes = localStorage.getItem("nextenter_resumes");
           if (savedResumes) {
-            setLocalResumes(JSON.parse(savedResumes));
+            const resumes = JSON.parse(savedResumes);
+            
+            const normalizedResumes = resumes.map((resume: any, index: number) => {
+              const uniqueId = resume.resumeId || resume.id || index;
+              return {
+                ...resume,
+                id: Number(uniqueId),
+                title: resume.title || "제목 없음",
+                industry: resume.industry || "미지정"
+              };
+            });
+            
+            const ids = normalizedResumes.map((r: any) => r.id);
+            const hasDuplicates = ids.length !== new Set(ids).size;
+            if (hasDuplicates) {
+              normalizedResumes.forEach((r: any, i: number) => {
+                r.id = Date.now() + i;
+              });
+            }
+            
+            setLocalResumes(normalizedResumes);
           } else {
             setLocalResumes([]);
           }
@@ -94,18 +116,26 @@ export default function UserJobDetailPage() {
     }
   }, [showResumeModal]);
 
+  // ✅ 뒤로가기 버튼
   const handleBackClick = () => {
     navigate("/user/jobs/all");
   };
 
+  // ✅ 지원하기 버튼
   const handleApplyClick = () => {
     setShowResumeModal(true);
   };
 
+  // ✅ 이력서 선택
   const handleResumeSelect = (resumeId: number) => {
-    setSelectedResumeId(resumeId);
+    if (selectedResumeId === resumeId) {
+      setSelectedResumeId(null);
+    } else {
+      setSelectedResumeId(resumeId);
+    }
   };
 
+  // ✅ 지원 제출
   const handleFinalSubmit = async () => {
     if (!selectedResumeId || !job) {
       alert("이력서를 선택해주세요.");
@@ -171,11 +201,13 @@ export default function UserJobDetailPage() {
     }
   };
 
+  // ✅ 모달 취소
   const handleCancelResume = () => {
     setShowResumeModal(false);
     setSelectedResumeId(null);
   };
 
+  // ✅ 북마크 토글
   const handleBookmarkToggle = async () => {
     if (!user?.userId || !job) {
       alert("로그인이 필요합니다.");
@@ -187,7 +219,6 @@ export default function UserJobDetailPage() {
       const result = await toggleBookmark(user.userId, job.jobId);
       setIsBookmarked(result.isBookmarked);
 
-      // 공고 데이터 새로고침
       const updatedJob = await getJobPosting(job.jobId);
       setJob(updatedJob);
 
@@ -228,10 +259,8 @@ export default function UserJobDetailPage() {
     }
   };
 
-  // ✅ [추가] 날짜 포맷팅 함수 (깨짐 방지)
   const formatDate = (dateString?: string) => {
     if (!dateString) return "-";
-    // T를 기준으로 자르고 . 으로 연결 (예: 2026-01-29T... -> 2026. 01. 29)
     return dateString.split("T")[0].replace(/-/g, ". ");
   };
 
@@ -280,9 +309,6 @@ export default function UserJobDetailPage() {
                 <div className="mb-4 text-xl font-semibold text-gray-600">
                   로딩 중...
                 </div>
-                <div className="text-sm text-gray-500">
-                  이력서 목록을 불러오고 있습니다
-                </div>
               </div>
             ) : localResumes.length === 0 ? (
               <div className="p-8 text-center">
@@ -299,25 +325,55 @@ export default function UserJobDetailPage() {
               </div>
             ) : (
               <>
-                <div className="mb-6 space-y-4 ">
-                  {localResumes.map((resume) => (
-                    <div
-                      key={resume.id}
-                      onClick={() => handleResumeSelect(resume.id)}
-                      className={`p-5 border-2 rounded-lg cursor-pointer transition ${
-                        selectedResumeId === resume.id
-                          ? "border-blue-600 bg-blue-50"
-                          : "border-gray-200 hover:border-blue-300 bg-white"
-                      }`}
-                    >
-                      <h4 className="text-lg font-bold text-gray-900">
-                        {resume.title}
-                      </h4>
-                      <p className="text-sm text-gray-600">
-                        산업: {resume.industry}
-                      </p>
-                    </div>
-                  ))}
+                <div className="mb-6 space-y-4">
+                  {localResumes.map((resume, index) => {
+                    const resumeId = resume.id;
+                    const isSelected = selectedResumeId === resumeId;
+                    
+                    return (
+                      <div
+                        key={`resume-${resumeId}-${index}`}
+                        onClick={() => handleResumeSelect(resumeId)}
+                        className={`p-5 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                          isSelected
+                            ? "border-blue-600 bg-blue-50 shadow-lg"
+                            : "border-gray-200 hover:border-blue-300 bg-white hover:shadow-md"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="text-lg font-bold text-gray-900">
+                                {resume.title}
+                              </h4>
+                              {isSelected && (
+                                <span className="flex items-center gap-1 px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full">
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                  선택됨
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600">
+                              산업: {resume.industry}
+                            </p>
+                          </div>
+                          <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                            isSelected 
+                              ? "border-blue-600 bg-blue-600" 
+                              : "border-gray-300 bg-white"
+                          }`}>
+                            {isSelected && (
+                              <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
                 <div className="flex space-x-4">
                   <button
@@ -328,10 +384,10 @@ export default function UserJobDetailPage() {
                   </button>
                   <button
                     onClick={handleFinalSubmit}
-                    disabled={submitting}
+                    disabled={submitting || !selectedResumeId}
                     className="flex-1 px-6 py-3 font-medium text-white transition bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
-                    {submitting ? "지원 중..." : "지원하기"}
+                    {submitting ? "지원 중..." : selectedResumeId ? "지원하기" : "이력서를 선택하세요"}
                   </button>
                 </div>
               </>
@@ -385,7 +441,6 @@ export default function UserJobDetailPage() {
                     viewBox="0 0 24 24"
                   >
                     <path
-
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
@@ -692,7 +747,6 @@ export default function UserJobDetailPage() {
                   <div className="mb-1 text-sm font-medium text-gray-500">
                     등록일 / 마감일
                   </div>
-                  {/* ✅ [수정됨] 날짜 포맷팅 함수 적용 */}
                   <div className="text-lg font-semibold text-gray-900">
                     {formatDate(job.createdAt)} ~ {job.deadline}
                   </div>

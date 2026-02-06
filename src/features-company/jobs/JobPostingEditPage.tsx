@@ -248,88 +248,6 @@ export default function JobPostingEditPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* 헤더 */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="px-6 py-4 mx-auto max-w-7xl">
-          <div className="flex items-center justify-between">
-            {/* 로고 */}
-            <div
-              onClick={() => navigate("/company")}
-              className="transition-opacity cursor-pointer hover:opacity-80"
-            >
-              <span className="text-2xl font-bold text-blue-600">Next </span>
-              <span className="text-2xl font-bold text-blue-800">Enter</span>
-            </div>
-
-            {/* 네비게이션 */}
-            <nav className="flex space-x-8">
-              <button
-                onClick={() => navigate("/company/jobs")}
-                className="px-4 py-2 font-medium text-blue-600 hover:text-blue-700"
-              >
-                ■ 채용공고
-              </button>
-              <button className="px-4 py-2 text-gray-700 hover:text-blue-600">
-                자료
-              </button>
-              <button className="px-4 py-2 text-gray-700 hover:text-blue-600">
-                홍보
-              </button>
-            </nav>
-
-            {/* 오른쪽 버튼 */}
-            <div className="flex items-center space-x-4">
-              {isAuthenticated && user?.userType === "company" ? (
-                <>
-                  <span className="font-medium text-gray-700">
-                    {user.companyName || user.name}님
-                  </span>
-                  <button
-                    onClick={() => {
-                      logout();
-                      navigate("/company/login");
-                    }}
-                    className="px-4 py-2 text-white transition bg-red-600 rounded-lg hover:bg-red-700"
-                  >
-                    로그아웃
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => navigate("/company/login")}
-                    className="px-4 py-2 text-gray-700 hover:text-blue-600"
-                  >
-                    로그인
-                  </button>
-                  <button
-                    onClick={() => navigate("/company/signup")}
-                    className="px-4 py-2 text-gray-700 hover:text-blue-600"
-                  >
-                    회원가입
-                  </button>
-                </>
-              )}
-              <button
-                onClick={() => navigate("/user")}
-                className="px-4 py-2 transition bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                개인 회원
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* 타이틀 배너 */}
-      <div className="py-8 bg-gradient-to-r from-purple-600 to-blue-600">
-        <div className="px-6 mx-auto max-w-7xl">
-          <h1 className="text-3xl font-bold text-center text-white">
-            공고 수정
-          </h1>
-        </div>
-      </div>
-
       {/* 메인 콘텐츠 */}
       <div className="px-6 py-10 mx-auto max-w-7xl">
         <div className="p-10 bg-white border border-gray-200 shadow-2xl rounded-3xl">
@@ -382,8 +300,8 @@ export default function JobPostingEditPage() {
                         }}
                         className={`px-4 py-3 text-sm font-medium rounded-xl transition-all ${
                           formData.jobCategories.includes(category)
-                            ? "bg-blue-600 text-white border-2 border-blue-600 shadow-md"
-                            : "bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-400"
+                            ? "bg-purple-700 text-white border-2 border-purple-700 shadow-md"
+                            : "bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-400"
                         }`}
                       >
                         {category}
@@ -406,7 +324,7 @@ export default function JobPostingEditPage() {
                                 jobCategories: prev.jobCategories.filter(c => c !== category)
                               }));
                             }}
-                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 transition-colors bg-blue-100 rounded-full hover:bg-blue-200"
+                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-black-700 transition-colors bg-purple-200 rounded-full hover:bg-blue-200"
                           >
                             <span>{category}</span>
                             <svg
@@ -449,14 +367,14 @@ export default function JobPostingEditPage() {
                     <button
                       type="button"
                       onClick={handleAddressSearch}
-                      className="px-6 py-3 font-semibold text-white transition-colors bg-blue-600 rounded-xl hover:bg-blue-700 whitespace-nowrap"
+                      className="px-6 py-3 font-semibold text-white transition-colors bg-purple-600 rounded-xl hover:bg-purple-700 whitespace-nowrap"
                     >
                       📍 주소 검색
                     </button>
                   </div>
                   {formData.locationCity && (
                     <p className="mt-2 text-sm text-gray-600">
-                      필터링 지역: <span className="font-semibold text-blue-600">{formData.locationCity}</span>
+                      필터링 지역: <span className="font-semibold text-purple-600">{formData.locationCity}</span>
                     </p>
                   )}
                 </div>
@@ -704,7 +622,7 @@ export default function JobPostingEditPage() {
               </button>
               <button
                 type="submit"
-                className="flex-1 px-8 py-4 font-semibold text-white transition-all shadow-lg bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl hover:shadow-xl hover:from-blue-700 hover:to-blue-800"
+                className="flex-1 px-8 py-4 font-semibold text-white transition-all shadow-lg bg-gradient-to-r from-purple-600 to-purple-700 rounded-xl hover:shadow-xl hover:from-purple-700 hover:to-purple-800"
               >
                 수정 완료
               </button>
