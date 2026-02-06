@@ -1,10 +1,9 @@
 interface ActionButtonsProps {
   onReanalyze: () => void;
   onEditResume: () => void;
-  onApply: () => void;
 }
 
-export default function ActionButtons({ onReanalyze, onEditResume, onApply }: ActionButtonsProps) {
+export default function ActionButtons({ onReanalyze, onEditResume }: ActionButtonsProps) {
   return (
     <div className="flex gap-4">
       <button
@@ -18,12 +17,6 @@ export default function ActionButtons({ onReanalyze, onEditResume, onApply }: Ac
         className="flex-1 py-4 font-bold text-white transition bg-blue-600 rounded-xl hover:bg-blue-700"
       >
         이력서 수정하기
-      </button>
-      <button
-        onClick={onApply}
-        className="flex-1 py-4 font-bold text-white transition bg-blue-600 rounded-xl hover:bg-blue-700"
-      >
-        🚀 지금 지원하기
       </button>
     </div>
   );

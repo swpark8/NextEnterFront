@@ -16,10 +16,6 @@ import { useApp } from "../../context/AppContext";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 import { CREDIT_COST } from "./data/sampleData";
 
-// ✅ [설정] 히스토리 자동 삭제 시간 (현재: 3분)
-// 테스트 성공 후 나중에 이 값을 늘리시면 됩니다. (예: 30일 = 30 * 24 * 60 * 60 * 1000)
-const HISTORY_EXPIRATION_MS = 3 * 60 * 1000;
-
 
 interface MatchingPageProps {
   onEditResume?: () => void;
@@ -47,60 +43,19 @@ export default function MatchingPage({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [recommendedCompanies, setRecommendedCompanies] = useState<CompanyInfo[]>([]);
   const [aiReport, setAiReport] = useState("");
+  const [aiGrade, setAiGrade] = useState("");
+  const [aiScore, setAiScore] = useState(0);
+  const [aiExperienceLevel, setAiExperienceLevel] = useState("JUNIOR");
   const [isLoading, setIsLoading] = useState(false);
 
-  // AppContext에서 히스토리 상태와 setter 가져오기
   const {
     resumes,
     businessJobs,
-    addMatchingHistory,
-    // @ts-ignore
-    matchingHistory,
-    // @ts-ignore
-    setMatchingHistory,
     setResumes,
     setBusinessJobs
   } = useApp();
 
-  // ========================================================================
-  // 🕒 [기능 1] 히스토리 자동 삭제 로직 (Auto Delete)
-  // ========================================================================
-  useEffect(() => {
-    // 10초마다 검사 실행
-    const interval = setInterval(() => {
-      if (!matchingHistory || matchingHistory.length === 0) return;
-
-      const now = Date.now();
-      // 유효기간(3분)이 지나지 않은 '신선한' 기록만 남김
-      const freshHistory = matchingHistory.filter((item: any) => {
-        // item.id는 생성 시점의 timestamp(Date.now())입니다.
-        return (now - item.id) < HISTORY_EXPIRATION_MS;
-      });
-
-      // 만약 지워야 할 오래된 기록이 있다면 상태 업데이트
-      if (freshHistory.length < matchingHistory.length) {
-        if (setMatchingHistory) {
-          setMatchingHistory(freshHistory);
-          console.log(`🧹 [Auto Clean] ${matchingHistory.length - freshHistory.length}개의 오래된 히스토리가 자동 삭제되었습니다.`);
-        }
-      }
-    }, 10000); // 10초 주기
-
-    return () => clearInterval(interval);
-  }, [matchingHistory, setMatchingHistory]);
-
-  // ========================================================================
-  // 🗑️ [기능 2] 히스토리 수동 삭제 함수 (Manual Delete)
-  // MatchingHistoryPage 컴포넌트에 prop으로 전달해서 버튼 클릭 시 실행
-  // ========================================================================
-  const handleDeleteHistory = (historyId: number) => {
-    if (!matchingHistory || !setMatchingHistory) return;
-
-    if (window.confirm("정말 이 히스토리를 삭제하시겠습니까?")) {
-      const updatedHistory = matchingHistory.filter((h: any) => h.id !== historyId);
-      setMatchingHistory(updatedHistory);
-    }
-  };
+  // 히스토리는 DB 기반으로 전환됨 (localStorage 자동삭제 로직 제거)
 
   // 1. 이력서 목록 로드
   useEffect(() => {
@@ -204,38 +159,16 @@ export default function MatchingPage({
 
       setRecommendedCompanies(aiResult.companies);
       setAiReport(aiResult.ai_report);
+      setAiGrade(aiResult.grade);
+      setAiScore(aiResult.score);
+      setAiExperienceLevel(aiResult.experience_level || "JUNIOR");
       setHasAnalysis(true);
 
       if (currentCredit >= CREDIT_COST) {
         setCurrentCredit(currentCredit - CREDIT_COST);
       }
 
-      // 히스토리 추가 (이전 동일 이력서 기록 덮어쓰기 로직 포함)
-      if (aiResult.companies.length > 0) {
-        const topCompany = aiResult.companies[0];
-        const newHistory = {
-          id: Date.now(),
-          date: new Date().toLocaleDateString(),
-          time: new Date().toTimeString().slice(0, 5),
-          resume: resumes.find(r => r.id.toString() === selectedResume)?.title || "이력서",
-          resumeId: resumeIdNum,
-          company: topCompany.company_name,
-          position: topCompany.role,
-          jobId: 0,
-          score: topCompany.score,
-          suitable: topCompany.match_level === "BEST" || topCompany.match_level === "HIGH",
-          techMatch: {},
-          strengths: ["AI 분석 완료"],
-          improvements: []
-        };
-
-        if (matchingHistory && setMatchingHistory) {
-          const filteredHistory = matchingHistory.filter((h: any) => h.resumeId !== resumeIdNum);
-          setMatchingHistory([...filteredHistory, newHistory]);
-        } else {
-          addMatchingHistory(newHistory);
-        }
-      }
+      // 매칭 히스토리는 백엔드(ResumeAiRecommendService)에서 resume_matching 테이블에 자동 저장됨
 
     } catch (error) {
       console.error("❌ AI 매칭 치명적 오류:", error);
@@ -251,6 +184,9 @@ export default function MatchingPage({
     setHasAnalysis(false);
     setRecommendedCompanies([]);
     setAiReport("");
+    setAiGrade("");
+    setAiScore(0);
+    setAiExperienceLevel("JUNIOR");
   };
 
   const handleCreditClick = () => navigate('/user/credit/charge');
@@ -264,11 +200,6 @@ export default function MatchingPage({
         onBackToMatching={handleBackToMatching}
         activeMenu={activeMenu}
         onMenuClick={handleMenuClick}
-        // [중요] 수동 삭제 함수를 자식 컴포넌트로 전달합니다.
-        // MatchingHistoryPage 내부에서 이 props를 받아서 버튼에 연결해야 합니다.
-        // 예: <button onClick={() => onDelete(history.id)}>삭제</button>
-        // @ts-ignore
-        onDelete={handleDeleteHistory}
       />
     );
   }
@@ -319,9 +250,11 @@ export default function MatchingPage({
                 <AnalysisResult
                   recommendedCompanies={recommendedCompanies}
                   aiReport={aiReport}
+                  grade={aiGrade}
+                  score={aiScore}
+                  experienceLevel={aiExperienceLevel}
                   onReanalyze={handleReanalyze}
                   onEditResume={handleEditResume}
-                  onApply={handleApply}
                 />
               )}
             </div>

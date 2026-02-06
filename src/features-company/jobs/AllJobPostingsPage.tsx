@@ -21,6 +21,7 @@ export default function AllJobPostingsPage() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
@@ -63,6 +64,7 @@ export default function AllJobPostingsPage() {
         const response = await getJobPostings(params);
         setJobPostings(response.content);
         setTotalPages(response.totalPages);
+        setTotalElements(response.totalElements);
       } catch (error) {
         console.error("공고 목록 로드 실패:", error);
       } finally {
@@ -73,10 +75,12 @@ export default function AllJobPostingsPage() {
     loadJobPostings();
   }, [currentPage, filters, itemsPerPage, reloadParam]);
 
-  // D-Day 계산 함수
-  const getDaysLeft = (deadline: string) => {
+  // D-Day 계산 함수 (null이면 null 반환)
+  const getDaysLeft = (deadline: string | null | undefined): number | null => {
+    if (!deadline) return null;
     const today = new Date();
     const end = new Date(deadline);
+    if (isNaN(end.getTime())) return null;
     const diff = end.getTime() - today.getTime();
     return Math.ceil(diff / (1000 * 60 * 60 * 24));
   };
@@ -151,7 +155,7 @@ export default function AllJobPostingsPage() {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900">
                 전체 채용공고{" "}
-                <span className="text-purple-600">{jobPostings.length}</span>건
+                <span className="text-purple-600">{totalElements}</span>건
               </h2>
               <div className="flex items-center gap-3">
                 {/* 검색창 */}
@@ -359,20 +363,28 @@ export default function AllJobPostingsPage() {
                               />
                             </svg>
                             <span className="text-xs text-gray-600">
-                              ~ {job.deadline || "상시채용"}
+                              {job.deadline ? `~ ${job.deadline}` : "마감일 미정"}
                             </span>
                           </div>
 
                           {/* D-Day 배지 */}
+                          {daysLeft !== null && (
                           <div
                             className={`px-3 py-1 text-xs font-bold rounded-lg ${
-                              daysLeft <= 7
-                                ? "bg-red-50 text-red-600"
-                                : "bg-blue-50 text-blue-600"
+                              daysLeft <= 0
+                                ? "bg-gray-100 text-gray-500"
+                                : daysLeft <= 7
+                                  ? "bg-red-50 text-red-600"
+                                  : "bg-blue-50 text-blue-600"
                             }`}
                           >
-                            {daysLeft > 0 ? `D-${daysLeft}` : "마감"}
+                            {daysLeft > 0
+                              ? `D-${daysLeft}`
+                              : daysLeft === 0
+                                ? "D-Day"
+                                : `D+${Math.abs(daysLeft)}`}
                           </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -383,25 +395,57 @@ export default function AllJobPostingsPage() {
 
             {/* 페이지네이션 */}
             {totalPages > 1 && (
-              <div className="flex justify-center gap-2 mt-8">
+              <div className="flex items-center justify-center gap-2 mt-8">
+                <button
+                  onClick={() => setCurrentPage(0)}
+                  disabled={currentPage === 0}
+                  className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {"<<"}
+                </button>
                 <button
                   onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
                   disabled={currentPage === 0}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                  className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   이전
                 </button>
-                <span className="flex items-center px-4 text-sm text-gray-700">
-                  {currentPage + 1} / {totalPages}
-                </span>
-                <button
-                  onClick={() =>
-                    setCurrentPage(Math.min(totalPages - 1, currentPage + 1))
+                {(() => {
+                  const pages = [];
+                  const maxShow = 10;
+                  let start = Math.max(0, currentPage - Math.floor(maxShow / 2));
+                  let end = Math.min(totalPages - 1, start + maxShow - 1);
+                  if (end - start < maxShow - 1) {
+                    start = Math.max(0, end - maxShow + 1);
                   }
+                  for (let i = start; i <= end; i++) pages.push(i);
+                  return pages.map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setCurrentPage(p)}
+                      className={`px-4 py-2 text-sm font-medium rounded-lg ${
+                        currentPage === p
+                          ? "bg-purple-600 text-white font-bold"
+                          : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
+                      }`}
+                    >
+                      {p + 1}
+                    </button>
+                  ));
+                })()}
+                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
                   disabled={currentPage >= totalPages - 1}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                  className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   다음
+                </button>
+                <button
+                  onClick={() => setCurrentPage(totalPages - 1)}
+                  disabled={currentPage >= totalPages - 1}
+                  className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {">>"}
                 </button>
               </div>
             )}

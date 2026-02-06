@@ -7,8 +7,18 @@ import apiClient from "./axios";
 export interface MatchingHistoryDTO {
   matchingId: number;
   resumeId: number;
-  jobId: number;
-  grade: string; // "S", "A", "B", "C", "F"
+  userId: number;
+  jobId: number | null;
+  jobStatus: string | null; // "ACTIVE", "CLOSED"
+  companyName: string | null;
+  score: number | null;
+  grade: string; // "S", "A", "B", "C", "F" (기업 매칭 등급)
+  resumeGrade: string | null; // 이력서 종합 등급
+  experienceLevel: string | null; // JUNIOR, SENIOR
+  missingSkills: string | null;
+  feedback: string | null;
+  pros: string | null;
+  cons: string | null;
   matchingType: string; // "MANUAL", "AI_RECOMMEND"
   createdAt: string;
 }

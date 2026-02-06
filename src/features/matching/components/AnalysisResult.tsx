@@ -1,21 +1,49 @@
+import { useNavigate } from 'react-router-dom';
 import { CompanyInfo } from '../../../api/ai';
 import ActionButtons from './ActionButtons';
 
 interface AnalysisResultProps {
   recommendedCompanies: CompanyInfo[];
   aiReport: string;
+  grade: string;
+  score: number;
+  experienceLevel: string;
   onReanalyze: () => void;
   onEditResume: () => void;
-  onApply: () => void;
 }
 
 export default function AnalysisResult({
-  recommendedCompanies = [],  // 기본값 추가
-  aiReport = "",              // 기본값 추가
+  recommendedCompanies = [],
+  aiReport = "",
+  grade = "B",
+  score = 0,
+  experienceLevel = "JUNIOR",
   onReanalyze,
   onEditResume,
-  onApply
 }: AnalysisResultProps) {
+  const navigate = useNavigate();
+
+  const getGradeColor = (g: string) => {
+    switch (g) {
+      case 'S': return 'from-yellow-400 to-orange-500';
+      case 'A': return 'from-green-400 to-emerald-600';
+      case 'B': return 'from-blue-400 to-blue-600';
+      case 'C': return 'from-gray-400 to-gray-600';
+      case 'F': return 'from-red-400 to-red-600';
+      default: return 'from-gray-400 to-gray-600';
+    }
+  };
+
+  const getGradeText = (g: string) => {
+    switch (g) {
+      case 'S': return '최우수';
+      case 'A': return '우수';
+      case 'B': return '보통';
+      case 'C': return '미흡';
+      case 'F': return '부적합';
+      default: return '분석중';
+    }
+  };
   const getMatchLevelColor = (level: string) => {
     switch (level) {
       case 'BEST':
@@ -40,10 +68,33 @@ export default function AnalysisResult({
 
   return (
     <div className="space-y-6">
+      {/* 이력서 등급 카드 */}
+      <div className={`p-6 bg-gradient-to-r ${getGradeColor(grade)} rounded-2xl`}>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="mb-1 text-lg font-semibold text-white/90">이력서 종합 등급</h3>
+            <p className="text-white/70 text-sm">AI가 분석한 이력서 경쟁력 등급입니다</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className={`px-4 py-2 rounded-full font-bold text-sm ${
+              experienceLevel === "SENIOR"
+                ? "bg-amber-400 text-amber-900"
+                : "bg-white/20 text-white"
+            }`}>
+              {experienceLevel === "SENIOR" ? "시니어" : "주니어"}
+            </div>
+            <div className="text-center">
+              <div className="text-6xl font-black text-white drop-shadow-lg">{grade}</div>
+              <div className="text-sm font-bold text-white/90 mt-1">{getGradeText(grade)}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* 추천 결과 헤더 */}
       <div className="p-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl">
         <h3 className="mb-2 text-2xl font-bold text-white">
-          🤖 AI 기업 추천 결과
+          AI 기업 추천 결과
         </h3>
         <p className="text-blue-100">
           이력서를 분석하여 가장 적합한 기업 {recommendedCompanies?.length || 0}곳을 추천합니다
@@ -109,6 +160,27 @@ export default function AnalysisResult({
                 </div>
               </div>
             )}
+
+            {/* 지원하기 버튼 */}
+            {company.job_id && company.job_id > 0 && (
+              <div className="mt-4 flex justify-end">
+                {company.job_status === "CLOSED" ? (
+                  <button
+                    disabled
+                    className="px-5 py-2 text-sm font-bold text-gray-500 bg-gray-200 rounded-lg cursor-not-allowed"
+                  >
+                    마감
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => navigate(`/user/jobs/${company.job_id}`)}
+                    className="px-5 py-2 text-sm font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+                  >
+                    지원하기
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -127,10 +199,9 @@ export default function AnalysisResult({
       </div>
 
       {/* 하단 버튼 */}
-      <ActionButtons 
+      <ActionButtons
         onReanalyze={onReanalyze}
         onEditResume={onEditResume}
-        onApply={onApply}
       />
     </div>
   );
