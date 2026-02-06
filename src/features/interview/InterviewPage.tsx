@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import LeftSidebar from "../../components/LeftSidebar";
 import InterviewChatPage from "./components/InterviewChatPage";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 import MockInterviewResultPage from "./components/MockInterviewResultPage";
-import MockInterviewHistoryListPage from "./components/MockInterviewHistoryListPage";
 import { setNavigationBlocker } from "../../utils/navigationBlocker";
 
 interface InterviewPageProps {
@@ -18,11 +18,19 @@ export default function InterviewPage({
   const { activeMenu, handleMenuClick } = usePageNavigation(
     "interview",
     initialMenu || "interview-sub-1",
-    onNavigate
+    onNavigate,
   );
 
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  // URL에서 interviewId 읽어오기
+  const interviewIdFromUrl = searchParams.get("interviewId");
+  const parsedInterviewId = interviewIdFromUrl
+    ? parseInt(interviewIdFromUrl)
+    : null;
+
   const [selectedLevel, setSelectedLevel] = useState<"junior" | "senior">(
-    "junior"
+    "junior",
   );
   const [isInterviewStarted, setIsInterviewStarted] = useState(false);
   const [currentCredit, setCurrentCredit] = useState(200);
@@ -33,7 +41,7 @@ export default function InterviewPage({
     if (isInterviewStarted) {
       setNavigationBlocker(
         true,
-        "면접이 진행 중입니다. 페이지를 이동하면 진행 상황이 저장되지 않습니다. 이동하시겠습니까?"
+        "면접이 진행 중입니다. 페이지를 이동하면 진행 상황이 저장되지 않습니다. 이동하시겠습니까?",
       );
     } else {
       setNavigationBlocker(false);
@@ -47,7 +55,7 @@ export default function InterviewPage({
   const handleSidebarMenuClick = (menuId: string) => {
     if (isInterviewStarted) {
       const confirmMove = window.confirm(
-        "면접이 진행 중입니다. 페이지를 이동하면 현재 진행 상황이 저장되지 않을 수 있습니다. 이동하시겠습니까?"
+        "면접이 진행 중입니다. 페이지를 이동하면 현재 진행 상황이 저장되지 않을 수 있습니다. 이동하시겠습니까?",
       );
       if (confirmMove) {
         setIsInterviewStarted(false);
@@ -70,7 +78,7 @@ export default function InterviewPage({
   const handleConfirmInterview = () => {
     const creditCost = selectedLevel === "junior" ? 10 : 20;
     console.log(
-      `${selectedLevel} 면접 시작하기 클릭됨, 크레딧 ${creditCost} 차감`
+      `${selectedLevel} 면접 시작하기 클릭됨, 크레딧 ${creditCost} 차감`,
     );
     setCurrentCredit(currentCredit - creditCost);
     setIsInterviewStarted(true);
@@ -80,6 +88,23 @@ export default function InterviewPage({
   const handleCancelInterview = () => setShowConfirmDialog(false);
   const handleLevelClick = (level: "junior" | "senior") =>
     setSelectedLevel(level);
+
+  // 면접 완료 핸들러
+  const handleInterviewComplete = (interviewId: number) => {
+    console.log("🎉 면접 완료! 결과 페이지로 이동. ID:", interviewId);
+
+    // ✅ [FIX] 면접 완료 시 모든 네비게이션 가드 즉시 해제
+    setIsInterviewStarted(false);
+    setNavigationBlocker(false); // 전역 블로커도 즉시 해제
+
+    // ✅ URL 업데이트 (replace: true) 사용하여 히스토리 스택 관리 및 ID 전달
+    navigate(
+      `/user/interview?menu=interview-sub-3&interviewId=${interviewId}`,
+      {
+        replace: true,
+      },
+    );
+  };
 
   // 면접 진행 중이거나 면접 채팅 페이지
   if (activeMenu === "interview-sub-2" || isInterviewStarted) {
@@ -94,6 +119,7 @@ export default function InterviewPage({
         level={selectedLevel}
         activeMenu={activeMenu}
         onMenuClick={handleSidebarMenuClick}
+        onComplete={handleInterviewComplete}
       />
     );
   }
@@ -105,17 +131,7 @@ export default function InterviewPage({
         activeMenu={activeMenu}
         onMenuClick={handleMenuClick}
         onNavigateToInterview={() => handleMenuClick("interview-sub-1")}
-      />
-    );
-  }
-
-  // 면접 히스토리 페이지
-  if (activeMenu === "interview-sub-4") {
-    return (
-      <MockInterviewHistoryListPage
-        activeMenu={activeMenu}
-        onMenuClick={handleMenuClick}
-        onBackToInterview={() => handleMenuClick("interview-sub-1")}
+        initialInterviewId={parsedInterviewId}
       />
     );
   }

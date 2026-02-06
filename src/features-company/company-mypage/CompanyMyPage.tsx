@@ -10,6 +10,7 @@ import { getCreditBalance, getCreditHistory } from "../../api/credit";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
 import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
 import CompanyProfile from "./components/CompanyProfile";
+import CompanyProfileView from "./components/CompanyProfileView";
 import AccountSecurity from "./components/AccountSecurity";
 import PaymentCredits from "./components/PaymentCredits";
 import NotificationSettings from "./components/NotificationSettings";
@@ -39,10 +40,18 @@ export default function CompanyMyPage({
     "companyMy",
     initialMenu,
   );
+  
+  // activeMenu가 변경되면 편집 모드 초기화
+  useEffect(() => {
+    setIsEditingProfile(false);
+  }, [activeMenu]);
 
   const [currentCredit, setCurrentCredit] = useState<number>(0);
   const [creditHistory, setCreditHistory] = useState<CreditHistoryItem[]>([]);
   const [creditLoading, setCreditLoading] = useState(false);
+  
+  // 상세보기/수정 모드 상태
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -201,6 +210,7 @@ export default function CompanyMyPage({
         managerDepartment,
       });
       alert("기업 정보가 저장되었습니다.");
+      setIsEditingProfile(false); // 저장 후 상세보기 모드로 전환
     } catch (err: any) {
       alert("기업 정보 저장에 실패했습니다.");
     } finally {

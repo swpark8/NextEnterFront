@@ -7,6 +7,54 @@ import {
   InterviewResultDTO,
 } from "../../../api/interviewService";
 
+// finalFeedback JSON 파싱하여 인간 친화적 피드백 생성
+function generateHumanFeedback(feedbackStr: string | null | undefined): string {
+  if (!feedbackStr) {
+    return "피드백 정보가 없습니다.";
+  }
+
+  // JSON 형식인지 확인
+  if (feedbackStr.trim().startsWith("{")) {
+    try {
+      const parsed = JSON.parse(feedbackStr);
+      const lines: string[] = [];
+
+      // 1. 강점 요약
+      if (parsed.strengths && parsed.strengths.length > 0) {
+        const strengthText = parsed.strengths.slice(0, 2).join(", ");
+        lines.push(`✅ 강점: ${strengthText}`);
+      }
+
+      // 2. 보완점 요약
+      if (parsed.gaps && parsed.gaps.length > 0) {
+        const gapText = parsed.gaps.slice(0, 2).join(", ");
+        lines.push(`💡 보완점: ${gapText}`);
+      }
+
+      // 3. 종합 조언
+      const questionCount = parsed.stats?.question_count || 0;
+      if (questionCount > 0) {
+        lines.push(`📊 총 ${questionCount}개의 질문에 대한 답변을 분석했습니다. 구체적인 사례와 결과를 포함하면 더 좋은 인상을 줄 수 있습니다.`);
+      } else {
+        lines.push(`📊 면접 답변에서 STARR(상황-과제-행동-결과-성찰) 요소를 더 명확히 표현해보세요.`);
+      }
+
+      // 결과가 없으면 기본 메시지
+      if (lines.length === 0) {
+        return "면접을 완료했습니다. 다음 면접에서는 구체적인 경험과 성과를 더 자세히 설명해보세요.";
+      }
+
+      return lines.join("\n");
+    } catch {
+      // JSON 파싱 실패 시 원문 반환
+      return feedbackStr;
+    }
+  }
+
+  // JSON이 아니면 원문 그대로 반환
+  return feedbackStr;
+}
+
 interface MockInterviewHistoryPageProps {
   interviewId: number;
   onBack: () => void;
@@ -63,7 +111,9 @@ export default function MockInterviewHistoryPage({
           const aMsg = data.messages.find(
             (m) =>
               m.turnNumber === i &&
-              (m.role === "APPLICANT" || m.role === "user"),
+              (m.role === "APPLICANT" ||
+                m.role === "user" ||
+                m.role === "CANDIDATE"),
           ); // user for compatibility
 
           if (qMsg) {
@@ -254,13 +304,13 @@ export default function MockInterviewHistoryPage({
                   </div>
                 </div>
 
-                {/* 피드백 메시지 */}
+                {/* 피드백 메시지 - 인간 친화적 3줄 요약 */}
                 <div className="p-6 mb-8 bg-blue-50 rounded-xl">
                   <h3 className="mb-3 text-lg font-bold text-blue-900">
                     💡 종합 피드백
                   </h3>
-                  <p className="leading-relaxed text-blue-800">
-                    {interview.finalFeedback || "피드백 정보가 없습니다."}
+                  <p className="leading-relaxed text-blue-800 whitespace-pre-line">
+                    {generateHumanFeedback(interview.finalFeedback)}
                   </p>
                 </div>
 
@@ -292,24 +342,26 @@ export default function MockInterviewHistoryPage({
                           </div>
                         </div>
 
-                        {/* 나의 답변 */}
-                        <div className="p-4 border-l-4 border-gray-400 rounded-lg bg-gray-50">
-                          <div className="flex items-start gap-3">
-                            <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 bg-gray-400 rounded-full">
-                              <span className="text-sm font-bold text-white">
-                                ME
-                              </span>
-                            </div>
-                            <div className="flex-1">
-                              <p className="mb-2 text-sm font-semibold text-gray-900">
-                                나의 답변
-                              </p>
-                              <p className="leading-relaxed text-gray-700 whitespace-pre-line">
-                                {qa.answer}
-                              </p>
+                        {/* 나의 답변 - 답변이 있을 때만 표시 */}
+                        {qa.answer && qa.answer !== "(답변 없음)" && (
+                          <div className="p-4 border-l-4 border-gray-400 rounded-lg bg-gray-50">
+                            <div className="flex items-start gap-3">
+                              <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 bg-gray-400 rounded-full">
+                                <span className="text-sm font-bold text-white">
+                                  ME
+                                </span>
+                              </div>
+                              <div className="flex-1">
+                                <p className="mb-2 text-sm font-semibold text-gray-900">
+                                  나의 답변
+                                </p>
+                                <p className="leading-relaxed text-gray-700 whitespace-pre-line">
+                                  {qa.answer}
+                                </p>
+                              </div>
                             </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     ))}
                   </div>

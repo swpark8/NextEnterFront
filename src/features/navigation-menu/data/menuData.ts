@@ -31,7 +31,6 @@ export const navigationMenuData = {
     items: [
       { id: "interview-sub-1", label: "모의면접 시작" },
       { id: "interview-sub-3", label: "면접 결과" },
-      { id: "interview-sub-4", label: "면접 히스토리" },
     ],
   },
   // ❌ [삭제] offer 카테고리 전체 삭제

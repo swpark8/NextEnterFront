@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Footer from "../../../components/Footer";
 import LeftSidebar from "../../../components/LeftSidebar";
 import MockInterviewHistoryPage from "./MockInterviewHistoryPage";
@@ -10,20 +10,105 @@ import {
   InterviewResultDTO,
 } from "../../../api/interviewService";
 
+// finalFeedback JSON 파싱 결과 타입
+interface ParsedFeedback {
+  summary?: string;
+  stats?: {
+    question_count?: number;
+    starr_counts?: Record<string, number>;
+  };
+  competencyScores?: Record<string, number>;
+  strengths?: string[];
+  gaps?: string[];
+  isJson: boolean;
+  rawText: string;
+}
+
+// finalFeedback 파싱 함수
+function parseFinalFeedback(feedback: string | null | undefined): ParsedFeedback {
+  if (!feedback) {
+    return { isJson: false, rawText: "" };
+  }
+
+  // JSON인지 확인
+  if (feedback.trim().startsWith("{")) {
+    try {
+      const parsed = JSON.parse(feedback);
+      return {
+        summary: parsed.summary,
+        stats: parsed.stats,
+        competencyScores: parsed.competencyScores,
+        strengths: parsed.strengths,
+        gaps: parsed.gaps,
+        isJson: true,
+        rawText: feedback,
+      };
+    } catch {
+      // 파싱 실패 시 원문 반환
+      return { isJson: false, rawText: feedback };
+    }
+  }
+
+  return { isJson: false, rawText: feedback };
+}
+
+// 인간 친화적 3줄 요약 피드백 생성
+function generateHumanFriendlyFeedback(parsed: ParsedFeedback): string {
+  if (!parsed.isJson) {
+    return parsed.rawText || "면접이 완료되었습니다.";
+  }
+
+  const lines: string[] = [];
+
+  // 1. 강점 요약
+  if (parsed.strengths && parsed.strengths.length > 0) {
+    const strengthText = parsed.strengths.slice(0, 2).join(", ");
+    lines.push(`✅ 강점: ${strengthText}`);
+  }
+
+  // 2. 보완점 요약
+  if (parsed.gaps && parsed.gaps.length > 0) {
+    const gapText = parsed.gaps.slice(0, 2).join(", ");
+    lines.push(`💡 보완점: ${gapText}`);
+  }
+
+  // 3. 종합 조언
+  const questionCount = parsed.stats?.question_count || 0;
+  if (questionCount > 0) {
+    lines.push(`📊 총 ${questionCount}개의 질문을 분석했습니다. 구체적인 사례와 결과를 포함하면 더 좋은 인상을 줄 수 있습니다.`);
+  } else {
+    lines.push(`📊 STARR(상황-과제-행동-결과-성찰) 요소를 더 명확히 표현해보세요.`);
+  }
+
+  if (lines.length === 0) {
+    return "면접을 완료했습니다. 다음 면접에서는 구체적인 경험과 성과를 더 자세히 설명해보세요.";
+  }
+
+  return lines.join("\n");
+}
+
 interface MockInterviewResultPageProps {
   onNavigateToInterview?: () => void;
   activeMenu: string;
   onMenuClick: (menuId: string) => void;
+  initialInterviewId?: number | null;
 }
 
 export default function MockInterviewResultPage({
   onNavigateToInterview,
   activeMenu,
   onMenuClick,
+  initialInterviewId,
 }: MockInterviewResultPageProps) {
   const [selectedInterviewId, setSelectedInterviewId] = useState<number | null>(
-    null,
+    initialInterviewId || null,
   );
+
+  useEffect(() => {
+    if (initialInterviewId) {
+      setSelectedInterviewId(initialInterviewId);
+    }
+  }, [initialInterviewId]);
 
   // API 데이터 상태
   const [historyList, setHistoryList] = useState<InterviewHistoryDTO[]>([]);
@@ -97,6 +182,40 @@ export default function MockInterviewResultPage({
   };
 
   const { maxScore, minScore, avgScore } = calculateStatistics();
+
+  // finalFeedback JSON 파싱 (메모이제이션)
+  const parsedFeedback = useMemo(() => {
+    return parseFinalFeedback(latestResult?.finalFeedback);
+  }, [latestResult?.finalFeedback]);
+
+  // competencyScores 병합 (API 응답 우선, 없으면 파싱된 JSON에서)
+  const mergedCompetencyScores = useMemo(() => {
+    if (latestResult?.competencyScores && Object.keys(latestResult.competencyScores).length > 0) {
+      return latestResult.competencyScores;
+    }
+    return parsedFeedback.competencyScores || null;
+  }, [latestResult?.competencyScores, parsedFeedback.competencyScores]);
+
+  // strengths 병합
+  const mergedStrengths = useMemo(() => {
+    if (latestResult?.strengths && latestResult.strengths.length > 0) {
+      return latestResult.strengths;
+    }
+    return parsedFeedback.strengths || [];
+  }, [latestResult?.strengths, parsedFeedback.strengths]);
+
+  // gaps 병합
+  const mergedGaps = useMemo(() => {
+    if (latestResult?.gaps && latestResult.gaps.length > 0) {
+      return latestResult.gaps;
+    }
+    return parsedFeedback.gaps || [];
+  }, [latestResult?.gaps, parsedFeedback.gaps]);
+
+  // STARR counts (파싱된 JSON에서 추출)
+  const starrCounts = useMemo(() => {
+    return parsedFeedback.stats?.starr_counts || null;
+  }, [parsedFeedback.stats?.starr_counts]);
 
   const statistics = [
     {
@@ -254,34 +373,47 @@ export default function MockInterviewResultPage({
                             핵심 역량 평가
                           </h4>
                           <div className="space-y-3">
-                            {latestResult.competencyScores &&
-                            Object.keys(latestResult.competencyScores).length >
-                              0 ? (
-                              Object.entries(latestResult.competencyScores).map(
-                                ([key, score]) => (
-                                  <div
-                                    key={key}
-                                    className="flex items-center gap-4"
-                                  >
-                                    <span
-                                      className="w-24 font-medium text-gray-600 truncate"
-                                      title={key}
+                            {mergedCompetencyScores &&
+                            Object.keys(mergedCompetencyScores).length > 0 ? (
+                              Object.entries(mergedCompetencyScores).map(
+                                ([key, score]) => {
+                                  // 역량명 한글 변환
+                                  const labelMap: Record<string, string> = {
+                                    situation_awareness: "상황 인식",
+                                    task_clarity: "과제 명확성",
+                                    action_specificity: "행동 구체성",
+                                    result_orientation: "결과 지향성",
+                                    reflection_depth: "성찰 깊이",
+                                    overall: "종합",
+                                    general: "종합",
+                                  };
+                                  const displayLabel = labelMap[key] || key;
+                                  const numScore = typeof score === "number" ? score : 0;
+                                  return (
+                                    <div
+                                      key={key}
+                                      className="flex items-center gap-4"
                                     >
-                                      {key}
-                                    </span>
-                                    <div className="flex-1 h-3 bg-gray-200 rounded-full">
-                                      <div
-                                        className="h-3 bg-purple-600 rounded-full"
-                                        style={{
-                                          width: `${(score / 5) * 100}%`,
-                                        }}
-                                      ></div>
+                                      <span
+                                        className="w-24 font-medium text-gray-600 truncate"
+                                        title={key}
+                                      >
+                                        {displayLabel}
+                                      </span>
+                                      <div className="flex-1 h-3 bg-gray-200 rounded-full">
+                                        <div
+                                          className="h-3 bg-purple-600 rounded-full"
+                                          style={{
+                                            width: `${(numScore / 5) * 100}%`,
+                                          }}
+                                        ></div>
+                                      </div>
+                                      <span className="font-bold text-purple-700">
+                                        {numScore.toFixed(1)}/5.0
+                                      </span>
                                     </div>
-                                    <span className="font-bold text-purple-700">
-                                      {score.toFixed(1)}/5.0
-                                    </span>
-                                  </div>
-                                ),
+                                  );
+                                },
                               )
                             ) : (
                               <p className="text-gray-400">
@@ -303,14 +435,20 @@ export default function MockInterviewResultPage({
                               "result",
                               "reflection",
                             ].map((key) => {
-                              // DB 컬럼과 매핑 필요. 현재 DTO에는 starrCoverage 필드가 없음?
-                              // -> DTO 확인 필요. 일단 없으면 가짜 데이터 혹은 숨김 처리.
-                              // 백엔드 로직상 detailedReport가 DTO에 어떻게 매핑되는지 확인.
-                              // InterviewResultDTO에는 finalFeedback, competencyScores 등이 있음.
-                              // starrCoverage는 없을 가능성 높음. 일단 보류.
-                              // 여기서는 임시로 false 처리 혹은 DTO 필드 확인.
-                              // 확인: InterviewResultDTO에 starr 관련 필드가 없으므로, 이 부분은 주석 처리하거나 빈 상태로 둠.
-                              const covered = false;
+                              // starrCounts에서 해당 요소의 카운트 가져오기
+                              const count = starrCounts?.[key] || 0;
+                              const questionCount = parsedFeedback.stats?.question_count || 1;
+                              const covered = count > 0;
+                              const percentage = Math.round((count / questionCount) * 100);
+
+                              const labelMap: Record<string, string> = {
+                                situation: "상황",
+                                task: "과제",
+                                action: "행동",
+                                result: "결과",
+                                reflection: "성찰",
+                              };
+
                               return (
                                 <div
                                   key={key}
@@ -330,18 +468,24 @@ export default function MockInterviewResultPage({
                                             : "🤔"}
                                   </div>
                                   <div
-                                    className={`font-bold capitalize ${covered ? "text-green-700" : "text-gray-400"}`}
+                                    className={`font-bold ${covered ? "text-green-700" : "text-gray-400"}`}
                                   >
-                                    {key}
+                                    {labelMap[key] || key}
                                   </div>
+                                  {starrCounts && (
+                                    <div className={`text-xs mt-1 ${covered ? "text-green-600" : "text-gray-400"}`}>
+                                      {count}/{questionCount} ({percentage}%)
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })}
                           </div>
-                          <p className="mt-2 text-xs text-center text-gray-500">
-                            * (현재 버전에서 STARR 분석은 지원되지 않을 수
-                            있습니다)
-                          </p>
+                          {!starrCounts && (
+                            <p className="mt-2 text-xs text-center text-gray-500">
+                              * STARR 분석 데이터가 없습니다. 새 면접을 진행해주세요.
+                            </p>
+                          )}
                         </div>
                       </div>
 
@@ -352,9 +496,8 @@ export default function MockInterviewResultPage({
                             <span>👍</span> 강점 (Strengths)
                           </h4>
                           <ul className="space-y-1 text-gray-700 list-disc list-inside">
-                            {latestResult.strengths &&
-                            latestResult.strengths.length > 0 ? (
-                              latestResult.strengths.map((s, i) => (
+                            {mergedStrengths.length > 0 ? (
+                              mergedStrengths.map((s, i) => (
                                 <li key={i}>{s}</li>
                               ))
                             ) : (
@@ -369,9 +512,8 @@ export default function MockInterviewResultPage({
                             <span>💡</span> 보완점 (Gaps)
                           </h4>
                           <ul className="space-y-1 text-gray-700 list-disc list-inside">
-                            {latestResult.gaps &&
-                            latestResult.gaps.length > 0 ? (
-                              latestResult.gaps.map((g, i) => (
+                            {mergedGaps.length > 0 ? (
+                              mergedGaps.map((g, i) => (
                                 <li key={i}>{g}</li>
                               ))
                             ) : (
@@ -383,14 +525,14 @@ export default function MockInterviewResultPage({
                         </div>
                       </div>
 
-                      {/* 종합 피드백 */}
+                      {/* 종합 피드백 - 인간 친화적 3줄 요약 */}
                       {latestResult.finalFeedback && (
                         <div className="p-4 mt-6 bg-gray-100 rounded-xl">
                           <h4 className="mb-2 font-bold text-gray-800">
                             종합 피드백
                           </h4>
-                          <p className="leading-relaxed text-gray-700">
-                            {latestResult.finalFeedback}
+                          <p className="leading-relaxed text-gray-700 whitespace-pre-line">
+                            {generateHumanFriendlyFeedback(parsedFeedback)}
                           </p>
                         </div>
                       )}
@@ -400,7 +542,7 @@ export default function MockInterviewResultPage({
                   {/* 최근 면접 기록 - 스크롤 가능 */}
                   <div className="p-6 bg-white border-2 border-blue-400 rounded-2xl">
                     <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-xl font-bold">최근 면접 기록</h3>
+                      <h3 className="text-xl font-bold">면접 히스토리</h3>
                       <span className="text-sm text-gray-600">
                         총 {historyList.length}개의 면접 기록
                       </span>

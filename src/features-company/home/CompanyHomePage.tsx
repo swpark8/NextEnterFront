@@ -2,12 +2,15 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { getCompanyJobPostings, JobPostingListResponse } from "../../api/job";
+import { searchTalents, TalentSearchResponse } from "../../api/talent";
 
 export default function CompanyHomePage() {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   const [myJobs, setMyJobs] = useState<JobPostingListResponse[]>([]);
+  const [talents, setTalents] = useState<TalentSearchResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isTalentLoading, setIsTalentLoading] = useState(false);
 
   // 로그인 필요한 페이지 이동 처리
   const handleProtectedNavigation = (path: string) => {
@@ -39,6 +42,31 @@ export default function CompanyHomePage() {
     };
 
     fetchMyJobs();
+  }, [isAuthenticated, user]);
+
+  // 인재 검색 불러오기
+  useEffect(() => {
+    const fetchTalents = async () => {
+      if (!isAuthenticated || !user?.companyId) {
+        return;
+      }
+
+      try {
+        setIsTalentLoading(true);
+        const response = await searchTalents({
+          page: 0,
+          size: 3,
+          companyUserId: user.companyId,
+        });
+        setTalents(response.content);
+      } catch (error) {
+        console.error("인재 검색 실패:", error);
+      } finally {
+        setIsTalentLoading(false);
+      }
+    };
+
+    fetchTalents();
   }, [isAuthenticated, user]);
 
   // D-day 계산
@@ -81,9 +109,9 @@ export default function CompanyHomePage() {
             {/* 중앙 타이틀 */}
             <div>
               <h1 className="text-5xl font-black text-gray-900 mb-3">
-                채용의 모든 과정을 <span className="text-purple-600">한 곳에서!</span>
+                나에게 맞춘 <span className="text-purple-600">AI 채용</span> 서비스
               </h1>
-              <p className="text-xl text-gray-600 font-medium"> NextEnter 채용센터 OPEN !</p>
+              <p className="text-xl text-black-600 font-medium"> NextEnter</p>
             </div>
             
             {/* 오른쪽 아이콘들 */}
@@ -145,20 +173,20 @@ export default function CompanyHomePage() {
                   </p>
                 </div>
                 
-                {/* 인재 검색 */}
+                {/* 마이페이지 */}
                 <div
-                  onClick={() => handleProtectedNavigation('/company/talent-search')}
+                  onClick={() => handleProtectedNavigation('/company/mypage')}
                   className="bg-purple-50 rounded-2xl p-6 cursor-pointer hover:shadow-lg transition-all border-2 border-transparent hover:border-purple-300"
                 >
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold text-gray-900">인재 검색</h3>
+                    <h3 className="text-xl font-bold text-gray-900">마이페이지</h3>
                     <svg className="w-12 h-12 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   </div>
                   <p className="text-sm text-gray-700 mb-4">
-                    <span className="text-purple-600 font-bold">기다리지 말고 인재를 검색</span>해보세요.<br />
-                    초신부터 최고의 전문가까지 확인할 수 있어요!
+                    <span className="text-purple-600 font-bold">우리 회사 정보를 확인</span>하세요.<br />
+                    회사 정보, 크레딧, 통계를 한눈에 관리하세요!
                   </p>
                 </div>
               </div>
@@ -167,30 +195,7 @@ export default function CompanyHomePage() {
           
           {/* 오른쪽: 로그인 & 고객센터 */}
           <div className="col-span-3 space-y-4">
-            {/* 로그인 안내 */}
-            {!isAuthenticated && (
-              <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">환영합니다.</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  <span className="text-blue-600 font-bold">로그인</span> 후 이용하세요.
-                </p>
-                <div className="space-y-2">
-                  <button
-                    onClick={() => navigate('/company/login')}
-                    className="w-full px-4 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-all"
-                  >
-                    로그인
-                  </button>
-                  <button
-                    onClick={() => navigate('/company/signup')}
-                    className="w-full px-4 py-3 bg-white text-blue-600 font-semibold rounded-lg border-2 border-blue-600 hover:bg-blue-50 transition-all"
-                  >
-                    회원가입
-                  </button>
-                </div>
-              </div>
-            )}
-            
+                        
             {/* 고객센터 */}
             <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200">
               <h3 className="text-2xl font-bold text-gray-900 mb-6">고객센터</h3>
@@ -234,72 +239,81 @@ export default function CompanyHomePage() {
           </div>
         </div>
         
-        {/* 하단: 통계 & 공고 */}
+        {/* 하단: 인재검색 & 공고 */}
         <div className="grid grid-cols-2 gap-6">
-          {/* 지원자 통계 */}
+          {/* 인재 검색 */}
           <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-100">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <div className="inline-block px-4 py-1 bg-blue-100 text-blue-700 rounded-full font-semibold text-xs mb-2">
-                  STATISTICS
+                  TALENT SEARCH
                 </div>
-                <h3 className="text-xl font-black text-gray-900">지원자 통계</h3>
+                <h3 className="text-xl font-black text-gray-900">인재 검색</h3>
               </div>
+              <button
+                onClick={() => handleProtectedNavigation('/company/talent-search')}
+                className="px-4 py-2 text-blue-600 border border-blue-300 font-semibold text-sm rounded-lg hover:bg-blue-50 transition-all"
+              >
+                전체보기
+              </button>
             </div>
-            
-            {/* 통계 카드 3개 */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-blue-700 font-semibold">총 지원자</span>
-                  <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                  </svg>
+
+            <div className="space-y-3">
+              {isTalentLoading ? (
+                <div className="py-12 text-center">
+                  <div className="w-12 h-12 mx-auto mb-4 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                  <p className="text-gray-600">인재를 불러오는 중...</p>
                 </div>
-                <div className="text-3xl font-black text-blue-900">0</div>
-                <div className="text-xs text-blue-600 mt-1">전체 지원</div>
-              </div>
-              
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-green-700 font-semibold">신규 지원</span>
-                  <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="text-3xl font-black text-green-900">0</div>
-                <div className="text-xs text-green-600 mt-1">이번 주</div>
-              </div>
-              
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-purple-700 font-semibold">합격률</span>
-                  <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="text-3xl font-black text-purple-900">0%</div>
-                <div className="text-xs text-purple-600 mt-1">서류 통과율</div>
-              </div>
-            </div>
-            
-            {/* 간단한 그래프 */}
-            <div className="bg-gray-50 rounded-xl p-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-semibold text-gray-700">지원자 추이</span>
-                <span className="text-xs text-gray-500">최근 7일</span>
-              </div>
-              <div className="flex items-end justify-between h-32 gap-2">
-                {[20, 35, 28, 45, 38, 52, 30].map((height, idx) => (
-                  <div key={idx} className="flex-1 flex flex-col items-center">
-                    <div 
-                      className="w-full bg-gradient-to-t from-purple-500 to-purple-300 rounded-t-lg transition-all hover:from-purple-600 hover:to-purple-400"
-                      style={{ height: `${height}%` }}
-                    ></div>
-                    <span className="text-xs text-gray-500 mt-2">{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][idx]}</span>
+              ) : talents.length > 0 ? (
+                talents.map((talent) => (
+                  <div
+                    key={talent.resumeId}
+                    onClick={() => navigate(`/company/talent-search/${talent.resumeId}`)}
+                    className="p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all cursor-pointer border border-gray-200"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2 flex-1">
+                        <h4 className="font-bold text-gray-900 text-sm">
+                          {talent.name}
+                        </h4>
+                        <span className="px-2 py-0.5 bg-purple-100 text-purple-600 text-xs rounded">
+                          {talent.jobCategory}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold">
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                        {talent.matchScore}점
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
+                      <span>📍 {talent.location}</span>
+                      <span className="font-semibold text-blue-600">{talent.experienceYears}년 경력</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {talent.skills.slice(0, 3).map((skill, idx) => (
+                        <span key={idx} className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs rounded-full">
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                ))}
-              </div>
+                ))
+              ) : (
+                <div className="py-12 text-center">
+                  <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <p className="text-gray-500 text-sm mb-4">등록된 인재가 없습니다</p>
+                  <button
+                    onClick={() => handleProtectedNavigation('/company/talent-search')}
+                    className="px-5 py-2.5 bg-blue-600 text-white font-semibold text-sm rounded-lg hover:bg-blue-700 transition-all"
+                  >
+                    인재 검색하기
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
