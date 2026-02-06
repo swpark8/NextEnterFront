@@ -240,6 +240,20 @@ export default function MatchingHistoryPage({
                           </div>
                         </div>
                       </div>
+
+                      {/* 적합성 메시지 */}
+                      <div
+                        className={`p-4 mb-4 rounded-lg text-white font-semibold text-center ${getSuitabilityColor(
+                          history.suitable
+                        )}`}
+                      >
+                        이 공고에 지원하기{" "}
+                        <span className="text-xl">
+                          {getSuitabilityText(history.suitable)}
+                        </span>
+                        합니다!
+                      </div>
+
                     </div>
                   ))}
                 </div>
