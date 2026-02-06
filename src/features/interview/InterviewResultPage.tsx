@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import MockInterviewResultPage from "./components/MockInterviewResultPage";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 
@@ -13,6 +14,11 @@ export default function InterviewResultPage({
     "interview",
     "interview-sub-3"
   );
+
+  // 페이지 진입 시 스크롤을 상단으로 이동
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   return (
     <MockInterviewResultPage

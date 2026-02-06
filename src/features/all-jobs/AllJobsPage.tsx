@@ -32,7 +32,7 @@ type JobListing = {
   daysLeft: number;
   thumbnailUrl?: string;
   logoUrl?: string;
-  status: string; // ✅ 추가: ACTIVE/CLOSED/EXPIRED
+  status: string;
 };
 
 export default function AllJobsPage() {
@@ -47,7 +47,6 @@ export default function AllJobsPage() {
     status: "전체",
   });
 
-  // 🔍 검색 및 페이징 상태
   const [searchQuery, setSearchQuery] = useState("");
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
@@ -55,14 +54,16 @@ export default function AllJobsPage() {
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
   const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  
+  // ✅ 추가: 로컬 이력서 관리
+  const [localResumes, setLocalResumes] = useState<any[]>([]);
+  const [resumesLoading, setResumesLoading] = useState(false);
 
-  // ✅ 백엔드 데이터 관리
   const [apiJobListings, setApiJobListings] = useState<JobListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [appliedJobIds, setAppliedJobIds] = useState<Set<number>>(new Set());
 
-  // ✅ AppContext 데이터 (setResumes 추가)
   const { resumes, addJobApplication, setResumes } = useApp();
 
   const handleFilterChange = (newFilters: SearchFilters) => {
@@ -93,7 +94,6 @@ export default function AllJobsPage() {
     fetchResumesIfNeeded();
   }, [user?.userId, resumes.length, setResumes]);
 
-  // ✅ 1. 사용자의 지원 내역 조회
   useEffect(() => {
     const fetchMyApplications = async () => {
       if (!user?.userId) return;
@@ -110,7 +110,6 @@ export default function AllJobsPage() {
     fetchMyApplications();
   }, [user?.userId]);
 
-  // ✅ 2. 채용공고 데이터 조회 (필터 적용)
   useEffect(() => {
     const fetchJobPostings = async () => {
       try {
@@ -128,23 +127,9 @@ export default function AllJobsPage() {
         if (filters.jobCategories.length > 0)
           params.jobCategories = filters.jobCategories.join(",");
 
-        /**
-         * ✅ 핵심 수정:
-         * 개인 회원 "전체 공고 조회"에서는 기업이 삭제(실제로는 CLOSED)한 공고가 보이면 안 되므로
-         * 서버가 CLOSED까지 내려주더라도 프론트에서 ACTIVE만 남깁니다.
-         *
-         * (옵션) 서버가 status 파라미터를 제대로 지원하면 아래 한 줄로도 충분:
-         * params.status = "ACTIVE";
-         *
-         * 그런데 현재 filters.status 값이 '전체' 같은 한글일 수 있어
-         * 서버 규격과 불일치 가능성이 있어, 안전하게 프론트 필터를 강제합니다.
-         */
-        // params.status = "ACTIVE"; // ✅ 서버가 ACTIVE 필터를 지원하면 주석 해제 권장
-
         const response = await getJobPostings(params);
 
         const convertedJobs: JobListing[] = response.content
-          // ✅ ACTIVE만 노출 (삭제/마감된 공고는 숨김)
           .filter((job: JobPostingListResponse) => job.status === "ACTIVE")
           .map((job: JobPostingListResponse) => {
             const deadline = new Date(job.deadline);
@@ -163,7 +148,7 @@ export default function AllJobsPage() {
               daysLeft: daysLeft > 0 ? daysLeft : 0,
               thumbnailUrl: job.thumbnailUrl,
               logoUrl: job.logoUrl,
-              status: job.status, // ✅ 추가
+              status: job.status,
             };
           });
 
@@ -179,7 +164,6 @@ export default function AllJobsPage() {
     fetchJobPostings();
   }, [filters]);
 
-  // ✅ 검색 필터링 + 페이징 처리
   const allJobListings = apiJobListings.filter((job) => {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
@@ -200,15 +184,53 @@ export default function AllJobsPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // ✅ 수정: localStorage에서 직접 로드
   const handleApply = (jobId: number) => {
     if (confirm("입사지원 하시겠습니까?")) {
       setSelectedJobId(jobId);
+      setSelectedResumeId(null);
       setShowResumeModal(true);
+      
+      // localStorage에서 이력서 로드
+      setResumesLoading(true);
+      try {
+        const savedResumes = localStorage.getItem("nextenter_resumes");
+        if (savedResumes) {
+          const resumes = JSON.parse(savedResumes);
+          const normalizedResumes = resumes.map((resume: any, index: number) => {
+            const uniqueId = resume.resumeId || resume.id || index;
+            return {
+              ...resume,
+              id: Number(uniqueId),
+              title: resume.title || "제목 없음",
+              industry: resume.industry || "미지정"
+            };
+          });
+          
+          console.log("📋 [AllJobsPage] 이력서 로드:", normalizedResumes);
+          setLocalResumes(normalizedResumes);
+        } else {
+          setLocalResumes([]);
+        }
+      } catch (error) {
+        console.error("❌ [오류] 이력서 로드 실패:", error);
+        setLocalResumes([]);
+      } finally {
+        setTimeout(() => {
+          setResumesLoading(false);
+        }, 300);
+      }
     }
   };
 
-  const handleResumeSelect = (resumeId: number) =>
-    setSelectedResumeId(resumeId);
+  const handleResumeSelect = (resumeId: number) => {
+    console.log("🖱️ [클릭]", resumeId, "현재:", selectedResumeId);
+    if (selectedResumeId === resumeId) {
+      setSelectedResumeId(null);
+    } else {
+      setSelectedResumeId(resumeId);
+    }
+  };
 
   const handleCancelResume = () => {
     setShowResumeModal(false);
@@ -228,7 +250,8 @@ export default function AllJobsPage() {
       return;
     }
 
-    const selectedResume = resumes.find((r) => r.id === selectedResumeId);
+    // ✅ localResumes에서 찾기
+    const selectedResume = localResumes.find((r) => r.id === selectedResumeId);
     const selectedJob = allJobListings.find((j) => j.id === selectedJobId);
 
     if (!selectedJob) {
@@ -305,32 +328,36 @@ export default function AllJobsPage() {
     return pageNumbers;
   };
 
-  // ✅ 카드 전체 클릭으로 상세 이동
   const handleCardClick = (jobId: number) => {
     navigate(`/user/jobs/${jobId}`);
   };
 
-  // ✅ "입사지원" 버튼 누르면 카드 클릭(상세 이동) 이벤트가 같이 안 타게
   const stopCardNavigation = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
 
   return (
     <>
-      {/* 이력서 선택 모달 */}
+      {/* ✅ 이력서 선택 모달 */}
       {showResumeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto ">
+          <div className="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
             <h3 className="mb-6 text-2xl font-bold text-gray-900">
               지원할 이력서를 선택해주세요
             </h3>
-            {resumes.length === 0 ? (
+            {resumesLoading ? (
+              <div className="p-8 text-center">
+                <div className="mb-4 text-xl font-semibold text-gray-600">
+                  로딩 중...
+                </div>
+              </div>
+            ) : localResumes.length === 0 ? (
               <div className="p-8 text-center">
                 <p className="mb-4 text-gray-600">등록된 이력서가 없습니다.</p>
                 <button
                   onClick={() => {
                     setShowResumeModal(false);
-                    handleMenuClick("resume-sub-1");
+                    navigate("/user/resume");
                   }}
                   className="px-6 py-2 text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
                 >
@@ -339,25 +366,55 @@ export default function AllJobsPage() {
               </div>
             ) : (
               <>
-                <div className="mb-6 space-y-4 ">
-                  {resumes.map((resume) => (
-                    <div
-                      key={resume.id}
-                      onClick={() => handleResumeSelect(resume.id)}
-                      className={`p-5 border-2 rounded-lg cursor-pointer transition ${
-                        selectedResumeId === resume.id
-                          ? "border-blue-600 bg-blue-50"
-                          : "border-gray-200 hover:border-blue-300 bg-white"
-                      }`}
-                    >
-                      <h4 className="text-lg font-bold text-gray-900">
-                        {resume.title}
-                      </h4>
-                      <p className="text-sm text-gray-600">
-                        산업: {resume.industry}
-                      </p>
-                    </div>
-                  ))}
+                <div className="mb-6 space-y-4">
+                  {localResumes.map((resume, index) => {
+                    const resumeId = resume.id;
+                    const isSelected = selectedResumeId === resumeId;
+                    
+                    return (
+                      <div
+                        key={`resume-${resumeId}-${index}`}
+                        onClick={() => handleResumeSelect(resumeId)}
+                        className={`p-5 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                          isSelected
+                            ? "border-blue-600 bg-blue-50 shadow-lg"
+                            : "border-gray-200 hover:border-blue-300 bg-white hover:shadow-md"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="text-lg font-bold text-gray-900">
+                                {resume.title}
+                              </h4>
+                              {isSelected && (
+                                <span className="flex items-center gap-1 px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full">
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                  선택됨
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600">
+                              산업: {resume.industry}
+                            </p>
+                          </div>
+                          <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                            isSelected 
+                              ? "border-blue-600 bg-blue-600" 
+                              : "border-gray-300 bg-white"
+                          }`}>
+                            {isSelected && (
+                              <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
                 <div className="flex space-x-4">
                   <button
@@ -368,10 +425,10 @@ export default function AllJobsPage() {
                   </button>
                   <button
                     onClick={handleFinalSubmit}
-                    disabled={submitting}
+                    disabled={submitting || !selectedResumeId}
                     className="flex-1 px-6 py-3 font-medium text-white transition bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
-                    {submitting ? "지원 중..." : "지원하기"}
+                    {submitting ? "지원 중..." : selectedResumeId ? "지원하기" : "이력서를 선택하세요"}
                   </button>
                 </div>
               </>
@@ -382,9 +439,7 @@ export default function AllJobsPage() {
 
       <div className="min-h-screen bg-white">
         <div className="px-4 py-8 mx-auto max-w-7xl">
-          {/* ✅ [수정] items-start 추가 (Sticky 적용) */}
           <div className="flex items-start gap-6">
-            {/* ✅ [수정] title prop은 이미 있으므로 유지 */}
             <LeftSidebar
               title="채용정보"
               activeMenu={activeMenu}
@@ -477,9 +532,8 @@ export default function AllJobsPage() {
                               handleCardClick(job.id);
                             }
                           }}
-                          className="flex flex-col overflow-hidden transition bg-white border border-gray-300 shadow-sm cursor-pointer rounded-xl hover:shadow-xl hover:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          className="flex flex-col overflow-hidden transition bg-white border border-gray-300 shadow-sm cursor-pointer rounded-xl hover:shadow-xl hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-purple-400"
                         >
-                          {/* 로고 영역 */}
                           <div className="flex items-center justify-center h-12 bg-gradient-to-br from-gray-50 to-gray-100">
                             {job.logoUrl ? (
                               <img
@@ -498,19 +552,15 @@ export default function AllJobsPage() {
                             )}
                           </div>
 
-                          {/* 내용 영역 */}
                           <div className="flex flex-col flex-1 p-4">
-                            {/* 직무명 */}
-                            <h3 className="mb-1.5 text-lg font-bold text-gray-900 line-clamp-2 hover:text-purple-600">
+                            <h3 className="mb-1.5 text-lg font-bold text-gray-900 line-clamp-2 hover:text-blue-600">
                               {job.title}
                             </h3>
 
-                            {/* 회사명 */}
                             <p className="mb-2 text-sm font-medium text-gray-600">
                               {job.company}
                             </p>
 
-                            {/* 썸네일 이미지 */}
                             <div className="mb-2 overflow-hidden rounded-lg">
                               {job.thumbnailUrl ? (
                                 <img
@@ -541,7 +591,6 @@ export default function AllJobsPage() {
                               )}
                             </div>
 
-                            {/* 정보 태그 */}
                             <div className="flex flex-wrap gap-2 mb-2">
                               <span className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded-full">
                                 <svg
@@ -588,7 +637,6 @@ export default function AllJobsPage() {
                               ))}
                             </div>
 
-                            {/* 하단 정보 */}
                             <div className="flex items-center justify-between pt-3 mt-auto border-t border-gray-100">
                               <div className="flex items-center gap-2">
                                 <svg
@@ -609,7 +657,6 @@ export default function AllJobsPage() {
                                 </span>
                               </div>
 
-                              {/* D-Day 배지 */}
                               <div
                                 className={`px-3 py-1 text-xs font-bold rounded-lg ${
                                   job.daysLeft <= 7
@@ -621,7 +668,6 @@ export default function AllJobsPage() {
                               </div>
                             </div>
 
-                            {/* 입사지원 버튼 */}
                             <button
                               onClick={(e) => {
                                 stopCardNavigation(e);
@@ -631,7 +677,7 @@ export default function AllJobsPage() {
                               className={`w-full py-2.5 mt-3 text-sm font-semibold transition rounded-lg ${
                                 isApplied
                                   ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                                  : "bg-purple-600 text-white hover:bg-purple-700"
+                                  : "bg-blue-600 text-white hover:bg-blue-700"
                               }`}
                             >
                               {isApplied ? "지원완료" : "입사지원"}

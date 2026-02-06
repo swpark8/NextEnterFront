@@ -29,6 +29,11 @@ export default function MockInterviewHistoryListPage({
   // Context에서 user 정보 가져오기 (userId 필요)
   const { user } = useAuth(); // ✅ useAuth 사용 (Lint fix: ID d45faedd-4ff7-409f-9848-ce8dd75fa7ab)
 
+  // 페이지 진입 시 스크롤을 상단으로 이동
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   useEffect(() => {
     const fetchHistory = async () => {
       try {

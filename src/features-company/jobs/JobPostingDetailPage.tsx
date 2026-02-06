@@ -217,7 +217,7 @@ export default function JobPostingDetailPage() {
                     {getStatusText(job.status)}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 text-xl font-semibold text-purple-600">
+                <div className="flex items-center gap-2 text-xl font-semibold text-black-600">
                   <svg
                     className="w-6 h-6"
                     fill="none"

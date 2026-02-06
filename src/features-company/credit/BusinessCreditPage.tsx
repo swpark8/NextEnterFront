@@ -137,7 +137,7 @@ export default function BusinessCreditPage() {
           </div>
 
           {/* Credit Card Section: 이미지의 숫자 박스 스타일 보존 */}
-          <div className="p-10 mb-10 bg-gradient-to-r from-[#7a87fb] via-[#6ba6f2] to-[#69d1f5] rounded-xl shadow-md">
+          <div className="p-10 mb-10 bg-gradient-to-r bg-slate-800 rounded-xl shadow-md">
             <div className="flex items-center justify-between">
               <div className="text-white">
                 <p className="text-xl font-medium opacity-90">

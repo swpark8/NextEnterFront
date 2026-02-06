@@ -4,6 +4,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import UserLayout from "./layouts/UserLayout";
 import CompanyLayout from "./layouts/CompanyLayout";
 import JobPostingEditPage from "./features-company/jobs/JobPostingEditPage";
+import BusinessCreditChargePage from "./features-company/credit/BusinessCreditChargePage";
 
 // 공통 페이지
 import LoginPage from "./pages/LoginPage";
@@ -313,7 +314,6 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            {/* ✅ 인재 상세보기 라우트 - Wrapper 제거하고 직접 사용 */}
             <Route
               path="talent-search/:resumeId"
               element={
@@ -346,11 +346,12 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            {/* ✅ 기업용 크레딧 충전 페이지 - 중복 제거하고 하나만 유지 */}
             <Route
               path="credit/charge"
               element={
                 <ProtectedRoute allowedUserType="company">
-                  <CreditChargePage initialMenu="credit-sub-2" />
+                  <BusinessCreditChargePage initialMenu="credit-sub-2" />
                 </ProtectedRoute>
               }
             />

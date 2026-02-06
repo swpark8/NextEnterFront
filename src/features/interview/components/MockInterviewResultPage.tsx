@@ -120,6 +120,11 @@ export default function MockInterviewResultPage({
   // User Context
   const { user } = useAuth();
 
+  // 페이지 진입 시 스크롤을 상단으로 이동
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   // 데이터 로드
   useEffect(() => {
     const loadData = async () => {

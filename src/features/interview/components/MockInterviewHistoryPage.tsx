@@ -81,6 +81,11 @@ export default function MockInterviewHistoryPage({
 
   const { user } = useAuth();
 
+  // 페이지 진입 시 스크롤을 상단으로 이동
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   // API 호출
   useEffect(() => {
     const fetchDetail = async () => {

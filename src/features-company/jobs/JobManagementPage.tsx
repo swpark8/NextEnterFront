@@ -10,6 +10,10 @@ import {
   type JobPostingListResponse,
 } from "../../api/job";
 
+// ✅ 페이지 크기 상수
+const PAGE_SIZE = 20;
+const MAX_PAGES_TO_LOAD = 5;
+
 const cacheKey = (companyId: number) => `company_job_cache_v1_${companyId}`;
 const deletedKey = (companyId: number) => `company_job_deleted_v1_${companyId}`;
 
@@ -22,15 +26,70 @@ function safeParse<T>(value: string | null, fallback: T): T {
   }
 }
 
-function loadCachedJobs(companyId: number): JobPostingListResponse[] {
-  return safeParse<JobPostingListResponse[]>(
+// ✅ 캐시용 간소화된 타입 정의
+interface CachedJob {
+  jobId: number;
+  title: string;
+  status: string;
+  location: string;
+  experienceMin?: number;
+  experienceMax?: number;
+  salaryMin?: number;
+  salaryMax?: number;
+  applicantCount?: number;
+  viewCount?: number;
+  bookmarkCount?: number;
+  createdAt: string;
+  companyId: number;
+}
+
+// ✅ 전체 객체를 간소화된 객체로 변환
+function simplifyJob(job: JobPostingListResponse): CachedJob {
+  return {
+    jobId: job.jobId,
+    title: job.title,
+    status: job.status,
+    location: job.location,
+    experienceMin: job.experienceMin,
+    experienceMax: job.experienceMax,
+    salaryMin: job.salaryMin,
+    salaryMax: job.salaryMax,
+    applicantCount: job.applicantCount,
+    viewCount: job.viewCount,
+    bookmarkCount: job.bookmarkCount,
+    createdAt: job.createdAt,
+    companyId: job.companyId,
+  };
+}
+
+function loadCachedJobs(companyId: number): CachedJob[] {
+  return safeParse<CachedJob[]>(
     localStorage.getItem(cacheKey(companyId)),
     [],
   );
 }
 
+// ✅ 캐시 저장 시 try-catch로 감싸고 용량 초과 시 기존 캐시 삭제
 function saveCachedJobs(companyId: number, jobs: JobPostingListResponse[]) {
-  localStorage.setItem(cacheKey(companyId), JSON.stringify(jobs));
+  try {
+    const simplified = jobs.map(simplifyJob);
+    localStorage.setItem(cacheKey(companyId), JSON.stringify(simplified));
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+      console.warn('LocalStorage quota exceeded. Clearing cache and retrying...');
+      // 기존 캐시 삭제 후 재시도
+      localStorage.removeItem(cacheKey(companyId));
+      try {
+        const simplified = jobs.map(simplifyJob);
+        localStorage.setItem(cacheKey(companyId), JSON.stringify(simplified));
+      } catch (retryError) {
+        console.error('Failed to save cache even after clearing:', retryError);
+        // 캐시 저장 실패해도 앱은 계속 동작
+      }
+    } else {
+      console.error('Failed to save cache:', error);
+    }
+  }
 }
 
 function loadDeletedIds(companyId: number): number[] {
@@ -38,7 +97,11 @@ function loadDeletedIds(companyId: number): number[] {
 }
 
 function saveDeletedIds(companyId: number, ids: number[]) {
-  localStorage.setItem(deletedKey(companyId), JSON.stringify(ids));
+  try {
+    localStorage.setItem(deletedKey(companyId), JSON.stringify(ids));
+  } catch (error) {
+    console.error('Failed to save deleted IDs:', error);
+  }
 }
 
 /**
@@ -46,16 +109,17 @@ function saveDeletedIds(companyId: number, ids: number[]) {
  */
 function mergeJobs(
   serverJobs: JobPostingListResponse[],
-  cachedJobs: JobPostingListResponse[],
+  cachedJobs: CachedJob[],
   deletedIds: number[],
-) {
+): JobPostingListResponse[] {
   const deletedSet = new Set(deletedIds);
   const map = new Map<number, JobPostingListResponse>();
 
   // 캐시 먼저 (삭제된 건 제외)
   for (const j of cachedJobs) {
     if (deletedSet.has(j.jobId)) continue;
-    map.set(j.jobId, j);
+    // CachedJob을 JobPostingListResponse로 변환
+    map.set(j.jobId, j as any);
   }
 
   // 서버로 덮기 (삭제된 건 제외)
@@ -76,6 +140,48 @@ function mergeJobs(
     const db = new Date(b.createdAt).getTime();
     return db - da;
   });
+}
+
+// ✅ 여러 페이지를 순차적으로 로드하는 함수
+async function loadMultiplePages(
+  maxPages: number,
+  pageSize: number,
+): Promise<JobPostingListResponse[]> {
+  const allJobs: JobPostingListResponse[] = [];
+  
+  for (let page = 0; page < maxPages; page++) {
+    try {
+      let response: any;
+      try {
+        response = await getJobPostings({
+          page,
+          size: pageSize,
+          status: "ALL",
+        } as any);
+      } catch {
+        response = await getJobPostings({ page, size: pageSize });
+      }
+      
+      const jobs = Array.isArray(response)
+        ? response
+        : (response.content ?? []);
+      
+      if (jobs.length === 0) {
+        break;
+      }
+      
+      allJobs.push(...jobs);
+      
+      if (!Array.isArray(response) && response.last) {
+        break;
+      }
+    } catch (error) {
+      console.error(`Failed to load page ${page}:`, error);
+      break;
+    }
+  }
+  
+  return allJobs;
 }
 
 export default function JobManagementPage() {
@@ -116,21 +222,11 @@ export default function JobManagementPage() {
         const cached = loadCachedJobs(companyId);
         const deletedIds = loadDeletedIds(companyId);
 
-        let response: any;
-        try {
-          response = await getJobPostings({
-            page: 0,
-            size: 1000,
-            status: "ALL",
-          } as any);
-        } catch {
-          response = await getJobPostings({ page: 0, size: 1000 });
-        }
-
-        const all = Array.isArray(response)
-          ? response
-          : (response.content ?? []);
-        const myServerJobs = all.filter(
+        // ✅ 여러 페이지를 순차적으로 로드
+        const allServerJobs = await loadMultiplePages(MAX_PAGES_TO_LOAD, PAGE_SIZE);
+        
+        // ✅ 해당 기업의 공고만 필터링
+        const myServerJobs = allServerJobs.filter(
           (job: JobPostingListResponse) => job.companyId === companyId,
         );
 

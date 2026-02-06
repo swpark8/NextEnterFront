@@ -180,14 +180,14 @@ export default function CreditPage({
               </div>
 
               {/* 크레딧 카드 */}
-              <div className="p-8 mb-6 text-white bg-gradient-to-r from-purple-500 via-purple-400 to-cyan-400 rounded-2xl">
+              <div className="p-8 mb-6 text-white bg-gradient-to-r bg-slate-900 via-purple-400 to-cyan-400 rounded-2xl">
                 <h2 className="mb-6 text-xl">
                   {user?.name || "admin"}님의 현재 사용 가능 크레딧
                 </h2>
                 <div className="flex items-center justify-end gap-3 mb-4">
                   <span className="text-6xl font-bold">{creditBalance}</span>
                   <div className="flex items-center justify-center w-12 h-12 text-2xl bg-orange-400 rounded-full">
-                    💳
+                  💰
                   </div>
                 </div>
                 <div className="flex justify-end">

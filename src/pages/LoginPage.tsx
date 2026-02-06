@@ -271,7 +271,11 @@ export default function LoginPage({
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 text-base font-semibold text-white transition-all bg-blue-600 rounded-lg hover:bg-blue-700 active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className={`w-full py-3 text-base font-semibold text-white transition-all rounded-lg active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed ${
+                accountType === "personal"
+                  ? "bg-blue-600 hover:bg-blue-700"
+                  : "bg-purple-600 hover:bg-purple-700"
+              }`}
             >
               {isLoading ? "로그인 중..." : "로그인"}
             </button>
