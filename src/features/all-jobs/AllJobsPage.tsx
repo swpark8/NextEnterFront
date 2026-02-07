@@ -29,7 +29,7 @@ type JobListing = {
   tags: string[];
   location: string;
   deadline: string;
-  daysLeft: number;
+  daysLeft: number | null;
   thumbnailUrl?: string;
   logoUrl?: string;
   status: string;
@@ -119,6 +119,7 @@ export default function AllJobsPage() {
         const params: any = {
           page: 0,
           size: 1000,
+          status: "ACTIVE",
         };
 
         if (filters.keyword) params.keyword = filters.keyword;
@@ -126,16 +127,22 @@ export default function AllJobsPage() {
           params.regions = filters.regions.join(",");
         if (filters.jobCategories.length > 0)
           params.jobCategories = filters.jobCategories.join(",");
+        if (filters.status && filters.status !== "전체")
+          params.status = filters.status;
 
         const response = await getJobPostings(params);
 
         const convertedJobs: JobListing[] = response.content
-          .filter((job: JobPostingListResponse) => job.status === "ACTIVE")
           .map((job: JobPostingListResponse) => {
-            const deadline = new Date(job.deadline);
-            const today = new Date();
-            const diffTime = deadline.getTime() - today.getTime();
-            const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            let daysLeft: number | null = null;
+            if (job.deadline) {
+              const deadline = new Date(job.deadline);
+              if (!isNaN(deadline.getTime())) {
+                const today = new Date();
+                const diffTime = deadline.getTime() - today.getTime();
+                daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              }
+            }
 
             return {
               id: job.jobId,
@@ -145,7 +152,7 @@ export default function AllJobsPage() {
               tags: [job.jobCategory],
               location: job.location,
               deadline: job.deadline,
-              daysLeft: daysLeft > 0 ? daysLeft : 0,
+              daysLeft: daysLeft,
               thumbnailUrl: job.thumbnailUrl,
               logoUrl: job.logoUrl,
               status: job.status,
@@ -653,19 +660,27 @@ export default function AllJobsPage() {
                                   />
                                 </svg>
                                 <span className="text-xs text-gray-600">
-                                  ~ {job.deadline}
+                                  {job.deadline ? `~ ${job.deadline}` : "마감일 미정"}
                                 </span>
                               </div>
 
+                              {job.daysLeft !== null && (
                               <div
                                 className={`px-3 py-1 text-xs font-bold rounded-lg ${
-                                  job.daysLeft <= 7
-                                    ? "bg-red-50 text-red-600"
-                                    : "bg-blue-50 text-blue-600"
+                                  job.daysLeft <= 0
+                                    ? "bg-gray-100 text-gray-500"
+                                    : job.daysLeft <= 7
+                                      ? "bg-red-50 text-red-600"
+                                      : "bg-blue-50 text-blue-600"
                                 }`}
                               >
-                                {job.daysLeft > 0 ? `D-${job.daysLeft}` : "마감"}
+                                {job.daysLeft > 0
+                                  ? `D-${job.daysLeft}`
+                                  : job.daysLeft === 0
+                                    ? "D-Day"
+                                    : `D+${Math.abs(job.daysLeft)}`}
                               </div>
+                              )}
                             </div>
 
                             <button
@@ -691,11 +706,25 @@ export default function AllJobsPage() {
 
                 {totalPages > 1 && (
                   <div className="flex items-center justify-center mt-8 space-x-2">
+                    <button
+                      onClick={() => handlePageChange(1)}
+                      disabled={currentPage === 1}
+                      className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {"<<"}
+                    </button>
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      이전
+                    </button>
                     {getPageNumbers().map((pageNum) => (
                       <button
                         key={pageNum}
                         onClick={() => handlePageChange(pageNum)}
-                        className={`px-4 py-2 rounded ${
+                        className={`px-4 py-2 rounded-lg text-sm font-medium ${
                           currentPage === pageNum
                             ? "bg-blue-600 text-white font-bold"
                             : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
@@ -704,6 +733,20 @@ export default function AllJobsPage() {
                         {pageNum}
                       </button>
                     ))}
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      다음
+                    </button>
+                    <button
+                      onClick={() => handlePageChange(totalPages)}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {">>"}
+                    </button>
                   </div>
                 )}
               </section>

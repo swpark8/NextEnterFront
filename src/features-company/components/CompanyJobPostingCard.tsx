@@ -215,7 +215,7 @@ export default function CompanyJobPostingCard({
               />
             </svg>
             <span className="text-xs text-gray-600">
-              ~ {job.deadline || "상시채용"}
+              {job.deadline ? `~ ${job.deadline}` : "마감일 미정"}
             </span>
           </div>
           {/* D-Day 배지 */}

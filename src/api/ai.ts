@@ -20,11 +20,16 @@ export interface CompanyInfo {
   match_level: string; // "BEST", "HIGH", "GAP"
   is_exact_match: boolean;
   missing_skills: string[];
+  job_id: number | null;
+  job_status: string | null; // "ACTIVE", "CLOSED"
 }
 
 export interface AiRecommendationResult {
   companies: CompanyInfo[];
   ai_report: string;
+  grade: string;    // S, A, B, C, F
+  score: number;
+  experience_level: string; // JUNIOR, SENIOR
 }
 
 // ============================================================================
@@ -51,7 +56,10 @@ export const getAiRecommendation = async (
 
     // [핵심] 백엔드 데이터를 UI 형식으로 변환 (Adapter)
     const mappedResult: AiRecommendationResult = {
-      // 백엔드 필드명(snake_case)과 프론트엔드 필드명(camelCase) 호환 처리
+      grade: backendData.grade || "B",
+      score: backendData.score || 0,
+      experience_level: backendData.experience_level || backendData.experienceLevel || "JUNIOR",
+
       ai_report:
         backendData.ai_feedback ||
         backendData.aiReport ||
@@ -68,6 +76,8 @@ export const getAiRecommendation = async (
         match_level: item.match_level || item.matchLevel || "NORMAL",
         is_exact_match: item.is_exact_match || item.isExactMatch || false,
         missing_skills: item.missing_skills || item.missingSkills || [],
+        job_id: item.job_id || item.jobId || null,
+        job_status: item.job_status || item.jobStatus || null,
       })),
     };
 
