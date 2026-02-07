@@ -6,6 +6,7 @@ import { useResumeStore } from "../../../stores/resumeStore";
 import { useAuthStore } from "../../../stores/authStore";
 import { interviewService } from "../../../api/interviewService";
 import { getResumeList } from "../../../api/resume";
+import api from "../../../api/axios";
 
 interface Message {
   id: number;
@@ -174,11 +175,30 @@ export default function InterviewChatPage({
       );
       console.log("  - totalTurns:", payload.totalTurns);
 
-      // TODO: 백엔드 API가 준비되면 portfolioFiles를 함께 전송
-      console.log("📎 포트폴리오 파일:", portfolioFiles.length, "개");
-      portfolioFiles.forEach((file) => {
-        console.log("  -", file.name, `(${(file.size / 1024).toFixed(1)} KB)`);
-      });
+      // 포트폴리오 파일 업로드 (이력서에 첨부 → AI가 자동으로 조회)
+      if (portfolioFiles.length > 0) {
+        console.log("📎 포트폴리오 파일 업로드 시작:", portfolioFiles.length, "개");
+        for (const file of portfolioFiles) {
+          try {
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("description", "면접 포트폴리오");
+            await api.post(
+              `/api/resume/${selectedResumeId}/portfolios`,
+              formData,
+              {
+                headers: {
+                  userId: userIdNum.toString(),
+                  "Content-Type": "multipart/form-data",
+                },
+              },
+            );
+            console.log("  ✅", file.name, "업로드 완료");
+          } catch (err) {
+            console.warn("  ⚠️", file.name, "업로드 실패:", err);
+          }
+        }
+      }
 
       // (2) API 호출
       console.log("🚀 면접 시작 API 호출 중...");
