@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
-import { useAuth } from "../../context/AuthContext";
+import { useAuthStore } from "../../stores/authStore";
 import {
   getMyApplications,
   ApplicationSummaryResponse,
@@ -27,7 +27,7 @@ export default function ApplicationStatusPage({
     _onNavigate,
   );
 
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const [applications, setApplications] = useState<
     ApplicationSummaryResponse[]
   >([]);

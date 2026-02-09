@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import HoverMenu from "../features/navigation-menu/components/HoverMenu";
 import DropdownMenu from "../features/navigation-menu/components/DropdownMenu";
-import { useAuth } from "../context/AuthContext";
+import { useAuthStore } from "../stores/authStore";
 import { logout as logoutApi } from "../api/auth";
 import { checkNavigationBlocked } from "../utils/navigationBlocker";
 import { getUnreadCount } from "../api/notification";
@@ -19,7 +19,7 @@ const LOGIN_REQUIRED_MENUS = [
 ];
 
 export default function Header() {
-  const { user, isAuthenticated, isLoading, logout } = useAuth(); // ✅ isLoading 추가
+  const { user, isAuthenticated, isLoading, logout } = useAuthStore(); // ✅ isLoading 추가
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams(); // ✅ URL 파라미터 가져오기

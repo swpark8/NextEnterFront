@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import LeftSidebar from "../../../components/LeftSidebar";
 import MockInterviewHistoryPage from "./MockInterviewHistoryPage";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuthStore } from "../../../stores/authStore";
 import {
   interviewService,
   InterviewHistoryDTO,
@@ -27,7 +27,7 @@ export default function MockInterviewHistoryListPage({
   const [loading, setLoading] = useState(true);
 
   // Context에서 user 정보 가져오기 (userId 필요)
-  const { user } = useAuth(); // ✅ useAuth 사용 (Lint fix: ID d45faedd-4ff7-409f-9848-ce8dd75fa7ab)
+  const { user } = useAuthStore(); // ✅ useAuthStore 사용 (Lint fix: ID d45faedd-4ff7-409f-9848-ce8dd75fa7ab)
 
   // 페이지 진입 시 스크롤을 상단으로 이동
   useEffect(() => {

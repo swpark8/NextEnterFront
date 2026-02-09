@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import OfferSidebar from "./components/OfferSidebar";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
-import { useApp } from "../../context/AppContext";
+import { useOfferStore } from "../../stores/offerStore";
 
 interface OfferPageProps {
   initialMenu?: string;
@@ -23,8 +23,7 @@ export default function OfferPage({ initialMenu, onNavigate }: OfferPageProps) {
     onNavigate,
   );
 
-  // AppContext에서 포지션 제안 데이터 가져오기
-  const { positionOffers, deletePositionOffer } = useApp();
+  const { positionOffers, deletePositionOffer } = useOfferStore();
 
   // URL의 'id' 파라미터를 감지해서 화면 전환
   useEffect(() => {

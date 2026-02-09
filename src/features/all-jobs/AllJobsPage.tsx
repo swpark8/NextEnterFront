@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
-import { useApp } from "../../context/AppContext";
-import { useAuth } from "../../context/AuthContext";
+import { useResumeStore } from "../../stores/resumeStore";
+import { useJobStore } from "../../stores/jobStore";
+import { useAuthStore } from "../../stores/authStore";
 import LeftSidebar from "../../components/LeftSidebar";
 import { getJobPostings, JobPostingListResponse } from "../../api/job";
 import { getResumeList } from "../../api/resume";
@@ -38,7 +39,7 @@ type JobListing = {
 export default function AllJobsPage() {
   const navigate = useNavigate();
   const { activeMenu, handleMenuClick } = usePageNavigation("job", "job-sub-1");
-  const { user } = useAuth();
+  const { user } = useAuthStore();
 
   const [filters, setFilters] = useState<SearchFilters>({
     keyword: "",
@@ -64,7 +65,8 @@ export default function AllJobsPage() {
   const [error, setError] = useState<string | null>(null);
   const [appliedJobIds, setAppliedJobIds] = useState<Set<number>>(new Set());
 
-  const { resumes, addJobApplication, setResumes } = useApp();
+  const { resumes, setResumes } = useResumeStore();
+  const { addJobApplication } = useJobStore();
 
   const handleFilterChange = (newFilters: SearchFilters) => {
     setFilters(newFilters);

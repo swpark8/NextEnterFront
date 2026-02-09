@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuthStore } from "../../stores/authStore";
 import {
   getCompanyProfile,
   updateCompanyProfile,
@@ -31,7 +31,7 @@ export default function CompanyMyPage({
   initialMenu = "companyMy-sub-1",
 }: CompanyMyPageProps) {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout } = useAuthStore();
   const [searchParams] = useSearchParams();
 
   const reloadParam = searchParams.get('reload');

@@ -3,7 +3,7 @@ import Footer from "../../../components/Footer";
 import LeftSidebar from "../../../components/LeftSidebar";
 import MockInterviewHistoryPage from "./MockInterviewHistoryPage";
 // ✅ [수정] useAuth 사용
-import { useAuth } from "../../../context/AuthContext";
+import { useAuthStore } from "../../../stores/authStore";
 import {
   interviewService,
   InterviewHistoryDTO,
@@ -118,7 +118,7 @@ export default function MockInterviewResultPage({
   const [loading, setLoading] = useState(true);
 
   // User Context
-  const { user } = useAuth();
+  const { user } = useAuthStore();
 
   // 페이지 진입 시 스크롤을 상단으로 이동
   useEffect(() => {

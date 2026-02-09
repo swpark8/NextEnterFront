@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuthStore } from "../../stores/authStore";
 import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
 import { getCreditBalance } from "../../api/credit";
@@ -10,7 +10,7 @@ import { getApplies, type ApplyListResponse } from "../../api/apply";
 
 export default function BusinessCreditPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const [searchParams] = useSearchParams();
   const { activeMenu, handleMenuClick } = useCompanyPageNavigation(
     "credit",

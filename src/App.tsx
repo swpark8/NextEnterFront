@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import UserLayout from "./layouts/UserLayout";
 import CompanyLayout from "./layouts/CompanyLayout";
@@ -58,10 +57,9 @@ import ScrollToTop from "./components/ScrollToTop";
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <ScrollToTop />
-        <Routes>
+    <BrowserRouter>
+      <ScrollToTop />
+      <Routes>
           {/* 루트 경로 - /user로 리다이렉트 */}
           <Route path="/" element={<Navigate to="/user" replace />} />
 
@@ -368,8 +366,7 @@ function App() {
           {/* 404 페이지 */}
           <Route path="*" element={<Navigate to="/user" replace />} />
         </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+    </BrowserRouter>
   );
 }
 

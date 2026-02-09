@@ -7,13 +7,13 @@ import {
   type ApplyCreateRequest,
 } from "../../api/apply";
 import { toggleBookmark, checkBookmark } from "../../api/bookmark";
-import { useApp } from "../../context/AppContext";
-import { useAuth } from "../../context/AuthContext";
+import { useJobStore } from "../../stores/jobStore";
+import { useAuthStore } from "../../stores/authStore";
 
 export default function UserJobDetailPage() {
   const navigate = useNavigate();
   const { jobId } = useParams<{ jobId: string }>();
-  const { user } = useAuth();
+  const { user } = useAuthStore();
 
   const [loading, setLoading] = useState(true);
   const [job, setJob] = useState<JobPostingResponse | null>(null);
@@ -25,7 +25,7 @@ export default function UserJobDetailPage() {
   const [resumesLoading, setResumesLoading] = useState(false);
   const [localResumes, setLocalResumes] = useState<any[]>([]);
 
-  const { addJobApplication } = useApp();
+  const { addJobApplication } = useJobStore();
 
   // 공고 데이터 로드
   useEffect(() => {

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import { useApp } from "../../context/AppContext";
+import { useAuthStore } from "../../stores/authStore";
+import { useCreditStore } from "../../stores/creditStore";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
 import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
 import { chargeCredit, getCreditBalance } from "../../api/credit";
@@ -49,8 +49,8 @@ export default function BusinessCreditChargePage({
   onNavigate,
 }: BusinessCreditChargePageProps) {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { addCreditTransaction } = useApp();
+  const { user } = useAuthStore();
+  const { addCreditTransaction } = useCreditStore();
   const { activeMenu, handleMenuClick } = useCompanyPageNavigation(
     "credit",
     initialMenu || "credit-sub-2",

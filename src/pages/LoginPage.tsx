@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { login as loginApi } from "../api/auth";
 import { loginCompany } from "../api/company";
-import { useAuth } from "../context/AuthContext";
+import { useAuthStore } from "../stores/authStore";
 
 interface LoginPageProps {
   initialAccountType?: "personal" | "business";
@@ -11,7 +11,7 @@ interface LoginPageProps {
 export default function LoginPage({
   initialAccountType = "personal",
 }: LoginPageProps) {
-  const { login: authLogin } = useAuth();
+  const { login: authLogin } = useAuthStore();
   const navigate = useNavigate();
 
   const [accountType, setAccountType] = useState<"personal" | "business">(

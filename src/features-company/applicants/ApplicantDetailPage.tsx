@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuthStore } from "../../stores/authStore";
 import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
 import {
@@ -16,7 +16,7 @@ type ResumeResponse = any;
 export default function ApplicantDetailPage() {
   const navigate = useNavigate();
   const { applicantId } = useParams();
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const [searchParams] = useSearchParams();
 
   const reloadParam = searchParams.get("reload");

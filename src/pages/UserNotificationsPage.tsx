@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "../context/AuthContext";
+import { useAuthStore } from "../stores/authStore";
 import { useNavigate } from "react-router-dom";
 import {
   Notification as NotificationData,
@@ -13,7 +13,7 @@ import { ko } from "date-fns/locale";
 import { useNotificationWebSocket } from "../hooks/useNotificationWebSocket";
 
 export default function UserNotificationsPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);

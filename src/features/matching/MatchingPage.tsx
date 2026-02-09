@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuthStore } from "../../stores/authStore";
 import { getResumeList } from "../../api/resume";
 import { getJobPostings } from "../../api/job";
 import { getAiRecommendation, CompanyInfo, AiRecommendRequest } from "../../api/ai";
@@ -12,7 +12,8 @@ import MatchingHeader from "./components/MatchingHeader";
 import TargetSelection from "./components/TargetSelection";
 import EmptyAnalysis from "./components/EmptyAnalysis";
 import AnalysisResult from "./components/AnalysisResult";
-import { useApp } from "../../context/AppContext";
+import { useResumeStore } from "../../stores/resumeStore";
+import { useJobStore } from "../../stores/jobStore";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 import { CREDIT_COST } from "./data/sampleData";
 
@@ -29,7 +30,7 @@ export default function MatchingPage({
   onNavigate,
 }: MatchingPageProps) {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useAuthStore();
 
   const { activeMenu, handleMenuClick, setActiveMenu } = usePageNavigation(
     "matching",
@@ -48,12 +49,8 @@ export default function MatchingPage({
   const [aiExperienceLevel, setAiExperienceLevel] = useState("JUNIOR");
   const [isLoading, setIsLoading] = useState(false);
 
-  const {
-    resumes,
-    businessJobs,
-    setResumes,
-    setBusinessJobs
-  } = useApp();
+  const { resumes, setResumes } = useResumeStore();
+  const { businessJobs, setBusinessJobs } = useJobStore();
 
   // 히스토리는 DB 기반으로 전환됨 (localStorage 자동삭제 로직 제거)
 
@@ -236,16 +233,22 @@ export default function MatchingPage({
                 onAnalyze={handleAnalyze}
               />
 
-              {!hasAnalysis ? (
-                <EmptyAnalysis />
-              ) : isLoading ? (
-                <div className="p-12 text-center bg-white border-2 border-gray-200 rounded-2xl">
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-xl font-bold text-gray-700">AI가 분석 중입니다...</p>
-                    <p className="text-gray-500">이력서를 분석하고 최적의 기업을 찾고 있습니다.</p>
+              {isLoading ? (
+                <div className="p-16 text-center bg-white border-2 border-gray-200 rounded-2xl">
+                  <div className="flex flex-col items-center gap-6">
+                    <div className="relative">
+                      <div className="w-20 h-20 border-4 border-blue-200 rounded-full"></div>
+                      <div className="absolute top-0 left-0 w-20 h-20 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-gray-800 mb-2">AI가 분석 중입니다</p>
+                      <p className="text-gray-500">이력서를 분석하고 최적의 기업을 매칭하고 있습니다</p>
+                      <p className="text-sm text-gray-400 mt-1">최대 1분 정도 소요될 수 있습니다</p>
+                    </div>
                   </div>
                 </div>
+              ) : !hasAnalysis ? (
+                <EmptyAnalysis />
               ) : (
                 <AnalysisResult
                   recommendedCompanies={recommendedCompanies}

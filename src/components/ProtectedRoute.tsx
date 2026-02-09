@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuthStore } from "../stores/authStore";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -12,7 +12,7 @@ export default function ProtectedRoute({
   requireAuth = true,
   allowedUserType,
 }: ProtectedRouteProps) {
-  const { isAuthenticated, user, isLoading } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuthStore();
   const location = useLocation();
 
   console.log("🛡️ ProtectedRoute 검사:", {

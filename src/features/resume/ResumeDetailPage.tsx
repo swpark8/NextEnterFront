@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuthStore } from "../../stores/authStore";
 import LeftSidebar from "../../components/LeftSidebar";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 import {
@@ -16,7 +16,7 @@ export default function ResumeDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { resumeId } = useParams();
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const { activeMenu, handleMenuClick } = usePageNavigation(
     "resume",
     "resume-sub-1",

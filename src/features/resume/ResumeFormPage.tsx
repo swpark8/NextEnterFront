@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuthStore } from "../../stores/authStore";
 import { JOB_CATEGORIES, AVAILABLE_SKILLS } from "../../constants/jobConstants";
 import {
   createResume,
@@ -39,7 +39,7 @@ export default function ResumeFormPage({
 }: ResumeFormPageProps) {
   const navigate = useNavigate();
   const { resumeId: resumeIdParam } = useParams();
-  const { user } = useAuth();
+  const { user } = useAuthStore();
 
   const resumeId = resumeIdParam ? parseInt(resumeIdParam) : null;
 

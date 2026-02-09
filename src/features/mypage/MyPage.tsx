@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import { useApp } from "../../context/AppContext";
+import { useAuthStore } from "../../stores/authStore";
+import { useResumeStore } from "../../stores/resumeStore";
 import { getUserProfile, UserProfile } from "../../api/user";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 // ✅ [수정] LeftSidebar 사용
@@ -19,8 +19,8 @@ export default function MyPage({
   initialMenu,
 }: MyPageProps) {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { resumes } = useApp(); // ✅ AppContext에서 실제 이력서 데이터 가져오기
+  const { user } = useAuthStore();
+  const { resumes } = useResumeStore();
   const [profile, setProfile] = useState<UserProfile | null>(null);
 
   const { activeMenu, handleMenuClick } = usePageNavigation(

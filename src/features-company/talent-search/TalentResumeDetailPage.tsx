@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuthStore } from "../../stores/authStore";
 import {
   getPublicResumeDetail,
   type ResumeResponse,
@@ -21,7 +21,7 @@ export default function TalentResumeDetailPage({
 }: TalentResumeDetailPageProps = {}) {
   const { resumeId: resumeIdParam } = useParams<{ resumeId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   
   // prop으로 받은 resumeId 우선, 없으면 URL 파라미터 사용
   const resumeId = resumeIdProp?.toString() || resumeIdParam;

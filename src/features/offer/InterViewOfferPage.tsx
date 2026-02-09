@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import LeftSidebar from "../../components/LeftSidebar";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
-import { useAuth } from "../../context/AuthContext";
+import { useAuthStore } from "../../stores/authStore";
 import api from "../../api/axios"; // ✅ 기존 경로 유지 (건드리지 않음)
 import {
   getMyOffers,
@@ -45,7 +45,7 @@ export default function InterviewOfferPage({
     initialMenu || "offer-sub-2",
     onNavigate,
   );
-  const { user } = useAuth();
+  const { user } = useAuthStore();
 
   // 상태 관리
   const [offers, setOffers] = useState<InterviewOfferResponse[]>([]);

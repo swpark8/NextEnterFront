@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import LeftSidebar from "../../../components/LeftSidebar";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuthStore } from "../../../stores/authStore";
 import { getMatchingsByUserId, MatchingHistoryDTO } from "../../../api/matching";
 
 interface MatchingHistoryPageProps {
@@ -72,7 +72,7 @@ export default function MatchingHistoryPage({
   activeMenu,
   onMenuClick,
 }: MatchingHistoryPageProps) {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const navigate = useNavigate();
 
   const [matchingHistory, setMatchingHistory] = useState<MatchingHistoryDTO[]>([]);

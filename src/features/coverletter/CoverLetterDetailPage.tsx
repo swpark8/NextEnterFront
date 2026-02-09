@@ -3,7 +3,7 @@ import {
   downloadCoverLetterFile,
   triggerFileDownload,
 } from "../../api/coverletter";
-import { useAuth } from "../../context/AuthContext";
+import { useAuthStore } from "../../stores/authStore";
 
 // 자소서 데이터 타입
 interface CoverLetterItem {
@@ -33,7 +33,7 @@ export default function CoverLetterDetailPage({
   onMenuClick,
   activeMenu,
 }: CoverLetterDetailPageProps) {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
 
   // 사이드바 클릭 시 확인 후 이동
   const handleSidebarClick = (menuId: string) => {

@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuthStore } from "../stores/authStore";
 
 export default function OAuth2CallbackPage() {
-  const { login } = useAuth();
+  const { login } = useAuthStore();
   const navigate = useNavigate();
   const hasProcessed = useRef(false);
 

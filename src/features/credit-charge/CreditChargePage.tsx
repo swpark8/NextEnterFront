@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import { useApp } from "../../context/AppContext";
+import { useAuthStore } from "../../stores/authStore";
+import { useCreditStore } from "../../stores/creditStore";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 import { chargeCredit, getCreditBalance } from "../../api/credit";
 import { verifyPayment } from "../../api/payment";
@@ -50,8 +50,8 @@ export default function CreditChargePage({
   onNavigate,
 }: CreditChargePageProps) {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { addCreditTransaction } = useApp();
+  const { user } = useAuthStore();
+  const { addCreditTransaction } = useCreditStore();
   const { activeMenu, handleMenuClick } = usePageNavigation(
     "credit",
     initialMenu || "credit-sub-2",

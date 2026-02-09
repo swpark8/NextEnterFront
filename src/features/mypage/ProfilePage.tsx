@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import { useApp } from "../../context/AppContext";
+import { useAuthStore } from "../../stores/authStore";
+import { useCreditStore } from "../../stores/creditStore";
 import {
   getUserProfile,
   updateUserProfile,
@@ -17,8 +17,8 @@ import { useKakaoAddress } from "../../hooks/useKakaoAddress";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
-  const { creditBalance } = useApp();
+  const { user, logout } = useAuthStore();
+  const { creditBalance } = useCreditStore();
 
   const { activeMenu, handleMenuClick } = usePageNavigation(
     "mypage",

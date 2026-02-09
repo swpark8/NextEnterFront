@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import { useApp } from "../../context/AppContext";
+import { useAuthStore } from "../../stores/authStore";
+import { useCreditStore } from "../../stores/creditStore";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 import LeftSidebar from "../../components/LeftSidebar";
 import { getCreditBalance } from "../../api/credit";
@@ -16,8 +16,8 @@ interface LocationState {
 export default function PaymentCompletePage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
-  const { creditBalance, setCreditBalance } = useApp();
+  const { user } = useAuthStore();
+  const { creditBalance, setCreditBalance } = useCreditStore();
   const { activeMenu, handleMenuClick } = usePageNavigation(
     "credit",
     "credit-sub-1",

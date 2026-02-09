@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../../../context/AuthContext";
+import { useAuthStore } from "../../../../stores/authStore";
 
 export default function BusinessServicePage() {
   const navigate = useNavigate();
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, logout } = useAuthStore();
   const [activeService, setActiveService] = useState<string>("");
 
   // 로그인 필요한 페이지 이동 처리

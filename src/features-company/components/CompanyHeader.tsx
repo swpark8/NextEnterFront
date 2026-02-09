@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import CompanyHoverMenu from "../navigation-menu/components/CompanyHoverMenu";
 import CompanyDropdownMenu from "../navigation-menu/components/CompanyDropdownMenu";
-import { useAuth } from "../../context/AuthContext";
+import { useAuthStore } from "../../stores/authStore";
 import { logout as logoutApi } from "../../api/auth";
 import { checkNavigationBlocked } from "../../utils/navigationBlocker";
 import { getUnreadCount } from "../../api/notification";
@@ -13,7 +13,7 @@ const MENU_CLOSE_DELAY = 150;
 const LOGIN_REQUIRED_MENUS = ["jobs", "applicants", "talent", "ads", "credit"];
 
 export default function CompanyHeader() {
-  const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const { user, isAuthenticated, isLoading, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();

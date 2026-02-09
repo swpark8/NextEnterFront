@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
-import { useAuth } from "../../context/AuthContext";
-import { useApp } from "../../context/AppContext";
+import { useAuthStore } from "../../stores/authStore";
+import { useCreditStore } from "../../stores/creditStore";
+import { useJobStore } from "../../stores/jobStore";
 import LeftSidebar from "../../components/LeftSidebar";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 import {
@@ -18,7 +19,7 @@ export default function CreditPage({
   onNavigate,
   initialMenu,
 }: CreditPageProps) {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const { activeMenu, handleMenuClick } = usePageNavigation(
     "credit",
     initialMenu || "credit-sub-1",
@@ -26,14 +27,8 @@ export default function CreditPage({
   );
 
   // ✅ AppContext에서 실제 데이터 가져오기
-  const {
-    creditBalance,
-    setCreditBalance, // ✅ 추가
-    creditTransactions,
-    coupons,
-    useCoupon,
-    businessJobs,
-  } = useApp();
+  const { creditBalance, setCreditBalance, creditTransactions, coupons, useCoupon } = useCreditStore();
+  const { businessJobs } = useJobStore();
 
   const [activeTab, setActiveTab] = useState<"coupon" | "usage" | "mileage">(
     "coupon",

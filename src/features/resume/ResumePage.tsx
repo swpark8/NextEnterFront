@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import { useApp } from "../../context/AppContext";
+import { useAuthStore } from "../../stores/authStore";
+import { useResumeStore } from "../../stores/resumeStore";
 import { getResumeList, deleteResume } from "../../api/resume";
 import { JOB_CATEGORIES } from "../../constants/jobConstants";
 import LeftSidebar from "../../components/LeftSidebar";
@@ -22,8 +22,8 @@ export interface ResumeListItem {
 
 export default function ResumePage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { setResumes: setContextResumes } = useApp();
+  const { user } = useAuthStore();
+  const { setResumes: setContextResumes } = useResumeStore();
 
   const { activeMenu, handleMenuClick } = usePageNavigation(
     "resume",
@@ -45,6 +45,7 @@ export default function ResumePage() {
   const [error, setError] = useState("");
   /** 파일 업로드 시 선택한 직무 (기본: 백엔드) */
   const [uploadJobCategory, setUploadJobCategory] = useState<string>(JOB_CATEGORIES[1]);
+  const [isDragging, setIsDragging] = useState(false);
 
   const loadResumes = useCallback(async () => {
     if (!user?.userId) return;
@@ -171,6 +172,25 @@ export default function ResumePage() {
   };
 
   const handleFileUpload = () => fileInputRef.current?.click();
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    const fakeEvent = { target: { files: [file] } } as unknown as React.ChangeEvent<HTMLInputElement>;
+    handleFileChange(fakeEvent);
+  };
   
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -217,14 +237,7 @@ export default function ResumePage() {
       // 이력서 목록 새로고침
       await loadResumes();
       
-      // 면접 페이지로 이동 옵션 제공
-      const shouldGoToInterview = window.confirm(
-        `"${resumeTitle}" 이력서가 성공적으로 업로드되었습니다!\n\n면접 페이지로 이동하시겠습니까?`
-      );
-
-      if (shouldGoToInterview) {
-        navigate('/user/interview');
-      }
+      alert(`"${resumeTitle}" 이력서가 성공적으로 업로드되었습니다!`);
     } catch (error) {
       console.error("파일 업로드 실패:", error);
       alert("파일 업로드 중 오류가 발생했습니다. 다시 시도해주세요.");
@@ -263,7 +276,16 @@ export default function ResumePage() {
         {/* ✅ 3. 메인 컨텐츠 */}
         <div className="flex-1 space-y-8">
           {/* 1. 파일 업로드 영역 */}
-          <div className="px-6 py-5 border-2 border-blue-300 border-dashed rounded-2xl bg-blue-50">
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={handleFileUpload}
+            className={`px-6 py-5 border-2 border-dashed rounded-2xl cursor-pointer transition-colors ${
+              isDragging
+                ? "border-blue-500 bg-blue-100"
+                : "border-blue-300 bg-blue-50 hover:bg-blue-100/50"
+            }`}>
             <div className="text-center">
               <div className="mb-2 text-3xl">📁</div>
               <h3 className="mb-1 text-base font-bold">
@@ -281,7 +303,6 @@ export default function ResumePage() {
                 className="hidden"
               />
               <button
-                onClick={handleFileUpload}
                 className="px-5 py-1.5 text-xs font-semibold text-white transition bg-blue-600 rounded-lg hover:bg-blue-700"
               >
                 파일선택

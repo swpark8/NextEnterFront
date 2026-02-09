@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {useAuth} from "../../../context/AuthContext";
+import {useAuthStore} from "../../../stores/authStore";
 interface BusinessServicePageProps {
   onLogoClick?: () => void;
   onLoginClick?: () => void;
@@ -13,7 +13,7 @@ export default function BusinessServicePage({
   onSignupClick,
 }: BusinessServicePageProps) {
   const navigate = useNavigate();
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, logout } = useAuthStore();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const categories = [

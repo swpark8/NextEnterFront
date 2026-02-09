@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
 import LeftSidebar from "../../components/LeftSidebar";
-import { useAuth } from "../../context/AuthContext";
+import { useAuthStore } from "../../stores/authStore";
 import {
   getBookmarkedJobs,
   toggleBookmark,
@@ -12,7 +12,7 @@ import {
 export default function ScrapStatusPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const menuFromUrl = searchParams.get("menu") || "mypage-sub-5";
 
   const { activeMenu, handleMenuClick } = usePageNavigation(

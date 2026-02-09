@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuthStore } from "../../stores/authStore";
 import Footer from "../../components/Footer";
 import {
   getJobPosting,
@@ -12,7 +12,7 @@ import { JOB_CATEGORIES } from "../../constants/jobConstants";
 export default function JobPostingEditPage() {
   const navigate = useNavigate();
   const { jobId } = useParams<{ jobId: string }>();
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, logout } = useAuthStore();
 
   const [loading, setLoading] = useState(true);
   

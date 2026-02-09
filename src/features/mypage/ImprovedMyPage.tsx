@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import { useApp } from "../../context/AppContext";
+import { useAuthStore } from "../../stores/authStore";
+import { useResumeStore } from "../../stores/resumeStore";
 import { getUserProfile, UserProfile } from "../../api/user";
 import { getMyApplies, ApplyListResponse } from "../../api/apply";
 import { getBookmarkedJobs, BookmarkedJobDto } from "../../api/bookmark";
@@ -28,8 +28,8 @@ export default function ImprovedMyPage({
   initialMenu,
 }: MyPageProps) {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { resumes } = useApp();
+  const { user } = useAuthStore();
+  const { resumes } = useResumeStore();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [applies, setApplies] = useState<ApplyListResponse[]>([]);

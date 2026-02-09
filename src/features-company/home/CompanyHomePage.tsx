@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuthStore } from "../../stores/authStore";
 import { getCompanyJobPostings, JobPostingListResponse } from "../../api/job";
 import { searchTalents, TalentSearchResponse } from "../../api/talent";
 
 export default function CompanyHomePage() {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user } = useAuthStore();
   const [myJobs, setMyJobs] = useState<JobPostingListResponse[]>([]);
   const [talents, setTalents] = useState<TalentSearchResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);

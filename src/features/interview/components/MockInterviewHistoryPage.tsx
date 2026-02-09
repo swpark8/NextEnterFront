@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 // ✅ [수정] LeftSidebar 사용
 import LeftSidebar from "../../../components/LeftSidebar";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuthStore } from "../../../stores/authStore";
 import {
   interviewService,
   InterviewResultDTO,
@@ -79,7 +79,7 @@ export default function MockInterviewHistoryPage({
   const [qaList, setQaList] = useState<InterviewQA[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const { user } = useAuth();
+  const { user } = useAuthStore();
 
   // 페이지 진입 시 스크롤을 상단으로 이동
   useEffect(() => {

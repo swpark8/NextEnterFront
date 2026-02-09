@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "../../context/AuthContext";
+import { useAuthStore } from "../../stores/authStore";
 import { useNavigate } from "react-router-dom";
 import { getJobPostings, JobPostingListResponse } from "../../api/job";
 
@@ -31,7 +31,7 @@ const cardBorderColors = [
 
 export default function HomePage({ onLoginClick }: HomePageProps) {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuthStore();
 
   // ✅ 실제 공고 데이터 상태
   const [recommendedJobs, setRecommendedJobs] = useState<JobPostingListResponse[]>([]);

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { usePageNavigation } from "../../hooks/usePageNavigation";
-import { useApp } from "../../context/AppContext";
+import { useResumeStore } from "../../stores/resumeStore";
+import { useJobStore } from "../../stores/jobStore";
 // ✅ [수정] LeftSidebar 사용
 import LeftSidebar from "../../components/LeftSidebar";
 
@@ -37,7 +38,8 @@ export default function AIRecommendedJobsPage() {
   const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
 
   // AppContext에서 데이터 가져오기
-  const { resumes, jobListings, businessJobs } = useApp();
+  const { resumes } = useResumeStore();
+  const { jobListings, businessJobs } = useJobStore();
 
   // businessJobs를 JobListing 형식으로 변환
   const convertedBusinessJobs: JobListing[] = businessJobs.map((job) => {

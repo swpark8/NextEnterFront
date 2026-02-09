@@ -13,11 +13,11 @@ import {
 } from "../../api/interviewOffer";
 import { getCompanyJobPostings, JobPostingListResponse } from "../../api/job";
 import JobSelectionModal from "./components/JobSelectionModal";
-import { useAuth } from "../../context/AuthContext";
+import { useAuthStore } from "../../stores/authStore";
 import { JOB_CATEGORIES } from "../../constants/jobConstants";
 
 export default function TalentSearchPage() {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const navigate = useNavigate();
   const { activeMenu, handleMenuClick } = useCompanyPageNavigation(
     "talent",

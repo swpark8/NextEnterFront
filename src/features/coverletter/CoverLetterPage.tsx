@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useAuth } from "../../context/AuthContext";
+import { useAuthStore } from "../../stores/authStore";
 import LeftSidebar from "../../components/LeftSidebar";
 import CoverLetterFormPage from "./CoverLetterFormPage";
 import CoverLetterDetailPage from "./CoverLetterDetailPage";
@@ -36,7 +36,7 @@ export default function CoverLetterPage({
   initialMenu,
   onNavigate,
 }: CoverLetterPageProps) {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
 
   /** ✅ 자소서 최대 개수 제한 */
   const MAX_COVER_LETTERS = 15;

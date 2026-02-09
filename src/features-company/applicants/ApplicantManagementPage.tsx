@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuthStore } from "../../stores/authStore";
 import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
 import {
@@ -13,7 +13,7 @@ import { JOB_CATEGORIES } from "../../constants/jobConstants";
 
 export default function ApplicantManagementPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const [searchParams] = useSearchParams();
 
   // URL에서 jobId와 jobTitle 가져오기

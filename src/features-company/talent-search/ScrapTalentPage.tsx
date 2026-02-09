@@ -3,11 +3,11 @@ import CompanyLeftSidebar from "../components/CompanyLeftSidebar";
 import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
 import { getSavedTalents, unsaveTalent, contactTalent, TalentSearchResponse } from "../../api/talent";
 import TalentResumeDetailPage from "./TalentResumeDetailPage";
-import { useAuth } from "../../context/AuthContext";
+import { useAuthStore } from "../../stores/authStore";
 import { useSearchParams } from "react-router-dom";
 
 export default function ScrapTalentPage() {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const { activeMenu, handleMenuClick } = useCompanyPageNavigation("talent", "talent-sub-2");
   const [searchParams] = useSearchParams(); // ✅ URL 파라미터 감지
 

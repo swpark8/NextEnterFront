@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuthStore } from "../../stores/authStore";
 import {
   getJobPosting,
   deleteJobPosting,
@@ -10,7 +10,7 @@ import {
 export default function JobPostingDetailPage() {
   const navigate = useNavigate();
   const { jobId } = useParams<{ jobId: string }>();
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, logout } = useAuthStore();
 
   const [loading, setLoading] = useState(true);
   const [job, setJob] = useState<JobPostingResponse | null>(null);

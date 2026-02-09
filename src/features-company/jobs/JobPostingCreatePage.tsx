@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuthStore } from "../../stores/authStore";
 import { createJobPosting, type JobPostingRequest } from "../../api/job";
 import { JOB_CATEGORIES, AVAILABLE_SKILLS } from "../../constants/jobConstants";
 
 export default function JobPostingCreatePage() {
   const navigate = useNavigate();
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, logout } = useAuthStore();
   
   // 이미지 미리보기 state
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);

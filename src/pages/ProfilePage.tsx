@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuthStore } from "../stores/authStore";
 import {
   getUserProfile,
   updateUserProfile,
@@ -14,7 +14,7 @@ import { useKakaoAddress } from "../hooks/useKakaoAddress"; // ✅ 추가
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useAuthStore();
 
   const { activeMenu, handleMenuClick } = usePageNavigation(
     "mypage",
