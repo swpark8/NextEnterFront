@@ -7,6 +7,7 @@ import {
   type ApplyCreateRequest,
 } from "../../api/apply";
 import { toggleBookmark, checkBookmark } from "../../api/bookmark";
+import { getResumeList } from "../../api/resume";
 import { useJobStore } from "../../stores/jobStore";
 import { useAuthStore } from "../../stores/authStore";
 
@@ -69,52 +70,44 @@ export default function UserJobDetailPage() {
     loadJobPosting();
   }, [jobId, navigate, user?.userId]);
 
-  // 모달이 열릴 때 이력서 목록 로드
+  // ✅ 모달이 열릴 때 로그인한 사용자의 이력서만 로드
   useEffect(() => {
-    if (showResumeModal) {
-      const fetchResumes = () => {
+    if (showResumeModal && user?.userId) {
+      const fetchResumes = async () => {
         setResumesLoading(true);
         setSelectedResumeId(null);
         
         try {
-          const savedResumes = localStorage.getItem("nextenter_resumes");
-          if (savedResumes) {
-            const resumes = JSON.parse(savedResumes);
-            
-            const normalizedResumes = resumes.map((resume: any, index: number) => {
-              const uniqueId = resume.resumeId || resume.id || index;
-              return {
-                ...resume,
-                id: Number(uniqueId),
-                title: resume.title || "제목 없음",
-                industry: resume.industry || "미지정"
-              };
-            });
-            
-            const ids = normalizedResumes.map((r: any) => r.id);
-            const hasDuplicates = ids.length !== new Set(ids).size;
-            if (hasDuplicates) {
-              normalizedResumes.forEach((r: any, i: number) => {
-                r.id = Date.now() + i;
-              });
-            }
+          console.log("📡 [입사지원] 이력서 목록 조회 시작 (userId:", user.userId, ")");
+          
+          // ✅ 백엔드 API로 로그인한 사용자의 이력서만 가져오기
+          const resumes = await getResumeList(user.userId);
+          
+          console.log("✅ [입사지원] 이력서 목록 조회 성공:", resumes.length, "개");
+          
+          if (Array.isArray(resumes) && resumes.length > 0) {
+            const normalizedResumes = resumes.map((resume: any) => ({
+              id: resume.resumeId,
+              title: resume.title || "제목 없음",
+              industry: resume.jobCategory || "미지정",
+            }));
             
             setLocalResumes(normalizedResumes);
           } else {
+            console.log("⚠️ [입사지원] 등록된 이력서가 없습니다.");
             setLocalResumes([]);
           }
         } catch (error) {
-          console.error("이력서 로드 실패:", error);
+          console.error("❌ [입사지원] 이력서 로드 실패:", error);
           setLocalResumes([]);
         } finally {
-          setTimeout(() => {
-            setResumesLoading(false);
-          }, 300);
+          setResumesLoading(false);
         }
       };
+      
       fetchResumes();
     }
-  }, [showResumeModal]);
+  }, [showResumeModal, user?.userId]);
 
   // ✅ 뒤로가기 버튼
   const handleBackClick = () => {
@@ -123,6 +116,11 @@ export default function UserJobDetailPage() {
 
   // ✅ 지원하기 버튼
   const handleApplyClick = () => {
+    if (!user?.userId) {
+      alert("로그인이 필요합니다.");
+      navigate("/user/login");
+      return;
+    }
     setShowResumeModal(true);
   };
 

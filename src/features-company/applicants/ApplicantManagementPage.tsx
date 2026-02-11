@@ -1,3 +1,5 @@
+// C:\NextEnterFront\src\features-company\applicants\ApplicantManagementPage.tsx
+
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthStore } from "../../stores/authStore";
@@ -6,10 +8,25 @@ import { useCompanyPageNavigation } from "../hooks/useCompanyPageNavigation";
 import {
   getApplies,
   updateApplyStatus,
+  deleteApplies,
   type ApplyListResponse,
 } from "../../api/apply";
 import { getJobPostings, type JobPostingListResponse } from "../../api/job";
 import { JOB_CATEGORIES } from "../../constants/jobConstants";
+
+// ✅ 한국 나이 계산 함수
+const calculateKoreanAge = (birthDate?: string): string => {
+  if (!birthDate) return "-";
+
+  const birth = new Date(birthDate);
+  const currentYear = new Date().getFullYear();
+  const birthYear = birth.getFullYear();
+
+  // 한국 나이 = 현재 연도 - 출생 연도 + 1
+  const koreanAge = currentYear - birthYear + 1;
+
+  return `${koreanAge}`;
+};
 
 export default function ApplicantManagementPage() {
   const navigate = useNavigate();
@@ -19,7 +36,7 @@ export default function ApplicantManagementPage() {
   // URL에서 jobId와 jobTitle 가져오기
   const urlJobId = searchParams.get("jobId");
   const urlJobTitle = searchParams.get("jobTitle");
-  const reloadParam = searchParams.get('reload'); 
+  const reloadParam = searchParams.get("reload");
 
   const { activeMenu, handleMenuClick } = useCompanyPageNavigation(
     "applicants",
@@ -37,6 +54,12 @@ export default function ApplicantManagementPage() {
   const [jobPostings, setJobPostings] = useState<JobPostingListResponse[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+
+  // ✅ 체크박스 상태 관리
+  const [selectedApplicants, setSelectedApplicants] = useState<Set<number>>(
+    new Set(),
+  );
+  const [selectAll, setSelectAll] = useState(false);
 
   // 화면 맨 위로 올림
   useEffect(() => {
@@ -97,6 +120,10 @@ export default function ApplicantManagementPage() {
         const response = await getApplies(user.companyId, params);
         setApplicants(response.content);
         setTotalPages(response.totalPages);
+
+        // ✅ 목록 새로고침 시 선택 초기화
+        setSelectedApplicants(new Set());
+        setSelectAll(false);
       } catch (error: any) {
         console.error("지원자 목록 조회 실패:", error);
         alert(
@@ -111,7 +138,88 @@ export default function ApplicantManagementPage() {
     if (user?.companyId) {
       loadApplicants();
     }
-  }, [currentPage, user, navigate, selectedJobPosting, jobPostings, reloadParam]);
+  }, [
+    currentPage,
+    user,
+    navigate,
+    selectedJobPosting,
+    jobPostings,
+    reloadParam,
+  ]);
+
+  // ✅ 전체 선택/해제
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedApplicants(new Set());
+    } else {
+      const allIds = new Set(
+        filteredApplicants.map((applicant) => applicant.applyId),
+      );
+      setSelectedApplicants(allIds);
+    }
+    setSelectAll(!selectAll);
+  };
+
+  // ✅ 개별 선택
+  const handleSelectApplicant = (applyId: number) => {
+    const newSelected = new Set(selectedApplicants);
+    if (newSelected.has(applyId)) {
+      newSelected.delete(applyId);
+    } else {
+      newSelected.add(applyId);
+    }
+    setSelectedApplicants(newSelected);
+
+    // 전체 선택 상태 업데이트
+    setSelectAll(newSelected.size === filteredApplicants.length);
+  };
+
+  // ✅ 선택 삭제
+  const handleDeleteSelected = async () => {
+    if (selectedApplicants.size === 0) {
+      alert("삭제할 지원자를 선택해주세요.");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `선택한 ${selectedApplicants.size}명의 지원자를 삭제하시겠습니까?`,
+      )
+    ) {
+      return;
+    }
+
+    if (!user?.companyId) return;
+
+    try {
+      await deleteApplies(user.companyId, Array.from(selectedApplicants));
+      alert("삭제되었습니다.");
+
+      // ✅ 목록 새로고침
+      const params: any = {
+        page: currentPage,
+        size: 100,
+      };
+
+      // 특정 공고가 선택된 경우
+      if (selectedJobPosting !== "전체") {
+        const selectedJob = jobPostings.find(
+          (job) => job.title === selectedJobPosting,
+        );
+        if (selectedJob) {
+          params.jobId = selectedJob.jobId;
+        }
+      }
+
+      const response = await getApplies(user.companyId, params);
+      setApplicants(response.content);
+      setSelectedApplicants(new Set());
+      setSelectAll(false);
+    } catch (error: any) {
+      console.error("삭제 실패:", error);
+      alert(error.response?.data?.message || "삭제에 실패했습니다.");
+    }
+  };
 
   const handleAccept = async (applyId: number) => {
     if (!user?.companyId) return;
@@ -239,11 +347,22 @@ export default function ApplicantManagementPage() {
           <div className="p-8 bg-white shadow-lg rounded-2xl min-h-[800px]">
             <div className="flex items-center justify-between mb-8">
               <h1 className="text-2xl font-bold">지원자 관리</h1>
-              {urlJobTitle && (
-                <div className="px-4 py-2 text-sm font-medium text-blue-700 rounded-lg bg-blue-50">
-                  필터: {decodeURIComponent(urlJobTitle)} 공고의 지원자
-                </div>
-              )}
+              <div className="flex items-center gap-4">
+                {urlJobTitle && (
+                  <div className="px-4 py-2 text-sm font-medium text-blue-700 rounded-lg bg-blue-50">
+                    필터: {decodeURIComponent(urlJobTitle)} 공고의 지원자
+                  </div>
+                )}
+                {/* ✅ 삭제 버튼 */}
+                {selectedApplicants.size > 0 && (
+                  <button
+                    onClick={handleDeleteSelected}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white transition bg-red-600 rounded-lg hover:bg-red-700"
+                  >
+                    🗑️ 선택 삭제 ({selectedApplicants.size}명)
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* 필터 섹션 */}
@@ -307,6 +426,15 @@ export default function ApplicantManagementPage() {
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
+                    {/* ✅ 전체 선택 체크박스 */}
+                    <th className="px-4 py-3 text-left whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={selectAll}
+                        onChange={handleSelectAll}
+                        className="w-4 h-4 text-purple-600 border-gray-300 rounded cursor-pointer focus:ring-purple-500"
+                      />
+                    </th>
                     <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700 whitespace-nowrap">
                       지원 공고
                     </th>
@@ -319,9 +447,7 @@ export default function ApplicantManagementPage() {
                     <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700 whitespace-nowrap">
                       주요 스킬
                     </th>
-                    <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700 whitespace-nowrap">
-                      AI 점수
-                    </th>
+                    {/* ✅ AI 점수 컬럼 제거 */}
                     <th className="px-6 py-3 text-sm font-semibold text-left text-gray-700 whitespace-nowrap">
                       지원일
                     </th>
@@ -332,10 +458,27 @@ export default function ApplicantManagementPage() {
                   {filteredApplicants.map((applicant) => (
                     <tr
                       key={applicant.applyId}
-                      onClick={() => handleApplicantClick(applicant.applyId)}
-                      className="transition cursor-pointer hover:bg-purple-50"
+                      className="transition hover:bg-purple-50"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      {/* ✅ 개별 체크박스 */}
+                      <td
+                        className="px-4 py-4 whitespace-nowrap"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedApplicants.has(applicant.applyId)}
+                          onChange={() =>
+                            handleSelectApplicant(applicant.applyId)
+                          }
+                          className="w-4 h-4 text-purple-600 border-gray-300 rounded cursor-pointer focus:ring-purple-500"
+                        />
+                      </td>
+
+                      <td
+                        className="px-6 py-4 cursor-pointer whitespace-nowrap"
+                        onClick={() => handleApplicantClick(applicant.applyId)}
+                      >
                         <button
                           onClick={(e) =>
                             handleJobPostingClick(applicant.jobTitle, e)
@@ -346,8 +489,10 @@ export default function ApplicantManagementPage() {
                         </button>
                       </td>
 
-                      {/* ✅ 지원자 이름 옆 동그라미(아바타) 제거 */}
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td
+                        className="px-6 py-4 cursor-pointer whitespace-nowrap"
+                        onClick={() => handleApplicantClick(applicant.applyId)}
+                      >
                         <div className="flex items-center">
                           <div>
                             <div className="font-medium text-gray-900">
@@ -364,13 +509,20 @@ export default function ApplicantManagementPage() {
                         </div>
                       </td>
 
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      {/* ✅ 한국 나이 표시 */}
+                      <td
+                        className="px-6 py-4 cursor-pointer whitespace-nowrap"
+                        onClick={() => handleApplicantClick(applicant.applyId)}
+                      >
                         <span className="font-semibold text-purple-600">
-                          {applicant.userAge}세
+                          {calculateKoreanAge(applicant.birthDate)}세
                         </span>
                       </td>
 
-                      <td className="px-6 py-4">
+                      <td
+                        className="px-6 py-4 cursor-pointer"
+                        onClick={() => handleApplicantClick(applicant.applyId)}
+                      >
                         <div className="flex flex-wrap gap-2 min-w-[200px]">
                           {applicant.skills && applicant.skills.length > 0 ? (
                             applicant.skills.map((skill, idx) => (
@@ -387,15 +539,12 @@ export default function ApplicantManagementPage() {
                         </div>
                       </td>
 
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center justify-center">
-                          <span className="text-2xl font-bold text-purple-600">
-                            {applicant.aiScore}
-                          </span>
-                        </div>
-                      </td>
+                      {/* ✅ AI 점수 컬럼 제거 */}
 
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td
+                        className="px-6 py-4 cursor-pointer whitespace-nowrap"
+                        onClick={() => handleApplicantClick(applicant.applyId)}
+                      >
                         <span className="text-sm text-gray-500">
                           {new Date(applicant.appliedAt).toLocaleDateString(
                             "ko-KR",

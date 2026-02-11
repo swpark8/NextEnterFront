@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../stores/authStore";
+import { useCreditStore } from "../../stores/creditStore";
+import { getCreditBalance, deductCredit } from "../../api/credit";
 import { getResumeList } from "../../api/resume";
 import { getJobPostings } from "../../api/job";
 import { getAiRecommendation, CompanyInfo, AiRecommendRequest } from "../../api/ai";
@@ -31,6 +33,7 @@ export default function MatchingPage({
 }: MatchingPageProps) {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const { creditBalance, setCreditBalance } = useCreditStore();
 
   const { activeMenu, handleMenuClick, setActiveMenu } = usePageNavigation(
     "matching",
@@ -39,7 +42,6 @@ export default function MatchingPage({
   );
 
   const [selectedResume, setSelectedResume] = useState("");
-  const [currentCredit, setCurrentCredit] = useState(200);
   const [hasAnalysis, setHasAnalysis] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [recommendedCompanies, setRecommendedCompanies] = useState<CompanyInfo[]>([]);
@@ -53,6 +55,36 @@ export default function MatchingPage({
   const { businessJobs, setBusinessJobs } = useJobStore();
 
   // 히스토리는 DB 기반으로 전환됨 (localStorage 자동삭제 로직 제거)
+
+  // 크레딧 잔액 조회
+  useEffect(() => {
+    const fetchCreditBalance = async () => {
+      if (user?.userId) {
+        try {
+          console.log("📡 [MatchingPage] 크레딧 잔액 조회 시작:", user.userId);
+          const balance = await getCreditBalance(user.userId);
+          console.log("✅ [MatchingPage] 크레딧 잔액 조회 성공:", balance);
+          setCreditBalance(balance.balance);
+          localStorage.setItem("nextenter_credit_balance", balance.balance.toString());
+        } catch (error: any) {
+          console.error("❌ [MatchingPage] 크레딧 잔액 조회 실패:", error);
+          
+          if (error.response?.status !== 401) {
+            const savedBalance = localStorage.getItem("nextenter_credit_balance");
+            if (savedBalance) {
+              console.log("💾 저장된 크레딧 사용:", savedBalance);
+              setCreditBalance(parseInt(savedBalance));
+            } else {
+              setCreditBalance(0);
+              localStorage.setItem("nextenter_credit_balance", "0");
+            }
+          }
+        }
+      }
+    };
+
+    fetchCreditBalance();
+  }, [user?.userId, setCreditBalance]);
 
   // 1. 이력서 목록 로드
   useEffect(() => {
@@ -122,6 +154,13 @@ export default function MatchingPage({
       alert("이력서를 먼저 선택해주세요!");
       return;
     }
+    
+    // 크레딧 부족 체크
+    if (creditBalance < CREDIT_COST) {
+      alert(`크레딧이 부족합니다. (필요: ${CREDIT_COST}, 보유: ${creditBalance})`);
+      return;
+    }
+    
     setShowConfirmDialog(true);
   };
 
@@ -143,14 +182,13 @@ export default function MatchingPage({
         return;
       }
 
-      // 5. 요청 객체 생성 (Dumb Component: ID만 전송)
+      // AI 분석 요청
       const aiRequest: AiRecommendRequest = {
         resumeId: resumeIdNum,
         userId: userIdNum,
-        // jobCategory: ... (선택 사항)
       };
 
-      console.log("🚀 [Front] Simple AI Matching Request:", aiRequest);
+      console.log("🚀 [Front] AI Matching Request:", aiRequest);
 
       const aiResult = await getAiRecommendation(aiRequest);
 
@@ -161,11 +199,26 @@ export default function MatchingPage({
       setAiExperienceLevel(aiResult.experience_level || "JUNIOR");
       setHasAnalysis(true);
 
-      if (currentCredit >= CREDIT_COST) {
-        setCurrentCredit(currentCredit - CREDIT_COST);
+      // ✅ AI 분석 성공 후 백엔드에 크레딧 차감 요청
+      try {
+        console.log("💳 [MatchingPage] 크레딧 차감 시작:", CREDIT_COST);
+        const deductResult = await deductCredit(
+          userIdNum,
+          CREDIT_COST,
+          "AI 매칭 분석 서비스 이용"
+        );
+        
+        if (deductResult.success && deductResult.balance) {
+          console.log("✅ [MatchingPage] 크레딧 차감 성공:", deductResult.balance.balance);
+          // 전역 상태 업데이트 (모든 페이지에 반영됨)
+          setCreditBalance(deductResult.balance.balance);
+          localStorage.setItem("nextenter_credit_balance", deductResult.balance.balance.toString());
+        }
+      } catch (creditError) {
+        console.error("❌ [MatchingPage] 크레딧 차감 실패:", creditError);
+        // 크레딧 차감 실패는 알림만 하고 분석 결과는 유지
+        alert("크레딧 차감 중 오류가 발생했습니다. 관리자에게 문의해주세요.");
       }
-
-      // 매칭 히스토리는 백엔드(ResumeAiRecommendService)에서 resume_matching 테이블에 자동 저장됨
 
     } catch (error) {
       console.error("❌ AI 매칭 치명적 오류:", error);
@@ -221,7 +274,7 @@ export default function MatchingPage({
 
             <div className="flex-1">
               <MatchingHeader
-                currentCredit={currentCredit}
+                currentCredit={creditBalance}
                 onCreditClick={handleCreditClick}
               />
 

@@ -1,3 +1,5 @@
+// C:\NextEnterFront\src\api\apply.ts
+
 import api from "./axios";
 
 // 지원자 목록 응답 타입
@@ -7,6 +9,7 @@ export interface ApplyListResponse {
   jobId: number;
   userName: string;
   userAge: number;
+  birthDate?: string; // ✅ 생년월일
   jobTitle: string;
   jobCategory: string;
   skills: string[];
@@ -205,4 +208,15 @@ export const cancelApply = async (
       headers: { userId },
     },
   );
+};
+
+// ✅ 수정: 지원자 삭제 (실제 DELETE 요청)
+export const deleteApplies = async (
+  companyId: number,
+  applyIds: number[],
+): Promise<void> => {
+  await api.delete("/api/applies", {
+    headers: { companyId },
+    data: { applyIds },
+  });
 };
